@@ -292,6 +292,46 @@ export default (
 		}
 
 		try {
+			const transceivers = pc.getTransceivers();
+
+			for (const transceiver of transceivers) {
+				const kind = transceiver.sender.track?.kind;
+				if (kind) {
+					let sendCodecs = RTCRtpSender.getCapabilities(kind)?.codecs;
+					let recvCodecs =
+						RTCRtpReceiver.getCapabilities(kind)?.codecs;
+					let codecs = [];
+					if (sendCodecs) {
+						codecs.push(...sendCodecs);
+					}
+					if (recvCodecs) {
+						codecs.push(...recvCodecs);
+					}
+					codecs = sortCodecs(codecs);
+
+					transceiver.setCodecPreferences(codecs);
+
+					DEV: console.log("sent codec preferences", codecs);
+				}
+			}
+
+			const senders = pc.getSenders();
+
+			for (const sender of senders) {
+				const parameters = sender.getParameters();
+				parameters.degradationPreference = "balanced";
+
+				for (const encoding of parameters.encodings) {
+					delete encoding.maxBitrate;
+					delete encoding.maxFramerate;
+					encoding.scaleResolutionDownBy = 1.0;
+				}
+
+				sender.setParameters(parameters);
+
+				DEV: console.log("set sender parameters", parameters);
+			}
+
 			makingOffer = true;
 
 			if (restartIce) {
@@ -598,3 +638,26 @@ export const defaultIceServers: RTCIceServer[] = [
 	...alloc(3, (_, i) => `stun:stun${i || ""}.l.google.com:19302`),
 	"stun:stun.cloudflare.com:3478",
 ].map((url) => ({ urls: url }));
+
+function sortCodecs(codecs: RTCRtpCodec[]) {
+	const preferredOrder = [
+		"video/AV1",
+		"video/H265",
+		"video/VP9",
+		"video/H264",
+		"video/VP8",
+		"audio/opus",
+		"audio/mp4a-latm",
+		"audio/G722",
+		"audio/PCMU",
+		"audio/PCMA",
+	];
+
+	return codecs.sort((a, b) => {
+		const indexA = preferredOrder.indexOf(a.mimeType);
+		const indexB = preferredOrder.indexOf(b.mimeType);
+		const orderA = indexA >= 0 ? indexA : Number.MAX_VALUE;
+		const orderB = indexB >= 0 ? indexB : Number.MAX_VALUE;
+		return orderA - orderB;
+	});
+}
