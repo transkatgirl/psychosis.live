@@ -69,7 +69,7 @@ function helperMenu() {
 
 	document.body.insertAdjacentHTML(
 		"beforeend",
-		"<p><b>Write down your room ID and password!</b> Reloading the page will generate new random credentials.</p><p>After writing down your credentials, use the following URLs to start streaming:</p>"
+		"<p><b>Write down your room ID and password!</b> Reloading this page will generate new random credentials.</p><p>After writing down your credentials, use the following URLs to start streaming:</p>"
 	);
 
 	const senderLabel = document.createElement("label");
@@ -127,6 +127,13 @@ function helperMenu() {
 	document.body.appendChild(document.createElement("br"));
 	document.body.appendChild(receiverLabel);
 	document.body.appendChild(receiverText);
+
+	// TODO: Allow setting codec ordering preferences
+
+	document.body.insertAdjacentHTML(
+		"beforeend",
+		'</br><details><summary>URL parameters</summary><p>Sender & Receiver:</p><ul><li><code>role</code> = Role (<code>sender</code> or <code>receiver</code>)</li><li><code>id</code> = Room ID</li><li><code>password</code> = Room Password (used for E2E encryption)</li></ul><p>All of the below parameters are optional.</p><p>Sender Only:</p><ul><li><code></code> = </li><li><code></code> = </li><li><code></code> = </li><li><code></code> = </li><li><code></code> = </li><li><code></code> = </li><li><code></code> = <a href=""></a> ()</li><li><code>autoGainControl</code> = <a href="https://w3c.github.io/mediacapture-main/#def-constraint-autoGainControl">Audio MediaTrackConstraints Automatic Gain Control</a> (boolean)</li><li><code>echoCancellation</code> = <a href="https://w3c.github.io/mediacapture-main/#def-constraint-echoCancellation">Audio MediaTrackConstraints Echo Cancellation</a> (limited to boolean)</li><li><code>noiseSuppression</code> = <a href="https://w3c.github.io/mediacapture-main/#def-constraint-noiseSuppression">Audio MediaTrackConstraints Noise Suppression</a> (boolean)</li><li><code>backgroundBlur</code> = <a href="https://w3c.github.io/mediacapture-main/#def-constraint-backgroundBlur">Video MediaTrackConstraints Background Blur</a> (boolean)</li><li><code>audioContentHint</code> = <a href="https://w3c.github.io/mst-content-hint/#audio-content-hints">MediaStreamTrack Audio Content Hint</a></li><li><code>videoContentHint</code> = <a href="https://w3c.github.io/mst-content-hint/#video-content-hints">MediaStreamTrack Video Content Hint</a></li><li><code>maxAudioBitrate</code> = <a href="https://w3c.github.io/webrtc-pc/#dom-rtcrtpencodingparameters-maxbitrate">WebRTC Maximum Audio Bitrate</a> (in kilobits/second)</li><li><code>maxVideoBitrate</code> = <a href="https://w3c.github.io/webrtc-pc/#dom-rtcrtpencodingparameters-maxbitrate">WebRTC Maximum Video Bitrate</a> (in kilobits/second)</li><li><code>degradationPreference</code> = <a href="https://w3c.github.io/mst-content-hint/#dictionary-rtcrtpsendparameters-new-members">WebRTC Video Degradation Preference</a> (<a href="https://w3c.github.io/mst-content-hint/#dom-rtcdegradationpreference">RTCDegradationPreference</a>)</li><li><code>networkPriority</code> = <a href="https://www.w3.org/TR/webrtc-priority/#dom-rtcrtpencodingparameters-networkpriority">WebRTC Network QoS Priority</a> (<a href="https://www.w3.org/TR/webrtc-priority/#rtc-priority-type">RTCPriorityType</a>)</li></ul><p>Receiver Only:</p><ul><li><code>jitterBufferTarget</code> = <a href="https://w3c.github.io/webrtc-pc/#dom-rtcrtpreceiver-jitterbuffertarget">WebRTC Jitter Buffer Target</a> (in miliseconds)</li></ul></details>'
+	);
 }
 
 function generateRandom(bits: number) {
@@ -196,6 +203,11 @@ async function launchApp(
 	const maxFramerate = Number(params.get("maxFramerate"));
 	if (params.has("maxFramerate") && Number.isFinite(maxFramerate)) {
 		senderMediaConfig.maxFramerate = maxFramerate;
+	} else {
+		const frameRate = Number(params.get("frameRate"));
+		if (params.has("frameRate") && Number.isFinite(frameRate)) {
+			senderMediaConfig.maxFramerate = maxFramerate;
+		}
 	}
 
 	const jitterBufferTarget = Number(params.get("jitterBufferTarget"));
@@ -253,6 +265,16 @@ async function launchApp(
 async function launchSender(room: Room) {
 	// TODO: allow specifying all constraints
 
+	let showAudio = params.get("showAudio") === "true";
+	if (!params.has("showAudio")) {
+		showAudio = true;
+	}
+
+	let showVideo = params.get("showVideo") === "true";
+	if (!params.has("showVideo")) {
+		showVideo = true;
+	}
+
 	const audioConstraints: MediaTrackConstraints = {
 		autoGainControl: params.get("autoGainControl") === "true",
 		echoCancellation: params.get("echoCancellation") === "true",
@@ -301,6 +323,14 @@ async function launchSender(room: Room) {
 		audio: audioConstraints,
 		video: videoConstraints,
 	};
+
+	if (!showAudio) {
+		constraints.audio = false;
+	}
+
+	if (!showVideo) {
+		constraints.video = false;
+	}
 
 	const stream = await navigator.mediaDevices.getUserMedia(constraints);
 
