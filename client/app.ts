@@ -1,5 +1,6 @@
-import { joinRoom, type NostrRoomConfig, type Room } from "trystero";
 import bs58 from "bs58";
+import { joinRoom, type NostrRoomConfig } from "./packages/nostr/src";
+import type { Room } from "./packages/core/src";
 
 const params: URLSearchParams = new URL(window.location.href).searchParams;
 
@@ -235,6 +236,9 @@ async function launchSender(room: Room) {
 
 	room.addStream(stream);
 	room.onPeerJoin((peerId) => room.addStream(stream, peerId));
+
+	// @ts-ignore
+	globalThis.room = room;
 }
 
 async function launchReceiver(room: Room) {
@@ -242,6 +246,9 @@ async function launchReceiver(room: Room) {
 	const videoContainer = document.createElement("div");
 	document.body.appendChild(videoContainer);
 
+	room.onPeerJoin((peerId) => {
+		console.log(`${peerId} joined`);
+	});
 	room.onPeerStream((stream, peerId) => {
 		let video = peerVideos[peerId];
 
@@ -257,6 +264,7 @@ async function launchReceiver(room: Room) {
 		peerVideos[peerId] = video;
 	});
 	room.onPeerLeave((peerId) => {
+		console.log(`${peerId} left`);
 		let video = peerVideos[peerId];
 
 		if (video) {

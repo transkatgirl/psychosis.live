@@ -3,6 +3,9 @@
 	"module": "index.ts",
 	"type": "module",
 	"private": true,
+	"workspaces": [
+		"packages/*"
+	],
 	"devDependencies": {
 		"@types/bun": "latest"
 	},
@@ -11,6 +14,7 @@
 	},
 	"dependencies": {
 		"bs58": "^6.0.0",
-		"trystero": "^0.23.0"
+		"@trystero-p2p/core": "workspace:*",
+		"@trystero-p2p/nostr": "workspace:*"
 	}
 }

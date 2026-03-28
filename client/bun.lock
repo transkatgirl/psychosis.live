@@ -4,7 +4,9 @@
     "": {
       "name": "client",
       "dependencies": {
-        "@root/passphrase": "^1.1.0",
+        "@trystero-p2p/core": "0.23.0",
+        "@trystero-p2p/nostr": "0.23.0",
+        "bs58": "^6.0.0",
         "trystero": "^0.23.0",
       },
       "devDependencies": {
@@ -18,8 +20,6 @@
   "packages": {
     "@noble/secp256k1": ["@noble/secp256k1@3.0.0", "", {}, "sha512-NJBaR352KyIvj3t6sgT/+7xrNyF9Xk9QlLSIqUGVUYlsnDTAUqY8LOmwpcgEx4AMJXRITQ5XEVHD+mMaPfr3mg=="],
 
-    "@root/passphrase": ["@root/passphrase@1.1.0", "", {}, "sha512-uokMKGQ+wUiqHpvxWRZNj5QtSGvoLOfOND/ny7NZaV2+48mahzJPUbLE9y/xhf/536mi9UvwlnbgTyVqedVHUA=="],
-
     "@trystero-p2p/core": ["@trystero-p2p/core@0.23.0", "", {}, "sha512-ozhtgxKDZH11Gdef0wH8xivwAE/L0/lDFvEcNFWPJWnHZlxWPPyfeonwE287ssGevQNi10vnj6x2ZcOi0n1bQQ=="],
 
     "@trystero-p2p/nostr": ["@trystero-p2p/nostr@0.23.0", "", { "dependencies": { "@noble/secp256k1": "^3.0.0", "@trystero-p2p/core": "0.23.0" } }, "sha512-KSqUR2c1KVfv4zeErcntuegtyKzFTzNNiitIKGD0LiKA/4H3CeTF81ROk2h+X/PNvP4mv7Gp5eVxFYwfMu4Nrg=="],
@@ -27,6 +27,10 @@
     "@types/bun": ["@types/bun@1.3.11", "", { "dependencies": { "bun-types": "1.3.11" } }, "sha512-5vPne5QvtpjGpsGYXiFyycfpDF2ECyPcTSsFBMa0fraoxiQyMJ3SmuQIGhzPg2WJuWxVBoxWJ2kClYTcw/4fAg=="],
 
     "@types/node": ["@types/node@25.5.0", "", { "dependencies": { "undici-types": "~7.18.0" } }, "sha512-jp2P3tQMSxWugkCUKLRPVUpGaL5MVFwF8RDuSRztfwgN1wmqJeMSbKlnEtQqU8UrhTmzEmZdu2I6v2dpp7XIxw=="],
+
+    "base-x": ["base-x@5.0.1", "", {}, "sha512-M7uio8Zt++eg3jPj+rHMfCC+IuygQHHCOU+IYsVtik6FWjuYpVt/+MRKcgsAMHh8mMFAwnB+Bs+mTrFiXjMzKg=="],
+
+    "bs58": ["bs58@6.0.0", "", { "dependencies": { "base-x": "^5.0.0" } }, "sha512-PD0wEnEYg6ijszw/u8s+iI3H17cTymlrwkKhDhPZq+Sokl3AU4htyBFTjAeNAlCCmg0f53g6ih3jATyCKftTfw=="],
 
     "bun-types": ["bun-types@1.3.11", "", { "dependencies": { "@types/node": "*" } }, "sha512-1KGPpoxQWl9f6wcZh57LvrPIInQMn2TQ7jsgxqpRzg+l0QPOFvJVH7HmvHo/AiPgwXy+/Thf6Ov3EdVn1vOabg=="],
 
