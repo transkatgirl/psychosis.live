@@ -268,7 +268,7 @@ async function launchReceiver(room: Room) {
 		let video = peerVideos[peerId];
 
 		if (video) {
-			document.removeChild(video);
+			videoContainer.removeChild(video);
 			peerVideos[peerId] = undefined;
 		}
 	});
