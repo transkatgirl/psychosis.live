@@ -1,6 +1,7 @@
 import bs58 from "bs58";
 import { joinRoom, type NostrRoomConfig } from "./packages/trystero-nostr/src";
 import type { Room } from "./packages/trystero-core/src";
+import type { MediaConfig } from "./packages/trystero-core/src/types";
 
 const params: URLSearchParams = new URL(window.location.href).searchParams;
 
@@ -143,6 +144,9 @@ function generateURL(role: Role, id: string, pass: string): string {
 		url.searchParams.set("width", 1920);
 		url.searchParams.set("audioContentHint", "music");
 		url.searchParams.set("videoContentHint", "motion");
+		url.searchParams.set("degradationPreference", "balanced");
+		url.searchParams.set("maxVideoBitrate", 100 * 1000);
+		url.searchParams.set("maxAudioBitrate", 256);
 	}
 	return url.toString();
 }
@@ -155,6 +159,42 @@ async function launchApp(
 ) {
 	document.body.id = "app";
 
+	let mediaConfig: MediaConfig = {
+		codecOrderPreference: [
+			"video/AV1",
+			"video/H265",
+			"video/VP9",
+			"video/H264",
+			"video/VP8",
+			"audio/opus",
+			"audio/mp4a-latm",
+			"audio/G722",
+			"audio/PCMU",
+			"audio/PCMA",
+		],
+	};
+
+	const degradationPreference = params.get("degradationPreference");
+	if (degradationPreference) {
+		mediaConfig.degradationPreference =
+			degradationPreference as RTCDegradationPreference;
+	}
+
+	const maxVideoBitrate = Number(params.get("maxVideoBitrate"));
+	if (params.has("maxVideoBitrate") && Number.isFinite(maxVideoBitrate)) {
+		mediaConfig.maxVideoBitrate = maxVideoBitrate;
+	}
+
+	const maxAudioBitrate = Number(params.get("maxAudioBitrate"));
+	if (params.has("maxAudioBitrate") && Number.isFinite(maxAudioBitrate)) {
+		mediaConfig.maxAudioBitrate = maxAudioBitrate;
+	}
+
+	const maxFramerate = Number(params.get("maxFramerate"));
+	if (params.has("maxFramerate") && Number.isFinite(maxFramerate)) {
+		mediaConfig.maxFramerate = maxFramerate;
+	}
+
 	let config: NostrRoomConfig = {
 		appId: "psychosis.live",
 		trickleIce: true,
@@ -163,23 +203,7 @@ async function launchApp(
 			iceCandidatePoolSize: 10,
 			bundlePolicy: "max-bundle",
 		},
-		mediaConfig: {
-			degradationPreference: "balanced",
-			maxVideoBitrate: 100 * 1000,
-			maxAudioBitrate: 256,
-			codecOrderPreference: [
-				"video/AV1",
-				"video/H265",
-				"video/VP9",
-				"video/H264",
-				"video/VP8",
-				"audio/opus",
-				"audio/mp4a-latm",
-				"audio/G722",
-				"audio/PCMU",
-				"audio/PCMA",
-			],
-		},
+		mediaConfig,
 	};
 	if (password) {
 		config.password = password;
