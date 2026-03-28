@@ -13,4 +13,10 @@ input[type="text"] {
 pre {
 	background-color: gray;
 	padding: 0.5em;
+	overflow: auto;
+}
+
+video {
+	max-width: 100%;
+	max-height: 100%;
 }

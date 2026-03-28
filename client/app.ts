@@ -135,6 +135,12 @@ function generateURL(role: Role, id: string, pass: string): string {
 	url.searchParams.set("role", role);
 	url.searchParams.set("id", id);
 	url.searchParams.set("password", pass);
+	if (role == Role.Sender) {
+		url.searchParams.set("aspectRatio", 1.7777777778);
+		url.searchParams.set("frameRate", 60);
+		url.searchParams.set("height", 1080);
+		url.searchParams.set("width", 1920);
+	}
 	return url.toString();
 }
 
@@ -158,48 +164,104 @@ async function launchApp(
 	});
 
 	if (role == Role.Sender) {
-		const stream = await navigator.mediaDevices.getUserMedia({
-			audio: true,
-			video: true,
-		});
-
-		const video = document.createElement("video");
-		video.autoplay = true;
-		video.muted = true;
-		video.controls = true;
-		video.srcObject = stream;
-		document.body.appendChild(video);
-
-		room.addStream(stream);
-		room.onPeerJoin((peerId) => room.addStream(stream, peerId));
+		await launchSender(room);
 	}
 
 	if (role == Role.Receiver) {
-		const peerVideos: any = {};
-		const videoContainer = document.createElement("div");
-		document.body.appendChild(videoContainer);
-
-		room.onPeerStream((stream, peerId) => {
-			let video = peerVideos[peerId];
-
-			if (!video) {
-				video = document.createElement("video");
-				video.autoplay = true;
-				video.controls = true;
-
-				videoContainer.appendChild(video);
-			}
-
-			video.srcObject = stream;
-			peerVideos[peerId] = video;
-		});
-		room.onPeerLeave((peerId) => {
-			let video = peerVideos[peerId];
-
-			if (video) {
-				document.removeChild(video);
-				peerVideos[peerId] = undefined;
-			}
-		});
+		await launchReceiver(room);
 	}
+}
+
+async function launchSender(room: Room) {
+	// TO DO: allow specifying all constraints
+
+	let audioConstraints: MediaTrackConstraints = {
+		autoGainControl: params.get("autoGainControl") === "true",
+		echoCancellation: params.get("echoCancellation") === "true",
+		noiseSuppression: params.get("noiseSuppression") === "true",
+	};
+	let videoConstraints: MediaTrackConstraints = {
+		backgroundBlur: params.get("backgroundBlur") === "true",
+	};
+
+	let channelCount = Number(params.get("channelCount"));
+	if (params.has("channelCount") && Number.isFinite(channelCount)) {
+		audioConstraints.channelCount = {
+			max: channelCount,
+		};
+	}
+
+	let aspectRatio = Number(params.get("aspectRatio"));
+	if (params.has("aspectRatio") && Number.isFinite(aspectRatio)) {
+		videoConstraints.aspectRatio = {
+			ideal: aspectRatio,
+		};
+	}
+
+	let frameRate = Number(params.get("frameRate"));
+	if (params.has("frameRate") && Number.isFinite(frameRate)) {
+		videoConstraints.frameRate = {
+			max: frameRate,
+		};
+	}
+
+	let height = Number(params.get("height"));
+	if (params.has("height") && Number.isFinite(height)) {
+		videoConstraints.height = {
+			max: height,
+		};
+	}
+
+	let width = Number(params.get("width"));
+	if (params.has("width") && Number.isFinite(width)) {
+		videoConstraints.width = {
+			max: width,
+		};
+	}
+
+	let constraints: MediaStreamConstraints = {
+		audio: audioConstraints,
+		video: videoConstraints,
+	};
+
+	const stream = await navigator.mediaDevices.getUserMedia(constraints);
+
+	const video = document.createElement("video");
+	video.autoplay = true;
+	video.muted = true;
+	video.controls = true;
+	video.srcObject = stream;
+	document.body.appendChild(video);
+
+	room.addStream(stream);
+	room.onPeerJoin((peerId) => room.addStream(stream, peerId));
+}
+
+async function launchReceiver(room: Room) {
+	const peerVideos: any = {};
+	const videoContainer = document.createElement("div");
+	document.body.appendChild(videoContainer);
+
+	room.onPeerStream((stream, peerId) => {
+		let video = peerVideos[peerId];
+
+		if (!video) {
+			video = document.createElement("video");
+			video.autoplay = true;
+			video.controls = true;
+
+			videoContainer.appendChild(video);
+		}
+
+		video.srcObject = stream;
+		peerVideos[peerId] = video;
+	});
+	room.onPeerLeave((peerId) => {
+		let video = peerVideos[peerId];
+
+		if (video) {
+			document.removeChild(video);
+			peerVideos[peerId] = undefined;
+		}
+	});
 }
