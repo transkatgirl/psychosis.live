@@ -322,51 +322,43 @@ export default (
 				}
 			}
 
-			if (
-				mediaConfig?.degradationPreference ||
-				mediaConfig?.maxVideoBitrate ||
-				mediaConfig?.maxAudioBitrate ||
-				mediaConfig?.maxFramerate
-			) {
-				const senders = pc.getSenders();
+			const senders = pc.getSenders();
 
-				for (const sender of senders) {
-					const parameters = sender.getParameters();
+			for (const sender of senders) {
+				const parameters = sender.getParameters();
 
-					if (mediaConfig.degradationPreference) {
-						parameters.degradationPreference =
-							mediaConfig.degradationPreference;
-					}
+				if (mediaConfig?.degradationPreference) {
+					parameters.degradationPreference =
+						mediaConfig.degradationPreference;
+				}
 
-					for (const encoding of parameters.encodings) {
-						if (
-							sender.track?.kind == "video" &&
-							mediaConfig.maxVideoBitrate
-						) {
+				for (const encoding of parameters.encodings) {
+					if (sender.track?.kind == "video") {
+						encoding.networkPriority = "medium";
+
+						if (mediaConfig?.maxVideoBitrate) {
 							encoding.maxBitrate =
 								mediaConfig.maxVideoBitrate * 1000;
 						}
 
-						if (
-							sender.track?.kind == "video" &&
-							mediaConfig.maxFramerate
-						) {
+						if (mediaConfig?.maxFramerate) {
 							encoding.maxFramerate = mediaConfig.maxFramerate;
 						}
+					}
 
-						if (
-							sender.track?.kind == "audio" &&
-							mediaConfig.maxAudioBitrate
-						) {
+					if (sender.track?.kind == "audio") {
+						encoding.networkPriority = "high";
+
+						if (mediaConfig?.maxAudioBitrate) {
 							encoding.maxBitrate =
 								mediaConfig.maxAudioBitrate * 1000;
 						}
 					}
-
-					sender.setParameters(parameters);
-
-					DEV: console.log("set sender parameters", parameters);
 				}
+
+				sender.setParameters(parameters);
+
+				DEV: console.log("set sender parameters", parameters);
 			}
 
 			makingOffer = true;
@@ -388,13 +380,13 @@ export default (
 			if (restartIce) {
 				const offer = await pc.createOffer({ iceRestart: true });
 
-				DEV: console.log("offer description", offer);
+				//DEV: console.log("offer description", offer);
 
 				await pc.setLocalDescription(offer);
 			} else {
 				const offer = await pc.createOffer({ iceRestart: false });
 
-				DEV: console.log("offer description", offer);
+				//DEV: console.log("offer description", offer);
 
 				await pc.setLocalDescription(offer);
 			}
