@@ -233,8 +233,8 @@ async function launchApp(
 			receiver: receiverMediaConfig,
 			codecOrderPreference: [
 				"video/AV1",
-				"video/H265",
 				"video/VP9",
+				"video/H265",
 				"video/H264",
 				"video/VP8",
 				"audio/opus",
@@ -247,6 +247,21 @@ async function launchApp(
 	};
 	if (password) {
 		config.password = password;
+	}
+
+	if (navigator.vendor.startsWith("Apple") && config.mediaConfig) {
+		config.mediaConfig.codecOrderPreference = [
+			"video/AV1",
+			"video/H265",
+			"video/VP9",
+			"video/H264",
+			"video/VP8",
+			"audio/opus",
+			"audio/mp4a-latm",
+			"audio/G722",
+			"audio/PCMU",
+			"audio/PCMA",
+		];
 	}
 
 	const room = joinRoom(config, roomId, {
@@ -395,6 +410,7 @@ async function launchReceiver(room: Room) {
 
 		video.srcObject = stream;
 		video.id = peerId;
+		DEV: video.title = peerId;
 		peerVideos[peerId] = video;
 	});
 	room.onPeerLeave((peerId) => {
