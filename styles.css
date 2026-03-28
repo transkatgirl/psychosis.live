@@ -1,6 +1,6 @@
 body#app {
 	margin: 0;
-	background-color: #0000;
+	background-color: black;
 }
 
 body:not(#app) {

@@ -39,7 +39,7 @@ function helperMenu() {
 	document.title = "psychosis.live";
 
 	document.body.innerHTML =
-		'<h1>psychosis.live</h1><p>This service allows you to stream <em>end-to-end encrypted</em> video from your smartphone into OBS over practically any internet connection, allowing you to stream anything from anywhere with an internet connection.</p><p>Unlike similar services, such as <a href="https://vdo.ninja">VDO.Ninja</a>, psychosis.live focuses primarily on ensuring watchability over poor connections.</p>';
+		'<h1>psychosis.live</h1><p>This service allows you to stream <em>end-to-end encrypted</em> video from your smartphone into OBS over practically any internet connection, allowing you to stream anything from anywhere with an internet connection.</p><p>Unlike similar services, such as <a href="https://vdo.ninja">VDO.Ninja</a>, psychosis.live focuses primarily on ensuring watchability over poor sender connections.</p>';
 
 	const roomLabel = document.createElement("label");
 	roomLabel.htmlFor = "room";
