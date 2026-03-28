@@ -146,11 +146,9 @@ function generateURL(role: Role, id: string, pass: string): string {
 		url.searchParams.set("frameRate", 60);
 		url.searchParams.set("height", 1080);
 		url.searchParams.set("width", 1920);
-		url.searchParams.set("audioContentHint", "music");
-		url.searchParams.set("videoContentHint", "motion");
 		url.searchParams.set("degradationPreference", "balanced");
 		url.searchParams.set("maxVideoBitrate", 15 * 1000);
-		url.searchParams.set("maxAudioBitrate", 256);
+		url.searchParams.set("maxAudioBitrate", 192);
 		url.searchParams.set("networkPriority", "medium");
 	}
 	if (role == Role.Receiver) {
