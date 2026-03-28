@@ -1,0 +1,12 @@
+body:not(#app) {
+	margin: 1lh;
+}
+
+input[type="text"] {
+	font-family: monospace;
+}
+
+pre {
+	background-color: gray;
+	padding: 0.5em;
+}

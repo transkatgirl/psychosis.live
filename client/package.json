@@ -1,0 +1,16 @@
+{
+	"name": "client",
+	"module": "index.ts",
+	"type": "module",
+	"private": true,
+	"devDependencies": {
+		"@types/bun": "latest"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"dependencies": {
+		"bs58": "^6.0.0",
+		"trystero": "^0.23.0"
+	}
+}
