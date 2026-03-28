@@ -160,6 +160,7 @@ async function launchApp(
 	document.body.id = "app";
 
 	let mediaConfig: MediaConfig = {
+		networkPriority: "medium",
 		codecOrderPreference: [
 			"video/AV1",
 			"video/H265",

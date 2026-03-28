@@ -333,8 +333,14 @@ export default (
 				}
 
 				for (const encoding of parameters.encodings) {
+					if (mediaConfig?.networkPriority) {
+						encoding.networkPriority = mediaConfig.networkPriority;
+					}
+
 					if (sender.track?.kind == "video") {
-						encoding.networkPriority = "medium";
+						if (mediaConfig?.videoPriority) {
+							encoding.priority = mediaConfig.videoPriority;
+						}
 
 						if (mediaConfig?.maxVideoBitrate) {
 							encoding.maxBitrate =
@@ -347,7 +353,9 @@ export default (
 					}
 
 					if (sender.track?.kind == "audio") {
-						encoding.networkPriority = "high";
+						if (mediaConfig?.audioPriority) {
+							encoding.priority = mediaConfig.audioPriority;
+						}
 
 						if (mediaConfig?.maxAudioBitrate) {
 							encoding.maxBitrate =

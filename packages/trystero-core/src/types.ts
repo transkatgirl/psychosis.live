@@ -54,6 +54,9 @@ export type TurnServerConfig = {
 };
 
 export type MediaConfig = {
+	networkPriority?: RTCPriorityType;
+	videoPriority?: RTCPriorityType;
+	audioPriority?: RTCPriorityType;
 	degradationPreference?: RTCDegradationPreference;
 	maxVideoBitrate?: number;
 	maxAudioBitrate?: number;
