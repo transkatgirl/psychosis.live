@@ -18,7 +18,7 @@ import {
 	type JoinRoom,
 	type RelayConfig,
 	type SocketClient,
-} from "../../core/src";
+} from "../../trystero-core/src";
 
 const relayManager = createRelayManager<SocketClient>(
 	(client) => client.socket
@@ -255,4 +255,4 @@ export const defaultRelayUrls = [
 	"yabu.me/v2",
 ].map((url) => "wss://" + url);
 
-export type * from "../../core/src";
+export type * from "../../trystero-core/src";

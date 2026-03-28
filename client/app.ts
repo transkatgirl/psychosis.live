@@ -1,6 +1,6 @@
 import bs58 from "bs58";
-import { joinRoom, type NostrRoomConfig } from "./packages/nostr/src";
-import type { Room } from "./packages/core/src";
+import { joinRoom, type NostrRoomConfig } from "./packages/trystero-nostr/src";
+import type { Room } from "./packages/trystero-core/src";
 
 const params: URLSearchParams = new URL(window.location.href).searchParams;
 
