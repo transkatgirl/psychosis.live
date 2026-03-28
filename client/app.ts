@@ -163,6 +163,23 @@ async function launchApp(
 			iceCandidatePoolSize: 10,
 			bundlePolicy: "max-bundle",
 		},
+		mediaConfig: {
+			degradationPreference: "balanced",
+			maxVideoBitrate: 100 * 1000,
+			maxAudioBitrate: 256,
+			codecOrderPreference: [
+				"video/AV1",
+				"video/H265",
+				"video/VP9",
+				"video/H264",
+				"video/VP8",
+				"audio/opus",
+				"audio/mp4a-latm",
+				"audio/G722",
+				"audio/PCMU",
+				"audio/PCMA",
+			],
+		},
 	};
 	if (password) {
 		config.password = password;

@@ -23,6 +23,7 @@ export default (
 		rtcConfig,
 		rtcPolyfill,
 		turnConfig,
+		mediaConfig,
 		_test_only_mdnsHostFallbackToLoopback,
 	}: BaseRoomConfig
 ): PeerHandle => {
@@ -292,50 +293,80 @@ export default (
 		}
 
 		try {
-			const transceivers = pc.getTransceivers();
+			if (mediaConfig?.codecOrderPreference) {
+				const transceivers = pc.getTransceivers();
 
-			for (const transceiver of transceivers) {
-				const kind = transceiver.sender.track?.kind;
-				if (kind) {
-					let sendCodecs = RTCRtpSender.getCapabilities(kind)?.codecs;
-					let recvCodecs =
-						RTCRtpReceiver.getCapabilities(kind)?.codecs;
-					let codecs = [];
-					if (sendCodecs) {
-						codecs.push(...sendCodecs);
+				for (const transceiver of transceivers) {
+					const kind = transceiver.sender.track?.kind;
+					if (kind) {
+						let sendCodecs =
+							RTCRtpSender.getCapabilities(kind)?.codecs;
+						let recvCodecs =
+							RTCRtpReceiver.getCapabilities(kind)?.codecs;
+						let codecs = [];
+						if (sendCodecs) {
+							codecs.push(...sendCodecs);
+						}
+						if (recvCodecs) {
+							codecs.push(...recvCodecs);
+						}
+						codecs = sortCodecs(
+							codecs,
+							mediaConfig.codecOrderPreference
+						);
+
+						transceiver.setCodecPreferences(codecs);
+
+						DEV: console.log("sent codec preferences", codecs);
 					}
-					if (recvCodecs) {
-						codecs.push(...recvCodecs);
-					}
-					codecs = sortCodecs(codecs);
-
-					transceiver.setCodecPreferences(codecs);
-
-					DEV: console.log("sent codec preferences", codecs);
 				}
 			}
 
-			const senders = pc.getSenders();
+			if (
+				mediaConfig?.degradationPreference ||
+				mediaConfig?.maxVideoBitrate ||
+				mediaConfig?.maxAudioBitrate ||
+				mediaConfig?.maxFramerate
+			) {
+				const senders = pc.getSenders();
 
-			for (const sender of senders) {
-				const parameters = sender.getParameters();
-				parameters.degradationPreference = "balanced";
+				for (const sender of senders) {
+					const parameters = sender.getParameters();
 
-				for (const encoding of parameters.encodings) {
-					if (sender.track?.kind == "video") {
-						encoding.maxBitrate = 100 * 1000 * 1000;
+					if (mediaConfig.degradationPreference) {
+						parameters.degradationPreference =
+							mediaConfig.degradationPreference;
 					}
 
-					if (sender.track?.kind == "audio") {
-						encoding.maxBitrate = 256 * 1000;
+					for (const encoding of parameters.encodings) {
+						if (
+							sender.track?.kind == "video" &&
+							mediaConfig.maxVideoBitrate
+						) {
+							encoding.maxBitrate =
+								mediaConfig.maxVideoBitrate * 1000;
+						}
+
+						if (
+							sender.track?.kind == "video" &&
+							mediaConfig.maxFramerate
+						) {
+							encoding.maxFramerate = mediaConfig.maxFramerate;
+						}
+
+						if (
+							sender.track?.kind == "audio" &&
+							mediaConfig.maxAudioBitrate
+						) {
+							encoding.maxBitrate =
+								mediaConfig.maxAudioBitrate * 1000;
+						}
 					}
 
-					encoding.scaleResolutionDownBy = 1.0;
+					sender.setParameters(parameters);
+
+					DEV: console.log("set sender parameters", parameters);
 				}
-
-				sender.setParameters(parameters);
-
-				DEV: console.log("set sender parameters", parameters);
 			}
 
 			makingOffer = true;
@@ -654,20 +685,7 @@ export const defaultIceServers: RTCIceServer[] = [
 	"stun:stun.cloudflare.com:3478",
 ].map((url) => ({ urls: url }));
 
-function sortCodecs(codecs: RTCRtpCodec[]) {
-	const preferredOrder = [
-		"video/AV1",
-		"video/H265",
-		"video/VP9",
-		"video/H264",
-		"video/VP8",
-		"audio/opus",
-		"audio/mp4a-latm",
-		"audio/G722",
-		"audio/PCMU",
-		"audio/PCMA",
-	];
-
+function sortCodecs(codecs: RTCRtpCodec[], preferredOrder: string[]) {
 	return codecs.sort((a, b) => {
 		const indexA = preferredOrder.indexOf(a.mimeType);
 		const indexB = preferredOrder.indexOf(b.mimeType);

@@ -53,6 +53,14 @@ export type TurnServerConfig = {
 	credentialType?: string;
 };
 
+export type MediaConfig = {
+	degradationPreference?: RTCDegradationPreference;
+	maxVideoBitrate?: number;
+	maxAudioBitrate?: number;
+	maxFramerate?: number;
+	codecOrderPreference?: string[];
+};
+
 export type BaseRoomConfig = {
 	appId: string;
 	password?: string;
@@ -60,6 +68,7 @@ export type BaseRoomConfig = {
 	rtcConfig?: RTCConfiguration;
 	rtcPolyfill?: typeof RTCPeerConnection;
 	turnConfig?: TurnServerConfig[];
+	mediaConfig?: MediaConfig;
 	_test_only_mdnsHostFallbackToLoopback?: boolean;
 	_test_only_sharedPeerIdleMs?: number;
 };
