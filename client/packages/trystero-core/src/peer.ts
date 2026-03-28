@@ -322,8 +322,14 @@ export default (
 				parameters.degradationPreference = "balanced";
 
 				for (const encoding of parameters.encodings) {
-					encoding.maxBitrate = Number.MAX_SAFE_INTEGER;
-					encoding.maxFramerate = Number.MAX_SAFE_INTEGER;
+					if (sender.track?.kind == "video") {
+						encoding.maxBitrate = 100 * 1000 * 1000;
+					}
+
+					if (sender.track?.kind == "audio") {
+						encoding.maxBitrate = 256 * 1000;
+					}
+
 					encoding.scaleResolutionDownBy = 1.0;
 				}
 
@@ -348,11 +354,20 @@ export default (
 				}
 			}
 
-			await pc.setLocalDescription(
-				restartIce
-					? await pc.createOffer({ iceRestart: true })
-					: undefined
-			);
+			if (restartIce) {
+				const offer = await pc.createOffer({ iceRestart: true });
+
+				DEV: console.log("offer description", offer);
+
+				await pc.setLocalDescription(offer);
+			} else {
+				const offer = await pc.createOffer({ iceRestart: false });
+
+				DEV: console.log("offer description", offer);
+
+				await pc.setLocalDescription(offer);
+			}
+
 			const offer = await emitLocalDescriptionSignal();
 			return offer;
 		} catch (err) {

@@ -141,6 +141,8 @@ function generateURL(role: Role, id: string, pass: string): string {
 		url.searchParams.set("frameRate", 60);
 		url.searchParams.set("height", 1080);
 		url.searchParams.set("width", 1920);
+		url.searchParams.set("audioContentHint", "music");
+		url.searchParams.set("videoContentHint", "motion");
 	}
 	return url.toString();
 }
@@ -153,7 +155,15 @@ async function launchApp(
 ) {
 	document.body.id = "app";
 
-	let config: NostrRoomConfig = { appId: "psychosis.live" };
+	let config: NostrRoomConfig = {
+		appId: "psychosis.live",
+		trickleIce: true,
+		rtcConfig: {
+			iceTransportPolicy: "all",
+			iceCandidatePoolSize: 10,
+			bundlePolicy: "max-bundle",
+		},
+	};
 	if (password) {
 		config.password = password;
 	}
@@ -174,58 +184,72 @@ async function launchApp(
 }
 
 async function launchSender(room: Room) {
-	// TO DO: allow specifying all constraints
+	// TODO: allow specifying all constraints
 
-	let audioConstraints: MediaTrackConstraints = {
+	const audioConstraints: MediaTrackConstraints = {
 		autoGainControl: params.get("autoGainControl") === "true",
 		echoCancellation: params.get("echoCancellation") === "true",
 		noiseSuppression: params.get("noiseSuppression") === "true",
 	};
-	let videoConstraints: MediaTrackConstraints = {
+	const videoConstraints: MediaTrackConstraints = {
 		backgroundBlur: params.get("backgroundBlur") === "true",
 	};
 
-	let channelCount = Number(params.get("channelCount"));
+	const channelCount = Number(params.get("channelCount"));
 	if (params.has("channelCount") && Number.isFinite(channelCount)) {
 		audioConstraints.channelCount = {
 			max: channelCount,
 		};
 	}
 
-	let aspectRatio = Number(params.get("aspectRatio"));
+	const aspectRatio = Number(params.get("aspectRatio"));
 	if (params.has("aspectRatio") && Number.isFinite(aspectRatio)) {
 		videoConstraints.aspectRatio = {
 			ideal: aspectRatio,
 		};
 	}
 
-	let frameRate = Number(params.get("frameRate"));
+	const frameRate = Number(params.get("frameRate"));
 	if (params.has("frameRate") && Number.isFinite(frameRate)) {
 		videoConstraints.frameRate = {
 			max: frameRate,
 		};
 	}
 
-	let height = Number(params.get("height"));
+	const height = Number(params.get("height"));
 	if (params.has("height") && Number.isFinite(height)) {
 		videoConstraints.height = {
 			max: height,
 		};
 	}
 
-	let width = Number(params.get("width"));
+	const width = Number(params.get("width"));
 	if (params.has("width") && Number.isFinite(width)) {
 		videoConstraints.width = {
 			max: width,
 		};
 	}
 
-	let constraints: MediaStreamConstraints = {
+	const constraints: MediaStreamConstraints = {
 		audio: audioConstraints,
 		video: videoConstraints,
 	};
 
 	const stream = await navigator.mediaDevices.getUserMedia(constraints);
+
+	const audioContentHint = params.get("audioContentHint");
+	if (audioContentHint) {
+		for (const audioTrack of stream.getAudioTracks()) {
+			audioTrack.contentHint = audioContentHint;
+		}
+	}
+
+	const videoContentHint = params.get("videoContentHint");
+	if (videoContentHint) {
+		for (const videoTrack of stream.getVideoTracks()) {
+			videoTrack.contentHint = videoContentHint;
+		}
+	}
 
 	const video = document.createElement("video");
 	video.autoplay = true;
