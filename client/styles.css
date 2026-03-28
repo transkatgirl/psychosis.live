@@ -1,3 +1,7 @@
+body#app {
+	margin: 0;
+}
+
 body:not(#app) {
 	margin: 1lh;
 }

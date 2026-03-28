@@ -1,15 +1,27 @@
-import { joinRoom } from "trystero";
+import { joinRoom, type NostrRoomConfig, type Room } from "trystero";
 import bs58 from "bs58";
 
 const params: URLSearchParams = new URL(window.location.href).searchParams;
 
-if (params.has("role") && params.has("id") && params.has("pass")) {
-	if (params.get("role") == "sender") {
-		// @ts-ignore
-		launchSender(params.get("id"), params.get("pass"), params);
-	} else if (params.get("role") == "receiver") {
-		// @ts-ignore
-		launchReceiver(params.get("id"), params.get("pass"));
+enum Role {
+	Sender = "sender",
+	Receiver = "receiver",
+}
+
+if (params.has("role") && params.has("id") && params.has("password")) {
+	let roleString = params.get("role");
+	let id = params.get("id");
+	let password = params.get("password");
+
+	let role;
+	if (roleString == Role.Sender) {
+		role = Role.Sender;
+	} else if (roleString == Role.Receiver) {
+		role = Role.Receiver;
+	}
+
+	if (role && id && password) {
+		await launchApp(role, id, password, params);
 	} else {
 		helperMenu();
 	}
@@ -55,50 +67,50 @@ function helperMenu() {
 	);
 
 	const senderLabel = document.createElement("label");
-	senderLabel.innerText = "Sender (use on your smartphone): ";
+	senderLabel.innerText = "Sender (your smartphone): ";
 	senderLabel.htmlFor = "sender";
 	const senderText = document.createElement("pre");
 	senderText.id = "sender";
 	senderText.style.backgroundColor = "lightcoral";
 
 	const receiverLabel = document.createElement("label");
-	receiverLabel.innerText = "Receiver (use in the OBS Browser source): ";
+	receiverLabel.innerText = "Receiver (OBS Browser source): ";
 	receiverLabel.htmlFor = "receiver";
 	const receiverText = document.createElement("pre");
 	receiverText.id = "receiver";
 	receiverText.style.backgroundColor = "lightseagreen";
 
 	senderText.innerText = generateURL(
-		"sender",
+		Role.Sender,
 		roomInput.value,
 		passwordInput.value
 	);
 	receiverText.innerText = generateURL(
-		"receiver",
+		Role.Receiver,
 		roomInput.value,
 		passwordInput.value
 	);
 
 	roomInput.addEventListener("input", (event) => {
 		senderText.innerText = generateURL(
-			"sender",
+			Role.Sender,
 			roomInput.value,
 			passwordInput.value
 		);
 		receiverText.innerText = generateURL(
-			"receiver",
+			Role.Receiver,
 			roomInput.value,
 			passwordInput.value
 		);
 	});
 	passwordInput.addEventListener("input", (event) => {
 		senderText.innerText = generateURL(
-			"sender",
+			Role.Sender,
 			roomInput.value,
 			passwordInput.value
 		);
 		receiverText.innerText = generateURL(
-			"receiver",
+			Role.Receiver,
 			roomInput.value,
 			passwordInput.value
 		);
@@ -117,21 +129,77 @@ function generateRandom(bits: number) {
 	return bs58.encode(data);
 }
 
-function generateURL(role: string, id: string, pass: string): string {
+function generateURL(role: Role, id: string, pass: string): string {
 	const url = new URL(window.location.href);
 	url.search = "";
 	url.searchParams.set("role", role);
 	url.searchParams.set("id", id);
-	url.searchParams.set("pass", pass);
+	url.searchParams.set("password", pass);
 	return url.toString();
 }
 
-function launchSender(id: string, pass: string, params: URLSearchParams) {
-	document.title = "Sender";
+async function launchApp(
+	role: Role,
+	roomId: string,
+	password: string,
+	params: URLSearchParams
+) {
 	document.body.id = "app";
-}
 
-function launchReceiver(id: string, pass: string) {
-	document.title = "Receiver";
-	document.body.id = "app";
+	let config: NostrRoomConfig = { appId: "psychosis.live" };
+	if (password) {
+		config.password = password;
+	}
+
+	const room = joinRoom(config, roomId, {
+		onJoinError: (details) => {
+			console.error(details);
+		},
+	});
+
+	if (role == Role.Sender) {
+		const stream = await navigator.mediaDevices.getUserMedia({
+			audio: true,
+			video: true,
+		});
+
+		const video = document.createElement("video");
+		video.autoplay = true;
+		video.muted = true;
+		video.controls = true;
+		video.srcObject = stream;
+		document.body.appendChild(video);
+
+		room.addStream(stream);
+		room.onPeerJoin((peerId) => room.addStream(stream, peerId));
+	}
+
+	if (role == Role.Receiver) {
+		const peerVideos: any = {};
+		const videoContainer = document.createElement("div");
+		document.body.appendChild(videoContainer);
+
+		room.onPeerStream((stream, peerId) => {
+			let video = peerVideos[peerId];
+
+			if (!video) {
+				video = document.createElement("video");
+				video.autoplay = true;
+				video.controls = true;
+
+				videoContainer.appendChild(video);
+			}
+
+			video.srcObject = stream;
+			peerVideos[peerId] = video;
+		});
+		room.onPeerLeave((peerId) => {
+			let video = peerVideos[peerId];
+
+			if (video) {
+				document.removeChild(video);
+				peerVideos[peerId] = undefined;
+			}
+		});
+	}
 }
