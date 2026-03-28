@@ -322,8 +322,8 @@ export default (
 				parameters.degradationPreference = "balanced";
 
 				for (const encoding of parameters.encodings) {
-					delete encoding.maxBitrate;
-					delete encoding.maxFramerate;
+					encoding.maxBitrate = Number.MAX_SAFE_INTEGER;
+					encoding.maxFramerate = Number.MAX_SAFE_INTEGER;
 					encoding.scaleResolutionDownBy = 1.0;
 				}
 
