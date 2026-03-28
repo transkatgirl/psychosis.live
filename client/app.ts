@@ -145,7 +145,7 @@ function generateURL(role: Role, id: string, pass: string): string {
 		url.searchParams.set("audioContentHint", "music");
 		url.searchParams.set("videoContentHint", "motion");
 		url.searchParams.set("degradationPreference", "balanced");
-		url.searchParams.set("maxVideoBitrate", 100 * 1000);
+		url.searchParams.set("maxVideoBitrate", 15 * 1000);
 		url.searchParams.set("maxAudioBitrate", 256);
 	}
 	return url.toString();
