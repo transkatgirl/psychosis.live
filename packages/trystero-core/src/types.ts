@@ -54,6 +54,12 @@ export type TurnServerConfig = {
 };
 
 export type MediaConfig = {
+	sender?: SenderMediaConfig;
+	receiver?: ReceiverMediaConfig;
+	codecOrderPreference?: string[];
+};
+
+export type SenderMediaConfig = {
 	networkPriority?: RTCPriorityType;
 	videoPriority?: RTCPriorityType;
 	audioPriority?: RTCPriorityType;
@@ -62,6 +68,10 @@ export type MediaConfig = {
 	maxAudioBitrate?: number;
 	maxFramerate?: number;
 	codecOrderPreference?: string[];
+};
+
+export type ReceiverMediaConfig = {
+	jitterBufferTarget?: DOMHighResTimeStamp;
 };
 
 export type BaseRoomConfig = {

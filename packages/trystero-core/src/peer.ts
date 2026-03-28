@@ -327,39 +327,43 @@ export default (
 			for (const sender of senders) {
 				const parameters = sender.getParameters();
 
-				if (mediaConfig?.degradationPreference) {
+				if (mediaConfig?.sender?.degradationPreference) {
 					parameters.degradationPreference =
-						mediaConfig.degradationPreference;
+						mediaConfig.sender.degradationPreference;
 				}
 
 				for (const encoding of parameters.encodings) {
-					if (mediaConfig?.networkPriority) {
-						encoding.networkPriority = mediaConfig.networkPriority;
+					if (mediaConfig?.sender?.networkPriority) {
+						encoding.networkPriority =
+							mediaConfig.sender.networkPriority;
 					}
 
 					if (sender.track?.kind == "video") {
-						if (mediaConfig?.videoPriority) {
-							encoding.priority = mediaConfig.videoPriority;
+						if (mediaConfig?.sender?.videoPriority) {
+							encoding.priority =
+								mediaConfig.sender.videoPriority;
 						}
 
-						if (mediaConfig?.maxVideoBitrate) {
+						if (mediaConfig?.sender?.maxVideoBitrate) {
 							encoding.maxBitrate =
-								mediaConfig.maxVideoBitrate * 1000;
+								mediaConfig.sender.maxVideoBitrate * 1000;
 						}
 
-						if (mediaConfig?.maxFramerate) {
-							encoding.maxFramerate = mediaConfig.maxFramerate;
+						if (mediaConfig?.sender?.maxFramerate) {
+							encoding.maxFramerate =
+								mediaConfig.sender.maxFramerate;
 						}
 					}
 
 					if (sender.track?.kind == "audio") {
-						if (mediaConfig?.audioPriority) {
-							encoding.priority = mediaConfig.audioPriority;
+						if (mediaConfig?.sender?.audioPriority) {
+							encoding.priority =
+								mediaConfig.sender.audioPriority;
 						}
 
-						if (mediaConfig?.maxAudioBitrate) {
+						if (mediaConfig?.sender?.maxAudioBitrate) {
 							encoding.maxBitrate =
-								mediaConfig.maxAudioBitrate * 1000;
+								mediaConfig.sender.maxAudioBitrate * 1000;
 						}
 					}
 				}
@@ -367,6 +371,15 @@ export default (
 				sender.setParameters(parameters);
 
 				DEV: console.log("set sender parameters", parameters);
+			}
+
+			const receivers = pc.getReceivers();
+
+			for (const receiver of receivers) {
+				if (mediaConfig?.receiver?.jitterBufferTarget) {
+					receiver.jitterBufferTarget =
+						mediaConfig.receiver.jitterBufferTarget;
+				}
 			}
 
 			makingOffer = true;

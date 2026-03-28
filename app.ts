@@ -1,7 +1,11 @@
 import bs58 from "bs58";
 import { joinRoom, type NostrRoomConfig } from "./packages/trystero-nostr/src";
 import type { Room } from "./packages/trystero-core/src";
-import type { MediaConfig } from "./packages/trystero-core/src/types";
+import type {
+	MediaConfig,
+	ReceiverMediaConfig,
+	SenderMediaConfig,
+} from "./packages/trystero-core/src/types";
 
 const params: URLSearchParams = new URL(window.location.href).searchParams;
 
@@ -147,6 +151,10 @@ function generateURL(role: Role, id: string, pass: string): string {
 		url.searchParams.set("degradationPreference", "balanced");
 		url.searchParams.set("maxVideoBitrate", 15 * 1000);
 		url.searchParams.set("maxAudioBitrate", 256);
+		url.searchParams.set("networkPriority", "medium");
+	}
+	if (role == Role.Receiver) {
+		url.searchParams.set("jitterBufferTarget", 2000);
 	}
 	return url.toString();
 }
@@ -159,41 +167,41 @@ async function launchApp(
 ) {
 	document.body.id = "app";
 
-	let mediaConfig: MediaConfig = {
-		networkPriority: "medium",
-		codecOrderPreference: [
-			"video/AV1",
-			"video/H265",
-			"video/VP9",
-			"video/H264",
-			"video/VP8",
-			"audio/opus",
-			"audio/mp4a-latm",
-			"audio/G722",
-			"audio/PCMU",
-			"audio/PCMA",
-		],
-	};
+	let senderMediaConfig: SenderMediaConfig = {};
+	let receiverMediaConfig: ReceiverMediaConfig = {};
+
+	const networkPriority = params.get("networkPriority");
+	if (networkPriority) {
+		senderMediaConfig.networkPriority = networkPriority as RTCPriorityType;
+	}
 
 	const degradationPreference = params.get("degradationPreference");
 	if (degradationPreference) {
-		mediaConfig.degradationPreference =
+		senderMediaConfig.degradationPreference =
 			degradationPreference as RTCDegradationPreference;
 	}
 
 	const maxVideoBitrate = Number(params.get("maxVideoBitrate"));
 	if (params.has("maxVideoBitrate") && Number.isFinite(maxVideoBitrate)) {
-		mediaConfig.maxVideoBitrate = maxVideoBitrate;
+		senderMediaConfig.maxVideoBitrate = maxVideoBitrate;
 	}
 
 	const maxAudioBitrate = Number(params.get("maxAudioBitrate"));
 	if (params.has("maxAudioBitrate") && Number.isFinite(maxAudioBitrate)) {
-		mediaConfig.maxAudioBitrate = maxAudioBitrate;
+		senderMediaConfig.maxAudioBitrate = maxAudioBitrate;
 	}
 
 	const maxFramerate = Number(params.get("maxFramerate"));
 	if (params.has("maxFramerate") && Number.isFinite(maxFramerate)) {
-		mediaConfig.maxFramerate = maxFramerate;
+		senderMediaConfig.maxFramerate = maxFramerate;
+	}
+
+	const jitterBufferTarget = Number(params.get("jitterBufferTarget"));
+	if (
+		params.has("jitterBufferTarget") &&
+		Number.isFinite(jitterBufferTarget)
+	) {
+		receiverMediaConfig.jitterBufferTarget = jitterBufferTarget;
 	}
 
 	let config: NostrRoomConfig = {
@@ -204,7 +212,22 @@ async function launchApp(
 			iceCandidatePoolSize: 10,
 			bundlePolicy: "max-bundle",
 		},
-		mediaConfig,
+		mediaConfig: {
+			sender: senderMediaConfig,
+			receiver: receiverMediaConfig,
+			codecOrderPreference: [
+				"video/AV1",
+				"video/H265",
+				"video/VP9",
+				"video/H264",
+				"video/VP8",
+				"audio/opus",
+				"audio/mp4a-latm",
+				"audio/G722",
+				"audio/PCMU",
+				"audio/PCMA",
+			],
+		},
 	};
 	if (password) {
 		config.password = password;
