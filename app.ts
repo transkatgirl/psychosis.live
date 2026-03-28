@@ -333,6 +333,7 @@ async function launchSender(room: Room) {
 async function launchReceiver(room: Room) {
 	const peerVideos: any = {};
 	const videoContainer = document.createElement("div");
+	videoContainer.classList.add("gallery");
 	document.body.appendChild(videoContainer);
 
 	room.onPeerJoin((peerId) => {
@@ -347,6 +348,7 @@ async function launchReceiver(room: Room) {
 			video.controls = true;
 
 			videoContainer.appendChild(video);
+			updateGalleryStyles(videoContainer);
 		}
 
 		video.srcObject = stream;
@@ -359,6 +361,74 @@ async function launchReceiver(room: Room) {
 		if (video) {
 			videoContainer.removeChild(video);
 			peerVideos[peerId] = undefined;
+			updateGalleryStyles(videoContainer);
 		}
 	});
+
+	const resizeObserver = new ResizeObserver((entries) => {
+		requestAnimationFrame(() => {
+			for (const entry of entries) {
+				updateGalleryStyles(entry.target as HTMLElement);
+			}
+		});
+	});
+
+	resizeObserver.observe(videoContainer);
+
+	window.addEventListener("error", (e) => {
+		console.error(e.message);
+	});
+}
+
+function updateGalleryStyles(container: HTMLElement) {
+	if (container.childElementCount <= 1) {
+		container.style.gridTemplateColumns = "1fr";
+		container.style.gridTemplateRows = "1fr";
+	} else {
+		if (container.childElementCount == 2) {
+			if (container.clientWidth > container.clientHeight) {
+				container.style.gridTemplateColumns = "repeat(2, 1fr)";
+				container.style.gridTemplateRows = "1fr";
+			} else {
+				container.style.gridTemplateColumns = "1fr";
+				container.style.gridTemplateRows = "repeat(2, 1fr)";
+			}
+		} else if (container.childElementCount <= 4) {
+			container.style.gridTemplateColumns = "repeat(2, 1fr)";
+			container.style.gridTemplateRows = "repeat(2, 1fr)";
+		} else if (container.childElementCount <= 6) {
+			if (container.clientWidth > container.clientHeight) {
+				container.style.gridTemplateColumns = "repeat(3, 1fr)";
+				container.style.gridTemplateRows = "repeat(2, 1fr)";
+			} else {
+				container.style.gridTemplateColumns = "repeat(2, 1fr)";
+				container.style.gridTemplateRows = "repeat(3, 1fr)";
+			}
+		} else if (container.childElementCount <= 9) {
+			container.style.gridTemplateColumns = "repeat(3, 1fr)";
+			container.style.gridTemplateRows = "repeat(3, 1fr)";
+		} else if (container.childElementCount <= 12) {
+			if (container.clientWidth > container.clientHeight) {
+				container.style.gridTemplateColumns = "repeat(4, 1fr)";
+				container.style.gridTemplateRows = "repeat(3, 1fr)";
+			} else {
+				container.style.gridTemplateColumns = "repeat(3, 1fr)";
+				container.style.gridTemplateRows = "repeat(4, 1fr)";
+			}
+		} else if (container.childElementCount <= 16) {
+			container.style.gridTemplateColumns = "repeat(4, 1fr)";
+			container.style.gridTemplateRows = "repeat(4, 1fr)";
+		} else if (container.childElementCount <= 20) {
+			if (container.clientWidth > container.clientHeight) {
+				container.style.gridTemplateColumns = "repeat(5, 1fr)";
+				container.style.gridTemplateRows = "repeat(4, 1fr)";
+			} else {
+				container.style.gridTemplateColumns = "repeat(4, 1fr)";
+				container.style.gridTemplateRows = "repeat(5, 1fr)";
+			}
+		} else {
+			container.style.gridTemplateColumns = "repeat(5, 1fr)";
+			container.style.gridTemplateRows = "repeat(5, 1fr)";
+		}
+	}
 }
