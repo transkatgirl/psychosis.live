@@ -167,6 +167,10 @@ async function launchApp(
 ) {
 	document.body.id = "app";
 
+	window.addEventListener("error", (e) => {
+		console.error(e.message);
+	});
+
 	let senderMediaConfig: SenderMediaConfig = {};
 	let receiverMediaConfig: ReceiverMediaConfig = {};
 
@@ -331,7 +335,7 @@ async function launchSender(room: Room) {
 }
 
 async function launchReceiver(room: Room) {
-	const peerVideos: any = {};
+	const peerVideos: Record<string, HTMLVideoElement> = {};
 	const videoContainer = document.createElement("div");
 	videoContainer.classList.add("gallery");
 	document.body.appendChild(videoContainer);
@@ -340,6 +344,8 @@ async function launchReceiver(room: Room) {
 		console.log(`${peerId} joined`);
 	});
 	room.onPeerStream((stream, peerId) => {
+		console.log(`${peerId} started streaming`);
+
 		let video = peerVideos[peerId];
 
 		if (!video) {
@@ -352,6 +358,7 @@ async function launchReceiver(room: Room) {
 		}
 
 		video.srcObject = stream;
+		video.id = peerId;
 		peerVideos[peerId] = video;
 	});
 	room.onPeerLeave((peerId) => {
@@ -360,7 +367,7 @@ async function launchReceiver(room: Room) {
 
 		if (video) {
 			videoContainer.removeChild(video);
-			peerVideos[peerId] = undefined;
+			delete peerVideos[peerId];
 			updateGalleryStyles(videoContainer);
 		}
 	});
@@ -374,10 +381,6 @@ async function launchReceiver(room: Room) {
 	});
 
 	resizeObserver.observe(videoContainer);
-
-	window.addEventListener("error", (e) => {
-		console.error(e.message);
-	});
 }
 
 function updateGalleryStyles(container: HTMLElement) {
