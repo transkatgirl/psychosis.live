@@ -238,7 +238,7 @@ async function launchApp(
 
 	let config: MqttRoomConfig = {
 		appId: "psychosis.live",
-		trickleIce: true,
+		trickleIce: false,
 		rtcConfig: {
 			iceTransportPolicy: "all",
 			iceCandidatePoolSize: 10,
