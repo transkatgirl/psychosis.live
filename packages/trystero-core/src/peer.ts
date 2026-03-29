@@ -718,7 +718,7 @@ export default (
 };
 
 export const defaultIceServers: RTCIceServer[] = [
-	...alloc(3, (_, i) => `stun:stun${i || ""}.l.google.com:19302`),
+	...alloc(5, (_, i) => `stun:stun${i || ""}.l.google.com:19302`),
 	"stun:stun.cloudflare.com:3478",
 ].map((url) => ({ urls: url }));
 

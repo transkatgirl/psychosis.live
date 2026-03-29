@@ -227,7 +227,9 @@ async function launchApp(
 			iceTransportPolicy: "all",
 			iceCandidatePoolSize: 10,
 			bundlePolicy: "max-bundle",
+			iceServers: [],
 		},
+		turnConfig: [],
 		mediaConfig: {
 			sender: senderMediaConfig,
 			receiver: receiverMediaConfig,
