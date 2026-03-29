@@ -1,8 +1,11 @@
 import bs58 from "bs58";
-import { joinRoom, type MqttRoomConfig } from "./packages/trystero-mqtt/src";
+import {
+	joinRoom,
+	selfId,
+	type MqttRoomConfig,
+} from "./packages/trystero-mqtt/src";
 import type { Room } from "./packages/trystero-core/src";
 import type {
-	MediaConfig,
 	ReceiverMediaConfig,
 	SenderMediaConfig,
 } from "./packages/trystero-core/src/types";
@@ -265,6 +268,8 @@ async function launchApp(
 			"audio/PCMA",
 		];
 	}
+
+	console.log(`role = ${role}, peer ID = ${selfId}`);
 
 	const room = joinRoom(config, roomId, {
 		onPeerHandshake: async (peerId, send, receive, isInitiator) => {
