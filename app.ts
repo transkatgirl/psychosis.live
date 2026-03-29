@@ -1,5 +1,5 @@
 import bs58 from "bs58";
-import { joinRoom, type NostrRoomConfig } from "./packages/trystero-nostr/src";
+import { joinRoom, type MqttRoomConfig } from "./packages/trystero-mqtt/src";
 import type { Room } from "./packages/trystero-core/src";
 import type {
 	MediaConfig,
@@ -220,7 +220,7 @@ async function launchApp(
 		receiverMediaConfig.jitterBufferTarget = jitterBufferTarget;
 	}
 
-	let config: NostrRoomConfig = {
+	let config: MqttRoomConfig = {
 		appId: "psychosis.live",
 		trickleIce: true,
 		rtcConfig: {
@@ -246,8 +246,6 @@ async function launchApp(
 				"audio/PCMA",
 			],
 		},
-		relayRedundancy: 10,
-		manualRelayReconnection: false,
 	};
 	if (password) {
 		config.password = password;
