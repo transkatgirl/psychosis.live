@@ -15,6 +15,6 @@
 	"dependencies": {
 		"bs58": "^6.0.0",
 		"@trystero-p2p/core": "workspace:*",
-		"@trystero-p2p/mqtt": "workspace:*"
+		"@trystero-p2p/nostr": "workspace:*"
 	}
 }
