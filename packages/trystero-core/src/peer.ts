@@ -368,7 +368,7 @@ export default (
 					}
 				}
 
-				sender.setParameters(parameters);
+				await sender.setParameters(parameters);
 
 				DEV: console.log("set sender parameters", parameters);
 			}
