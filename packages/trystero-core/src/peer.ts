@@ -638,8 +638,11 @@ export default (
 		offerPromise,
 
 		addStream: (stream) => {
-			stream.getTracks().forEach((track) => pc.addTrack(track, stream));
-			updateSenders(pc, mediaConfig);
+			stream
+				.getTracks()
+				.forEach((track) =>
+					updateSender(pc.addTrack(track, stream), mediaConfig)
+				);
 		},
 
 		removeStream: (stream) =>
@@ -653,8 +656,7 @@ export default (
 				.forEach((sender) => pc.removeTrack(sender)),
 
 		addTrack: (track, stream) => {
-			pc.addTrack(track, stream);
-			updateSenders(pc, mediaConfig);
+			updateSender(pc.addTrack(track, stream), mediaConfig);
 		},
 
 		removeTrack: (track) => {
@@ -692,54 +694,48 @@ function sortCodecs(codecs: RTCRtpCodec[], preferredOrder: string[]) {
 	});
 }
 
-async function updateSenders(
-	pc: RTCPeerConnection,
+async function updateSender(
+	sender: RTCRtpSender,
 	mediaConfig: MediaConfig | undefined
 ) {
-	const senders = pc.getSenders();
+	const parameters = sender.getParameters();
 
-	for (const sender of senders) {
-		const parameters = sender.getParameters();
-
-		if (mediaConfig?.sender?.degradationPreference) {
-			parameters.degradationPreference =
-				mediaConfig.sender.degradationPreference;
-		}
-
-		for (const encoding of parameters.encodings) {
-			if (mediaConfig?.sender?.networkPriority) {
-				encoding.networkPriority = mediaConfig.sender.networkPriority;
-			}
-
-			if (sender.track?.kind == "video") {
-				if (mediaConfig?.sender?.videoPriority) {
-					encoding.priority = mediaConfig.sender.videoPriority;
-				}
-
-				if (mediaConfig?.sender?.maxVideoBitrate) {
-					encoding.maxBitrate =
-						mediaConfig.sender.maxVideoBitrate * 1000;
-				}
-
-				if (mediaConfig?.sender?.maxFramerate) {
-					encoding.maxFramerate = mediaConfig.sender.maxFramerate;
-				}
-			}
-
-			if (sender.track?.kind == "audio") {
-				if (mediaConfig?.sender?.audioPriority) {
-					encoding.priority = mediaConfig.sender.audioPriority;
-				}
-
-				if (mediaConfig?.sender?.maxAudioBitrate) {
-					encoding.maxBitrate =
-						mediaConfig.sender.maxAudioBitrate * 1000;
-				}
-			}
-		}
-
-		await sender.setParameters(parameters);
-
-		DEV: console.log("set sender parameters", parameters);
+	if (mediaConfig?.sender?.degradationPreference) {
+		parameters.degradationPreference =
+			mediaConfig.sender.degradationPreference;
 	}
+
+	for (const encoding of parameters.encodings) {
+		if (mediaConfig?.sender?.networkPriority) {
+			encoding.networkPriority = mediaConfig.sender.networkPriority;
+		}
+
+		if (sender.track?.kind == "video") {
+			if (mediaConfig?.sender?.videoPriority) {
+				encoding.priority = mediaConfig.sender.videoPriority;
+			}
+
+			if (mediaConfig?.sender?.maxVideoBitrate) {
+				encoding.maxBitrate = mediaConfig.sender.maxVideoBitrate * 1000;
+			}
+
+			if (mediaConfig?.sender?.maxFramerate) {
+				encoding.maxFramerate = mediaConfig.sender.maxFramerate;
+			}
+		}
+
+		if (sender.track?.kind == "audio") {
+			if (mediaConfig?.sender?.audioPriority) {
+				encoding.priority = mediaConfig.sender.audioPriority;
+			}
+
+			if (mediaConfig?.sender?.maxAudioBitrate) {
+				encoding.maxBitrate = mediaConfig.sender.maxAudioBitrate * 1000;
+			}
+		}
+	}
+
+	await sender.setParameters(parameters);
+
+	DEV: console.log("set sender parameters", parameters);
 }
