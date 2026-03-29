@@ -395,20 +395,7 @@ export default (
 	pc.ontrack = (e) => {
 		const stream = e.streams[0];
 
-		if (mediaConfig?.receiver?.codecOrderPreference) {
-			const transceiver = e.transceiver;
-
-			let codecs = RTCRtpReceiver.getCapabilities(e.track.kind)?.codecs;
-
-			if (codecs) {
-				codecs = sortCodecs(
-					codecs,
-					mediaConfig.receiver.codecOrderPreference
-				);
-				transceiver.setCodecPreferences(codecs);
-				DEV: console.log("set codec preferences", codecs);
-			}
-		}
+		updateTransceiver(e.transceiver, mediaConfig);
 
 		if (mediaConfig?.receiver?.jitterBufferTarget) {
 			e.receiver.jitterBufferTarget =
@@ -596,11 +583,13 @@ export default (
 		offerPromise,
 
 		addStream: (stream) => {
-			stream
-				.getTracks()
-				.forEach((track) =>
-					updateSender(pc.addTrack(track, stream), mediaConfig)
-				);
+			stream.getTracks().forEach((track) => {
+				let transceiver = pc.addTransceiver(track, {
+					streams: [stream],
+				});
+				updateTransceiver(transceiver, mediaConfig);
+				updateSender(transceiver.sender, mediaConfig);
+			});
 		},
 
 		removeStream: (stream) =>
@@ -614,7 +603,11 @@ export default (
 				.forEach((sender) => pc.removeTrack(sender)),
 
 		addTrack: (track, stream) => {
-			updateSender(pc.addTrack(track, stream), mediaConfig);
+			let transceiver = pc.addTransceiver(track, {
+				streams: [stream],
+			});
+			updateTransceiver(transceiver, mediaConfig);
+			updateSender(transceiver.sender, mediaConfig);
 		},
 
 		removeTrack: (track) => {
@@ -696,4 +689,28 @@ async function updateSender(
 	await sender.setParameters(parameters);
 
 	DEV: console.log("set sender parameters", parameters);
+}
+
+async function updateTransceiver(
+	transceiver: RTCRtpTransceiver,
+	mediaConfig: MediaConfig | undefined
+) {
+	if (mediaConfig?.receiver?.codecOrderPreference) {
+		let kind = transceiver.receiver.track.kind;
+
+		if (transceiver.sender.track?.kind) {
+			kind = transceiver.sender.track.kind;
+		}
+
+		let codecs = RTCRtpReceiver.getCapabilities(kind)?.codecs;
+
+		if (codecs) {
+			codecs = sortCodecs(
+				codecs,
+				mediaConfig.receiver.codecOrderPreference
+			);
+			transceiver.setCodecPreferences(codecs);
+			DEV: console.log("set codec preferences", codecs);
+		}
+	}
 }
