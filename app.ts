@@ -131,11 +131,9 @@ function helperMenu() {
 	document.body.appendChild(receiverLabel);
 	document.body.appendChild(receiverText);
 
-	// TODO: Allow setting codec ordering preferences
-
 	document.body.insertAdjacentHTML(
 		"beforeend",
-		'</br><details><summary>URL parameters (advanced)</summary><p>Sender & Receiver:</p><ul><li><code>role</code> = Role (<code>sender</code> or <code>receiver</code>)</li><li><code>id</code> = Room ID</li><li><code>password</code> = Room Password (used for E2E encryption)</li></ul><p>All of the below parameters are optional.</p><p>Sender Only:</p><ul><li><code>showAudio</code> = Enable audio (boolean)</li><li><code>showVideo</code> = Enable video (boolean)</li><li><code></code> = </li><li><code></code> = </li><li><code></code> = </li><li><code></code> = </li><li><code></code> = <a href=""></a> ()</li><li><code>autoGainControl</code> = <a href="https://w3c.github.io/mediacapture-main/#def-constraint-autoGainControl">Audio MediaTrackConstraints Automatic Gain Control</a> (boolean)</li><li><code>echoCancellation</code> = <a href="https://w3c.github.io/mediacapture-main/#def-constraint-echoCancellation">Audio MediaTrackConstraints Echo Cancellation</a> (limited to boolean)</li><li><code>noiseSuppression</code> = <a href="https://w3c.github.io/mediacapture-main/#def-constraint-noiseSuppression">Audio MediaTrackConstraints Noise Suppression</a> (boolean)</li><li><code>backgroundBlur</code> = <a href="https://w3c.github.io/mediacapture-main/#def-constraint-backgroundBlur">Video MediaTrackConstraints Background Blur</a> (boolean)</li><li><code>audioContentHint</code> = <a href="https://w3c.github.io/mst-content-hint/#audio-content-hints">MediaStreamTrack Audio Content Hint</a></li><li><code>videoContentHint</code> = <a href="https://w3c.github.io/mst-content-hint/#video-content-hints">MediaStreamTrack Video Content Hint</a></li><li><code>maxAudioBitrate</code> = <a href="https://w3c.github.io/webrtc-pc/#dom-rtcrtpencodingparameters-maxbitrate">WebRTC Maximum Audio Bitrate</a> (in kilobits/second)</li><li><code>maxVideoBitrate</code> = <a href="https://w3c.github.io/webrtc-pc/#dom-rtcrtpencodingparameters-maxbitrate">WebRTC Maximum Video Bitrate</a> (in kilobits/second)</li><li><code>degradationPreference</code> = <a href="https://w3c.github.io/mst-content-hint/#dictionary-rtcrtpsendparameters-new-members">WebRTC Video Degradation Preference</a> (<a href="https://w3c.github.io/mst-content-hint/#dom-rtcdegradationpreference">RTCDegradationPreference</a>)</li><li><code>networkPriority</code> = <a href="https://www.w3.org/TR/webrtc-priority/#dom-rtcrtpencodingparameters-networkpriority">WebRTC Network QoS Priority</a> (<a href="https://www.w3.org/TR/webrtc-priority/#rtc-priority-type">RTCPriorityType</a>)</li></ul><p>Receiver Only:</p><ul><li><code>jitterBufferTarget</code> = <a href="https://w3c.github.io/webrtc-pc/#dom-rtcrtpreceiver-jitterbuffertarget">WebRTC Jitter Buffer Target</a> (in miliseconds)</li></ul></details>'
+		'</br><details><summary>URL parameters (advanced)</summary><p>Sender & Receiver:</p><ul><li><code>role</code> = Role (<code>sender</code> or <code>receiver</code>)</li><li><code>id</code> = Room ID</li><li><code>password</code> = Room Password (used for E2E encryption)</li></ul><p>All of the below parameters are optional.</p><p>Sender Only:</p><ul><li><code>showAudio</code> = Enable audio (boolean)</li><li><code>showVideo</code> = Enable video (boolean)</li><li><code>channelCount</code> = Preferred audio channel count (integer)</li><li><code>width</code> = Preferred video width (pixels)</li><li><code>height</code> = Preferred video height (pixels)</li><li><code>frameRate</code> = Preferred video frame rate (frames/second)</li><li><code>aspectRatio</code> = Preferred video aspect ratio (number, rounded to 10 decimal places)</li><li><code></code> = </li><li><code></code> = </li><li><code>autoGainControl</code> = <a href="https://w3c.github.io/mediacapture-main/#def-constraint-autoGainControl">Audio MediaTrackConstraints Automatic Gain Control</a> (boolean)</li><li><code>echoCancellation</code> = <a href="https://w3c.github.io/mediacapture-main/#def-constraint-echoCancellation">Audio MediaTrackConstraints Echo Cancellation</a> (limited to boolean)</li><li><code>noiseSuppression</code> = <a href="https://w3c.github.io/mediacapture-main/#def-constraint-noiseSuppression">Audio MediaTrackConstraints Noise Suppression</a> (boolean)</li><li><code>backgroundBlur</code> = <a href="https://w3c.github.io/mediacapture-main/#def-constraint-backgroundBlur">Video MediaTrackConstraints Background Blur</a> (boolean)</li><li><code>audioContentHint</code> = <a href="https://w3c.github.io/mst-content-hint/#audio-content-hints">MediaStreamTrack Audio Content Hint</a></li><li><code>videoContentHint</code> = <a href="https://w3c.github.io/mst-content-hint/#video-content-hints">MediaStreamTrack Video Content Hint</a></li><li><code>maxAudioBitrate</code> = <a href="https://w3c.github.io/webrtc-pc/#dom-rtcrtpencodingparameters-maxbitrate">WebRTC Maximum Audio Bitrate</a> (kilobits/second)</li><li><code>maxVideoBitrate</code> = <a href="https://w3c.github.io/webrtc-pc/#dom-rtcrtpencodingparameters-maxbitrate">WebRTC Maximum Video Bitrate</a> (kilobits/second)</li><li><code>degradationPreference</code> = <a href="https://w3c.github.io/mst-content-hint/#dictionary-rtcrtpsendparameters-new-members">WebRTC Video Degradation Preference</a> (<a href="https://w3c.github.io/mst-content-hint/#dom-rtcdegradationpreference">RTCDegradationPreference</a>)</li><li><code>networkPriority</code> = <a href="https://www.w3.org/TR/webrtc-priority/#dom-rtcrtpencodingparameters-networkpriority">WebRTC Network QoS Priority</a> (<a href="https://www.w3.org/TR/webrtc-priority/#rtc-priority-type">RTCPriorityType</a>)</li></ul><p>Receiver Only:</p><ul><li><code>jitterBufferTarget</code> = <a href="https://w3c.github.io/webrtc-pc/#dom-rtcrtpreceiver-jitterbuffertarget">WebRTC Jitter Buffer Target</a> (miliseconds)</li></ul></details>'
 	);
 }
 
@@ -152,10 +150,9 @@ function generateURL(role: Role, id: string, pass: string): string {
 	url.searchParams.set("id", id);
 	url.searchParams.set("password", pass);
 	if (role == Role.Sender) {
-		url.searchParams.set("aspectRatio", 1.7777777778);
-		url.searchParams.set("frameRate", 60);
-		url.searchParams.set("height", 1080);
 		url.searchParams.set("width", 1920);
+		url.searchParams.set("height", 1080);
+		url.searchParams.set("frameRate", 60);
 		url.searchParams.set("echoCancellation", "false");
 		url.searchParams.set("noiseSuppression", "false");
 		url.searchParams.set("videoContentHint", "motion");
@@ -164,7 +161,7 @@ function generateURL(role: Role, id: string, pass: string): string {
 		url.searchParams.set("networkPriority", "medium");
 	}
 	if (role == Role.Receiver) {
-		url.searchParams.set("jitterBufferTarget", 2000);
+		url.searchParams.set("jitterBufferTarget", 1500);
 	}
 	return url.toString();
 }
@@ -238,12 +235,19 @@ async function launchApp(
 
 	let config: MqttRoomConfig = {
 		appId: "psychosis.live",
-		trickleIce: false,
+		trickleIce: false, // Enabling causes reconnection after network loss to fail
 		rtcConfig: {
 			iceTransportPolicy: "all",
 			iceCandidatePoolSize: 10,
 			bundlePolicy: "max-bundle",
-			iceServers: [],
+			iceServers: [
+				{ urls: "stun:stun.l.google.com:19302" },
+				{ urls: "stun:stun1.l.google.com:19302" },
+				{ urls: "stun:stun2.l.google.com:19302" },
+				{ urls: "stun:stun3.l.google.com:19302" },
+				{ urls: "stun:stun4.l.google.com:19302" },
+				{ urls: "stun:stun.cloudflare.com:3478" },
+			],
 		},
 		turnConfig: [],
 		mediaConfig: {
@@ -305,13 +309,6 @@ async function launchSender(room: Room) {
 		};
 	}
 
-	const aspectRatio = Number(params.get("aspectRatio"));
-	if (params.has("aspectRatio") && Number.isFinite(aspectRatio)) {
-		videoConstraints.aspectRatio = {
-			ideal: aspectRatio,
-		};
-	}
-
 	const frameRate = Number(params.get("frameRate"));
 	if (params.has("frameRate") && Number.isFinite(frameRate)) {
 		videoConstraints.frameRate = {
@@ -333,6 +330,22 @@ async function launchSender(room: Room) {
 		videoConstraints.width = {
 			min: 0,
 			ideal: width,
+		};
+	}
+
+	const aspectRatio = Number(params.get("aspectRatio"));
+	if (params.has("aspectRatio") && Number.isFinite(aspectRatio)) {
+		videoConstraints.aspectRatio = {
+			ideal: aspectRatio,
+		};
+	} else if (
+		params.has("height") &&
+		Number.isFinite(height) &&
+		params.has("width") &&
+		Number.isFinite(width)
+	) {
+		videoConstraints.aspectRatio = {
+			ideal: width / height,
 		};
 	}
 
