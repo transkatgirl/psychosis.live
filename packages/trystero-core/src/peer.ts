@@ -478,6 +478,30 @@ export default (
 	pc.ontrack = (e) => {
 		const stream = e.streams[0];
 
+		if (mediaConfig?.codecOrderPreference) {
+			const transceivers = pc.getTransceivers();
+
+			for (const transceiver of transceivers) {
+				const kind = transceiver.receiver.track?.kind;
+				if (kind && !transceiver.sender.track?.kind) {
+					let recvCodecs =
+						RTCRtpReceiver.getCapabilities(kind)?.codecs;
+					let codecs = [];
+					if (recvCodecs) {
+						codecs.push(...recvCodecs);
+					}
+					codecs = sortCodecs(
+						codecs,
+						mediaConfig.codecOrderPreference
+					);
+
+					transceiver.setCodecPreferences(codecs);
+
+					DEV: console.log("set codec preferences", codecs);
+				}
+			}
+		}
+
 		if (stream) {
 			if (!handlers.track && !handlers.stream) {
 				pendingTracks.push({ track: e.track, stream });
