@@ -246,6 +246,8 @@ async function launchApp(
 				"audio/PCMA",
 			],
 		},
+		relayRedundancy: 10,
+		manualRelayReconnection: false,
 	};
 	if (password) {
 		config.password = password;
@@ -267,6 +269,9 @@ async function launchApp(
 	}
 
 	const room = joinRoom(config, roomId, {
+		onPeerHandshake: async (peerId, send, receive, isInitiator) => {
+			console.log(`handshaked with ${peerId}`);
+		},
 		onJoinError: (details) => {
 			console.error(details);
 		},
@@ -380,7 +385,16 @@ async function launchSender(room: Room) {
 	document.body.appendChild(video);
 
 	room.addStream(stream);
-	room.onPeerJoin((peerId) => room.addStream(stream, peerId));
+	room.onPeerJoin((peerId) => {
+		console.log(`${peerId} joined`);
+		room.addStream(stream, peerId);
+	});
+	room.onPeerStream((stream, peerId) => {
+		console.log(`${peerId} started streaming`);
+	});
+	room.onPeerLeave((peerId) => {
+		console.log(`${peerId} left`);
+	});
 
 	// @ts-ignore
 	globalThis.room = room;

@@ -245,12 +245,12 @@ export const watchOnline = (): (() => void) => {
 	if (isBrowser) {
 		const controller = new AbortController();
 
-		addEventListener("online", resumeRelayReconnection, {
+		/*addEventListener("online", resumeRelayReconnection, {
 			signal: controller.signal,
 		});
 		addEventListener("offline", pauseRelayReconnection, {
 			signal: controller.signal,
-		});
+		});*/
 
 		return () => controller.abort();
 	}
