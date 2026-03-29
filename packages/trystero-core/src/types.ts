@@ -56,7 +56,6 @@ export type TurnServerConfig = {
 export type MediaConfig = {
 	sender?: SenderMediaConfig;
 	receiver?: ReceiverMediaConfig;
-	codecOrderPreference?: string[];
 };
 
 export type SenderMediaConfig = {
@@ -71,6 +70,7 @@ export type SenderMediaConfig = {
 };
 
 export type ReceiverMediaConfig = {
+	codecOrderPreference?: string[];
 	jitterBufferTarget?: DOMHighResTimeStamp;
 };
 

@@ -182,7 +182,20 @@ async function launchApp(
 	});
 
 	let senderMediaConfig: SenderMediaConfig = {};
-	let receiverMediaConfig: ReceiverMediaConfig = {};
+	let receiverMediaConfig: ReceiverMediaConfig = {
+		codecOrderPreference: [
+			"video/AV1",
+			"video/VP9",
+			"video/H265",
+			"video/H264",
+			"video/VP8",
+			"audio/opus",
+			"audio/mp4a-latm",
+			"audio/G722",
+			"audio/PCMU",
+			"audio/PCMA",
+		],
+	};
 
 	const networkPriority = params.get("networkPriority");
 	if (networkPriority) {
@@ -236,37 +249,10 @@ async function launchApp(
 		mediaConfig: {
 			sender: senderMediaConfig,
 			receiver: receiverMediaConfig,
-			codecOrderPreference: [
-				"video/AV1",
-				"video/VP9",
-				"video/H265",
-				"video/H264",
-				"video/VP8",
-				"audio/opus",
-				"audio/mp4a-latm",
-				"audio/G722",
-				"audio/PCMU",
-				"audio/PCMA",
-			],
 		},
 	};
 	if (password) {
 		config.password = password;
-	}
-
-	if (navigator.vendor.startsWith("Apple") && config.mediaConfig) {
-		config.mediaConfig.codecOrderPreference = [
-			"video/AV1",
-			"video/H265",
-			"video/VP9",
-			"video/H264",
-			"video/VP8",
-			"audio/opus",
-			"audio/mp4a-latm",
-			"audio/G722",
-			"audio/PCMU",
-			"audio/PCMA",
-		];
 	}
 
 	console.log(`role = ${role}, peer ID = ${selfId}`);
