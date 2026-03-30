@@ -237,16 +237,16 @@ async function launchApp(
 					) {
 						audioBitrateLower = Math.min(
 							Math.max(
-								Math.floor(report.targetBitrate / 256000),
-								1
-							) * 64000,
+								Math.floor(report.targetBitrate / 128000),
+								2
+							) * 32000,
 							audioBitrateMax
 						);
 						audioBitrateUpper = Math.min(
 							Math.max(
-								Math.ceil(report.targetBitrate / 256000),
-								1
-							) * 64000,
+								Math.ceil(report.targetBitrate / 128000),
+								2
+							) * 32000,
 							audioBitrateMax
 						);
 					}
