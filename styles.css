@@ -26,6 +26,10 @@ input[type="text"] {
 	font-family: monospace;
 }
 
+input[type="text"]:invalid {
+	background-color: lightpink;
+}
+
 pre {
 	background-color: gray;
 	padding: 0.5em;
