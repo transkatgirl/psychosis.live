@@ -8,7 +8,7 @@ import type {
 } from "./types";
 
 const iceTimeout = 15_000;
-const disconnectedCloseDelayMs = 5_000;
+const disconnectedCloseDelayMs = 4_000;
 const iceStateEvent = "icegatheringstatechange";
 const offerType = "offer";
 const answerType = "answer";
