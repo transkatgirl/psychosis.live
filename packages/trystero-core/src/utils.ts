@@ -110,7 +110,7 @@ export const strToNum = (
 	limit = Number.MAX_SAFE_INTEGER
 ): number => str.split("").reduce((a, c) => a + c.charCodeAt(0), 0) % limit;
 
-const defaultRetryMs = 3333;
+const defaultRetryMs = 1000;
 const socketRetryPeriods: Record<string, number> = {};
 
 let reconnectionLockingPromise: Promise<void> | null = null;

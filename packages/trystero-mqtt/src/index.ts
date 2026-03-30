@@ -26,7 +26,14 @@ export type MqttRoomConfig = BaseRoomConfig & RelayConfig;
 export const joinRoom: JoinRoom<MqttRoomConfig> = createStrategy({
 	init: (config) =>
 		getRelays(config, defaultRelayUrls, defaultRedundancy).map((url) => {
-			const client = relayManager.register(url, mqtt.connect(url));
+			const client = relayManager.register(
+				url,
+				mqtt.connect(url, {
+					reconnectPeriod: 1_000,
+					reconnectOnConnackError: true,
+					connectTimeout: 10_000,
+				})
+			);
 			const handlers = msgHandlers.forRelay(client);
 
 			client
