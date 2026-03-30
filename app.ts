@@ -174,7 +174,7 @@ function generateURL(role: Role, id: string, pass: string): string {
 	url.searchParams.set(
 		"codecPreferences",
 		JSON.stringify([
-			//"video/AV1", // too CPU intensive for doing 1080p30 on phones :(
+			"video/AV1",
 			"video/VP9",
 			"video/H265",
 			"video/H264",
