@@ -258,7 +258,8 @@ async function launchApp(
 
 			let audioBitrateLower = 0;
 			let audioBitrateUpper = Infinity;
-			let maxVideoFramerate = Infinity;
+			let videoFramerateLower = 0;
+			let videoFramerateUpper = Infinity;
 
 			stats.forEach((report) => {
 				if (
@@ -290,19 +291,20 @@ async function launchApp(
 						framerateCeil &&
 						params.get("dynamicVideoFramerate") === "true"
 					) {
-						if (report.targetBitrate >= 1000000) {
-							maxVideoFramerate = Math.min(
-								Math.max(
-									Math.floor(report.targetBitrate / 1000000),
-									1
-								) * 60,
-								framerateCeil
-							);
-						} else if (report.targetBitrate > 500000) {
-							maxVideoFramerate = Math.min(30, framerateCeil);
-						} else if (report.targetBitrate > 250000) {
-							maxVideoFramerate = Math.min(24, framerateCeil);
-						}
+						videoFramerateLower = Math.min(
+							Math.max(
+								Math.floor(report.targetBitrate / 500000),
+								1
+							) * 30,
+							framerateCeil
+						);
+						videoFramerateUpper = Math.min(
+							Math.max(
+								Math.ceil(report.targetBitrate / 500000),
+								1
+							) * 30,
+							framerateCeil
+						);
 					}
 				}
 			});
@@ -316,15 +318,34 @@ async function launchApp(
 					for (const encoding of parameters.encodings) {
 						if (encoding.maxFramerate) {
 							if (
-								maxVideoFramerate != Infinity &&
-								encoding.maxFramerate != maxVideoFramerate
+								videoFramerateLower != 0 &&
+								videoFramerateUpper != Infinity
 							) {
-								DEV: console.log(
-									"set video maxFramerate",
-									maxVideoFramerate
-								);
-								encoding.maxFramerate = maxVideoFramerate;
-								changed = true;
+								if (
+									encoding.maxFramerate >
+										videoFramerateUpper &&
+									encoding.maxFramerate != videoFramerateLower
+								) {
+									DEV: console.log(
+										"set video maxFramerate",
+										videoFramerateLower
+									);
+									encoding.maxFramerate = videoFramerateLower;
+									changed = true;
+								}
+
+								if (
+									encoding.maxFramerate <
+										videoFramerateLower &&
+									encoding.maxFramerate != videoFramerateUpper
+								) {
+									DEV: console.log(
+										"set video maxFramerate",
+										videoFramerateUpper
+									);
+									encoding.maxFramerate = videoFramerateUpper;
+									changed = true;
+								}
 							}
 						}
 					}
