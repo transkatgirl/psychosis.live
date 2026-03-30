@@ -201,7 +201,10 @@ async function launchApp(
 		console.error(e.message);
 	});
 
-	let senderMediaConfig: SenderMediaConfig = {};
+	let senderMediaConfig: SenderMediaConfig = {
+		videoPriority: "medium",
+		audioPriority: "high",
+	};
 	let receiverMediaConfig: ReceiverMediaConfig = {};
 
 	if (params.has("codecPreferences")) {
