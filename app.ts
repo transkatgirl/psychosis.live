@@ -131,7 +131,7 @@ function helperMenu() {
 
 	document.body.insertAdjacentHTML(
 		"beforeend",
-		"<p>Requires a fairly powerful device due to use of newer video codecs, especially if using high resolutions and frame rates.</p><p>Theoretically supports up to 25 simultaneous senders. However, it is recommended that you stick to &lt;= 9 simultaneous senders to avoid overloading your receiver.</p>"
+		"<p>Requires a fairly powerful device due to use of newer video codecs, especially if using high resolutions and frame rates.</p><p>Theoretically supports up to 25 simultaneous senders. However, it is recommended that you stick to &lt;= 4 simultaneous senders to avoid overloading your receiver.</p>"
 	);
 
 	document.body.appendChild(receiverLabel);
