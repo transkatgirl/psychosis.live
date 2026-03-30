@@ -159,8 +159,8 @@ function generateURL(role: Role, id: string, pass: string): string {
 		url.searchParams.set("width", 1920);
 		url.searchParams.set("height", 1080);
 		url.searchParams.set("frameRate", 60);
-		url.searchParams.set("echoCancellation", "false");
-		url.searchParams.set("noiseSuppression", "false");
+		url.searchParams.set("autoGainControl", "true");
+		url.searchParams.set("audioContentHint", "music");
 		url.searchParams.set("videoContentHint", "motion");
 		url.searchParams.set("maxAudioBitrate", 192);
 		url.searchParams.set("dynamicAudioBitrate", "true");
