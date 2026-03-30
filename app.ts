@@ -139,7 +139,7 @@ function helperMenu() {
 
 	document.body.insertAdjacentHTML(
 		"beforeend",
-		'<p>Although this app will not <em>stop you from</em> having multiple receivers, it is a <b>very bad idea</b> to have more than one active receiver in a room, as senders send video data directly to every receiver.</p><details><summary>URL parameters (advanced)</summary><p>Sender & Receiver:</p><ul><li><code>role</code> = Role (<code>sender</code> or <code>receiver</code>)</li><li><code>id</code> = Room ID</li><li>Fragment (text after <code>#</code>) = Room Password (required for E2E encryption)</li></ul><p>All of the below parameters are optional.</p><p>Sender & Receiver:</p><ul><li><code>codecPreferences</code> = <a href="https://blog.mozilla.org/webrtc/cross-browser-support-for-choosing-webrtc-codecs/">Preferred WebRTC Codec Ordering</a> (JSON-encoded list of MIME types); It is highly recommended that you use the same list on both ends to avoid connection establishment issues</li></ul><p>Sender Only:</p><ul><li><code>showAudio</code> = Enable audio (boolean)</li><li><code>showVideo</code> = Enable video (boolean)</li><li><code>channelCount</code> = Preferred audio channel count (integer)</li><li><code>width</code> = Preferred video width (pixels)</li><li><code>height</code> = Preferred video height (pixels)</li><li><code>frameRate</code> = Preferred video frame rate (frames/second)</li><li><code>aspectRatio</code> = Preferred video aspect ratio (number, rounded to 10 decimal places)</li><li><code></code> = </li><li><code></code> = </li><li><code>autoGainControl</code> = <a href="https://w3c.github.io/mediacapture-main/#def-constraint-autoGainControl">Audio MediaTrackConstraints Automatic Gain Control</a> (boolean)</li><li><code>echoCancellation</code> = <a href="https://w3c.github.io/mediacapture-main/#def-constraint-echoCancellation">Audio MediaTrackConstraints Echo Cancellation</a> (limited to boolean)</li><li><code>noiseSuppression</code> = <a href="https://w3c.github.io/mediacapture-main/#def-constraint-noiseSuppression">Audio MediaTrackConstraints Noise Suppression</a> (boolean)</li><li><code>backgroundBlur</code> = <a href="https://w3c.github.io/mediacapture-main/#def-constraint-backgroundBlur">Video MediaTrackConstraints Background Blur</a> (boolean)</li><li><code>audioContentHint</code> = <a href="https://w3c.github.io/mst-content-hint/#audio-content-hints">MediaStreamTrack Audio Content Hint</a></li><li><code>videoContentHint</code> = <a href="https://w3c.github.io/mst-content-hint/#video-content-hints">MediaStreamTrack Video Content Hint</a></li><li><code>maxAudioBitrate</code> = <a href="https://w3c.github.io/webrtc-pc/#dom-rtcrtpencodingparameters-maxbitrate">WebRTC Maximum Audio Bitrate</a> (kilobits/second)</li><li><code>dynamicAudioBitrate</code> = Dynamically adjust audio bitrate based on inferred connection bandwidth (boolean); Uses a minimum audio bitrate of 64 kbit/s</li><li><code>maxVideoBitrate</code> = <a href="https://w3c.github.io/webrtc-pc/#dom-rtcrtpencodingparameters-maxbitrate">WebRTC Maximum Video Bitrate</a> (kilobits/second)</li><li><code>degradationPreference</code> = <a href="https://w3c.github.io/mst-content-hint/#dictionary-rtcrtpsendparameters-new-members">WebRTC Video Degradation Preference</a> (<a href="https://w3c.github.io/mst-content-hint/#dom-rtcdegradationpreference">RTCDegradationPreference</a>)</li><li><code>networkPriority</code> = <a href="https://www.w3.org/TR/webrtc-priority/#dom-rtcrtpencodingparameters-networkpriority">WebRTC Network QoS Priority</a> (<a href="https://www.w3.org/TR/webrtc-priority/#rtc-priority-type">RTCPriorityType</a>)</li></ul><p>Receiver Only:</p><ul><li><code>jitterBufferTarget</code> = <a href="https://w3c.github.io/webrtc-pc/#dom-rtcrtpreceiver-jitterbuffertarget">WebRTC Jitter Buffer Target</a> (miliseconds)</li></ul></details>'
+		'<p>Although this app will not <em>stop you from</em> having multiple receivers, it is a <b>very bad idea</b> to have more than one active receiver in a room, as senders send video data directly to every receiver.</p><details><summary>URL parameters (advanced)</summary><p>Sender & Receiver:</p><ul><li><code>role</code> = Role (<code>sender</code> or <code>receiver</code>)</li><li><code>id</code> = Room ID</li><li>Fragment (text after <code>#</code>) = Room Password (required for E2E encryption)</li></ul><p>All of the below parameters are optional.</p><p>Sender & Receiver:</p><ul><li><code>codecPreferences</code> = <a href="https://blog.mozilla.org/webrtc/cross-browser-support-for-choosing-webrtc-codecs/">Preferred WebRTC Codec Ordering</a> (JSON-encoded list of MIME types); It is highly recommended that you use the same list on both ends to avoid connection establishment issues</li></ul><p>Sender Only:</p><ul><li><code>showAudio</code> = Enable audio (boolean)</li><li><code>showVideo</code> = Enable video (boolean)</li><li><code>channelCount</code> = Preferred audio channel count (integer)</li><li><code>width</code> = Preferred video width (pixels)</li><li><code>height</code> = Preferred video height (pixels)</li><li><code>frameRate</code> = Preferred video frame rate (frames/second)</li><li><code>aspectRatio</code> = Preferred video aspect ratio (number, rounded to 10 decimal places)</li><li><code></code> = </li><li><code></code> = </li><li><code>autoGainControl</code> = <a href="https://w3c.github.io/mediacapture-main/#def-constraint-autoGainControl">Audio MediaTrackConstraints Automatic Gain Control</a> (boolean)</li><li><code>echoCancellation</code> = <a href="https://w3c.github.io/mediacapture-main/#def-constraint-echoCancellation">Audio MediaTrackConstraints Echo Cancellation</a> (limited to boolean)</li><li><code>noiseSuppression</code> = <a href="https://w3c.github.io/mediacapture-main/#def-constraint-noiseSuppression">Audio MediaTrackConstraints Noise Suppression</a> (boolean)</li><li><code>backgroundBlur</code> = <a href="https://w3c.github.io/mediacapture-main/#def-constraint-backgroundBlur">Video MediaTrackConstraints Background Blur</a> (boolean)</li><li><code>audioContentHint</code> = <a href="https://w3c.github.io/mst-content-hint/#audio-content-hints">MediaStreamTrack Audio Content Hint</a></li><li><code>videoContentHint</code> = <a href="https://w3c.github.io/mst-content-hint/#video-content-hints">MediaStreamTrack Video Content Hint</a></li><li><code>maxAudioBitrate</code> = <a href="https://w3c.github.io/webrtc-pc/#dom-rtcrtpencodingparameters-maxbitrate">WebRTC Maximum Audio Bitrate</a> (kilobits/second)</li><li><code>dynamicAudioBitrate</code> = Uses JavaScript to dynamically adjust audio bitrate between 64 kbit/s and <code>maxAudioBitrate</code> based on inferred connection bandwidth (boolean)</li><li><code>dynamicVideoFramerate</code> = Uses JavaScript to dynamically adjust video frame rate between 24 fps and <code>frameRate</code> based on inferred connection bandwidth (boolean)</li><li><code>maxVideoBitrate</code> = <a href="https://w3c.github.io/webrtc-pc/#dom-rtcrtpencodingparameters-maxbitrate">WebRTC Maximum Video Bitrate</a> (kilobits/second)</li><li><code>degradationPreference</code> = <a href="https://w3c.github.io/mst-content-hint/#dictionary-rtcrtpsendparameters-new-members">WebRTC Video Degradation Preference</a> (<a href="https://w3c.github.io/mst-content-hint/#dom-rtcdegradationpreference">RTCDegradationPreference</a>)</li><li><code>networkPriority</code> = <a href="https://www.w3.org/TR/webrtc-priority/#dom-rtcrtpencodingparameters-networkpriority">WebRTC Network QoS Priority</a> (<a href="https://www.w3.org/TR/webrtc-priority/#rtc-priority-type">RTCPriorityType</a>)</li></ul><p>Receiver Only:</p><ul><li><code>jitterBufferTarget</code> = <a href="https://w3c.github.io/webrtc-pc/#dom-rtcrtpreceiver-jitterbuffertarget">WebRTC Jitter Buffer Target</a> (miliseconds)</li></ul></details>'
 	);
 }
 
@@ -164,6 +164,7 @@ function generateURL(role: Role, id: string, pass: string): string {
 		url.searchParams.set("videoContentHint", "motion");
 		url.searchParams.set("maxAudioBitrate", 192);
 		url.searchParams.set("dynamicAudioBitrate", "true");
+		//url.searchParams.set("dynamicVideoFramerate", "true");
 		url.searchParams.set("maxVideoBitrate", 15 * 1000);
 		url.searchParams.set("networkPriority", "medium");
 	}
@@ -229,60 +230,121 @@ async function launchApp(
 		senderMediaConfig.maxVideoBitrate = maxVideoBitrate;
 	}
 
+	let audioBitrateCeil = undefined;
+
 	const maxAudioBitrate = Number(params.get("maxAudioBitrate"));
 	if (params.has("maxAudioBitrate") && Number.isFinite(maxAudioBitrate)) {
 		senderMediaConfig.maxAudioBitrate = maxAudioBitrate;
+		audioBitrateCeil = maxAudioBitrate * 1000;
 	}
 
-	if (
-		params.has("maxAudioBitrate") &&
-		Number.isFinite(maxAudioBitrate) &&
-		params.get("dynamicAudioBitrate") === "true"
-	) {
-		const audioBitrateMax = maxAudioBitrate * 1000;
+	let framerateCeil = undefined;
 
-		window.setInterval(async () => {
-			for (const [peerId, peer] of Object.entries(room.getPeers())) {
-				const stats = await peer.getStats();
+	const maxFramerate = Number(params.get("maxFramerate"));
+	if (params.has("maxFramerate") && Number.isFinite(maxFramerate)) {
+		senderMediaConfig.maxFramerate = maxFramerate;
+		framerateCeil = maxFramerate;
+	} else {
+		const frameRate = Number(params.get("frameRate"));
+		if (params.has("frameRate") && Number.isFinite(frameRate)) {
+			senderMediaConfig.maxFramerate = frameRate;
+			framerateCeil = frameRate;
+		}
+	}
 
-				let audioBitrateLower = 0;
-				let audioBitrateUpper = Infinity;
+	window.setInterval(async () => {
+		for (const [peerId, peer] of Object.entries(room.getPeers())) {
+			const stats = await peer.getStats();
 
-				stats.forEach((report) => {
+			let audioBitrateLower = 0;
+			let audioBitrateUpper = Infinity;
+			let maxVideoFramerate = Infinity;
+
+			stats.forEach((report) => {
+				if (
+					report.type == "outbound-rtp" &&
+					report.kind == "video" &&
+					report.targetBitrate
+				) {
 					if (
-						report.type == "outbound-rtp" &&
-						report.kind == "video" &&
-						report.targetBitrate
+						audioBitrateCeil &&
+						params.get("dynamicAudioBitrate") === "true"
 					) {
 						audioBitrateLower = Math.min(
 							Math.max(
 								Math.floor(report.targetBitrate / 128000),
 								2
 							) * 32000,
-							audioBitrateMax
+							audioBitrateCeil
 						);
 						audioBitrateUpper = Math.min(
 							Math.max(
 								Math.ceil(report.targetBitrate / 128000),
 								2
 							) * 32000,
-							audioBitrateMax
+							audioBitrateCeil
 						);
 					}
-				});
 
-				if (audioBitrateLower == 0 || audioBitrateUpper == Infinity) {
-					continue;
+					if (
+						framerateCeil &&
+						params.get("dynamicVideoFramerate") === "true"
+					) {
+						if (report.targetBitrate >= 1000000) {
+							maxVideoFramerate = Math.min(
+								Math.max(
+									Math.floor(report.targetBitrate / 1000000),
+									1
+								) * 60,
+								framerateCeil
+							);
+						} else if (report.targetBitrate > 500000) {
+							maxVideoFramerate = Math.min(30, framerateCeil);
+						} else if (report.targetBitrate > 250000) {
+							maxVideoFramerate = Math.min(24, framerateCeil);
+						}
+					}
+				}
+			});
+
+			for (const transceiver of peer.getTransceivers()) {
+				if (transceiver.sender.track?.kind == "video") {
+					let parameters = transceiver.sender.getParameters();
+
+					let changed = false;
+
+					for (const encoding of parameters.encodings) {
+						if (encoding.maxFramerate) {
+							if (
+								maxVideoFramerate != Infinity &&
+								encoding.maxFramerate != maxVideoFramerate
+							) {
+								DEV: console.log(
+									"set video maxFramerate",
+									maxVideoFramerate
+								);
+								encoding.maxFramerate = maxVideoFramerate;
+								changed = true;
+							}
+						}
+					}
+
+					if (changed) {
+						await transceiver.sender.setParameters(parameters);
+					}
 				}
 
-				for (const transceiver of peer.getTransceivers()) {
-					if (transceiver.sender.track?.kind == "audio") {
-						let parameters = transceiver.sender.getParameters();
+				if (transceiver.sender.track?.kind == "audio") {
+					let parameters = transceiver.sender.getParameters();
 
-						let changed = false;
+					let changed = false;
 
-						for (const encoding of parameters.encodings) {
-							if (encoding.maxBitrate) {
+					for (const encoding of parameters.encodings) {
+						if (encoding.maxBitrate) {
+							if (
+								audioBitrateLower != 0 &&
+								audioBitrateUpper != Infinity
+							) {
 								if (
 									encoding.maxBitrate > audioBitrateUpper &&
 									encoding.maxBitrate != audioBitrateLower
@@ -308,25 +370,15 @@ async function launchApp(
 								}
 							}
 						}
+					}
 
-						if (changed) {
-							await transceiver.sender.setParameters(parameters);
-						}
+					if (changed) {
+						await transceiver.sender.setParameters(parameters);
 					}
 				}
 			}
-		}, 100);
-	}
-
-	const maxFramerate = Number(params.get("maxFramerate"));
-	if (params.has("maxFramerate") && Number.isFinite(maxFramerate)) {
-		senderMediaConfig.maxFramerate = maxFramerate;
-	} else {
-		const frameRate = Number(params.get("frameRate"));
-		if (params.has("frameRate") && Number.isFinite(frameRate)) {
-			senderMediaConfig.maxFramerate = maxFramerate;
 		}
-	}
+	});
 
 	const jitterBufferTarget = Number(params.get("jitterBufferTarget"));
 	if (
