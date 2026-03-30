@@ -235,37 +235,20 @@ async function launchApp(
 						report.kind == "video" &&
 						report.targetBitrate
 					) {
-						if (report.targetBitrate >= 512000) {
-							audioBitrateLower = Math.min(
-								Math.max(
-									Math.floor(report.targetBitrate / 256000),
-									2
-								) * 64000,
-								audioBitrateMax
-							);
-							audioBitrateUpper = Math.min(
-								Math.max(
-									Math.ceil(report.targetBitrate / 256000),
-									2
-								) * 64000,
-								audioBitrateMax
-							);
-						} else {
-							audioBitrateLower = Math.min(
-								Math.max(
-									Math.floor(report.targetBitrate / 128000),
-									2
-								) * 32000,
-								audioBitrateMax
-							);
-							audioBitrateUpper = Math.min(
-								Math.max(
-									Math.ceil(report.targetBitrate / 128000),
-									2
-								) * 32000,
-								audioBitrateMax
-							);
-						}
+						audioBitrateLower = Math.min(
+							Math.max(
+								Math.floor(report.targetBitrate / 256000),
+								1
+							) * 64000,
+							audioBitrateMax
+						);
+						audioBitrateUpper = Math.min(
+							Math.max(
+								Math.ceil(report.targetBitrate / 256000),
+								1
+							) * 64000,
+							audioBitrateMax
+						);
 					}
 				});
 
