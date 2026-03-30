@@ -38,7 +38,7 @@ import type {
 	StrategyAdapter,
 } from "./types";
 
-const announceIntervalMs = 3_333;
+const announceIntervalMs = 5_333;
 const announceWarmupIntervalsMs = [233, 533, 1_333] as const;
 const sharedPeerIdleMsDefault = 123_333;
 

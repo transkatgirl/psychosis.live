@@ -215,6 +215,96 @@ async function launchApp(
 		senderMediaConfig.maxAudioBitrate = maxAudioBitrate;
 	}
 
+	if (
+		params.has("maxAudioBitrate") &&
+		Number.isFinite(maxAudioBitrate) &&
+		params.get("dynamicAudioBitrate") === "true"
+	) {
+		window.setInterval(async () => {
+			for (const [peerId, peer] of Object.entries(room.getPeers())) {
+				const stats = await peer.getStats();
+
+				let audioBitrateLower = 0;
+				let audioBitrateUpper = Infinity;
+
+				stats.forEach((report) => {
+					if (
+						report.type == "outbound-rtp" &&
+						report.kind == "video" &&
+						report.targetBitrate
+					) {
+						audioBitrateLower =
+							Math.max(
+								Math.floor(report.targetBitrate / 128000),
+								2
+							) * 32000;
+						audioBitrateUpper =
+							Math.max(
+								Math.ceil(report.targetBitrate / 128000),
+								2
+							) * 32000;
+					}
+				});
+
+				if (audioBitrateLower == 0 || audioBitrateUpper == Infinity) {
+					continue;
+				}
+
+				if (audioBitrateLower > maxAudioBitrate * 1000) {
+					audioBitrateLower = maxAudioBitrate * 1000;
+				}
+
+				if (audioBitrateUpper > maxAudioBitrate * 1000) {
+					audioBitrateUpper = maxAudioBitrate * 1000;
+				}
+
+				console.log(audioBitrateLower, audioBitrateUpper);
+
+				for (const transceiver of peer.getTransceivers()) {
+					if (transceiver.sender.track?.kind == "audio") {
+						let parameters = transceiver.sender.getParameters();
+
+						let changed = false;
+
+						for (const encoding of parameters.encodings) {
+							if (encoding.maxBitrate) {
+								if (
+									encoding.maxBitrate > audioBitrateUpper &&
+									encoding.maxBitrate != audioBitrateLower
+								) {
+									DEV: console.log(
+										"set audio maxBitrate",
+										audioBitrateLower / 1000
+									);
+									encoding.maxBitrate = audioBitrateLower;
+									changed = true;
+								}
+
+								if (
+									encoding.maxBitrate < audioBitrateLower &&
+									encoding.maxBitrate != audioBitrateUpper
+								) {
+									DEV: console.log(
+										"set audio maxBitrate",
+										audioBitrateUpper / 1000
+									);
+									encoding.maxBitrate = audioBitrateUpper;
+									changed = true;
+								}
+							}
+						}
+
+						if (changed) {
+							await transceiver.sender
+								.setParameters(parameters)
+								.catch((error) => console.error(error));
+						}
+					}
+				}
+			}
+		}, 100);
+	}
+
 	const maxFramerate = Number(params.get("maxFramerate"));
 	if (params.has("maxFramerate") && Number.isFinite(maxFramerate)) {
 		senderMediaConfig.maxFramerate = maxFramerate;
@@ -269,6 +359,22 @@ async function launchApp(
 			console.error(details);
 		},
 	});
+
+	/*window.setInterval(async () => {
+		for (const [peerId, peer] of Object.entries(room.getPeers())) {
+			const stats = await peer.getStats();
+
+			stats.forEach((report) => {
+				if (
+					report.type == "outbound-rtp" &&
+					report.kind == "video" &&
+					report.targetBitrate // in bits
+				) {
+					console.log(report);
+				}
+			});
+		}
+	}, 2000);*/
 
 	if (role == Role.Sender) {
 		await launchSender(room);
