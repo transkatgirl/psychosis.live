@@ -139,7 +139,7 @@ function helperMenu() {
 
 	document.body.insertAdjacentHTML(
 		"beforeend",
-		'<p>Although this app will not <em>stop you from</em> having multiple receivers, it is a <b>very bad idea</b> to have more than one active receiver in a room, as senders send video data directly to every receiver.</p><details><summary>URL parameters (advanced)</summary><p>Sender & Receiver:</p><ul><li><code>role</code> = Role (<code>sender</code> or <code>receiver</code>)</li><li><code>id</code> = Room ID</li><li>Fragment (text after <code>#</code>) = Room Password (required for E2E encryption)</li></ul><p>All of the below parameters are optional.</p><p>Sender & Receiver:</p><ul><li><code>codecPreferences</code> = <a href="https://blog.mozilla.org/webrtc/cross-browser-support-for-choosing-webrtc-codecs/">Preferred WebRTC Codec Ordering</a> (JSON-encoded list of MIME types); It is highly recommended that you use the same list on both ends to avoid connection establishment issues</li></ul><p>Sender Only:</p><ul><li><code>showAudio</code> = Enable audio (boolean)</li><li><code>showVideo</code> = Enable video (boolean)</li><li><code>channelCount</code> = Preferred audio channel count (integer)</li><li><code>width</code> = Preferred video width (pixels)</li><li><code>height</code> = Preferred video height (pixels)</li><li><code>frameRate</code> = Preferred video frame rate (frames/second)</li><li><code>aspectRatio</code> = Preferred video aspect ratio (number, rounded to 10 decimal places)</li><li><code></code> = </li><li><code></code> = </li><li><code>autoGainControl</code> = <a href="https://w3c.github.io/mediacapture-main/#def-constraint-autoGainControl">Audio MediaTrackConstraints Automatic Gain Control</a> (boolean)</li><li><code>echoCancellation</code> = <a href="https://w3c.github.io/mediacapture-main/#def-constraint-echoCancellation">Audio MediaTrackConstraints Echo Cancellation</a> (limited to boolean)</li><li><code>noiseSuppression</code> = <a href="https://w3c.github.io/mediacapture-main/#def-constraint-noiseSuppression">Audio MediaTrackConstraints Noise Suppression</a> (boolean)</li><li><code>backgroundBlur</code> = <a href="https://w3c.github.io/mediacapture-main/#def-constraint-backgroundBlur">Video MediaTrackConstraints Background Blur</a> (boolean)</li><li><code>audioContentHint</code> = <a href="https://w3c.github.io/mst-content-hint/#audio-content-hints">MediaStreamTrack Audio Content Hint</a></li><li><code>videoContentHint</code> = <a href="https://w3c.github.io/mst-content-hint/#video-content-hints">MediaStreamTrack Video Content Hint</a></li><li><code>maxAudioBitrate</code> = <a href="https://w3c.github.io/webrtc-pc/#dom-rtcrtpencodingparameters-maxbitrate">WebRTC Maximum Audio Bitrate</a> (kilobits/second)</li><li><code>dynamicAudioBitrate</code> = Uses JavaScript to dynamically adjust the maximum audio bitrate between 64 kbit/s and <code>maxAudioBitrate</code> based on inferred connection bandwidth (boolean)</li><li><code>dynamicVideoFramerate</code> = Uses JavaScript to dynamically adjust the maximum video frame rate between 24 fps and <code>frameRate</code> based on video bitrate (boolean)</li><li><code>maxVideoBitrate</code> = <a href="https://w3c.github.io/webrtc-pc/#dom-rtcrtpencodingparameters-maxbitrate">WebRTC Maximum Video Bitrate</a> (kilobits/second)</li><li><code>degradationPreference</code> = <a href="https://w3c.github.io/mst-content-hint/#dictionary-rtcrtpsendparameters-new-members">WebRTC Video Degradation Preference</a> (<a href="https://w3c.github.io/mst-content-hint/#dom-rtcdegradationpreference">RTCDegradationPreference</a>)</li><li><code>networkPriority</code> = <a href="https://www.w3.org/TR/webrtc-priority/#dom-rtcrtpencodingparameters-networkpriority">WebRTC Network QoS Priority</a> (<a href="https://www.w3.org/TR/webrtc-priority/#rtc-priority-type">RTCPriorityType</a>)</li></ul><p>Receiver Only:</p><ul><li><code>jitterBufferTarget</code> = <a href="https://w3c.github.io/webrtc-pc/#dom-rtcrtpreceiver-jitterbuffertarget">WebRTC Jitter Buffer Target</a> (miliseconds)</li></ul></details>'
+		'<p>Although this app will not <em>stop you from</em> having multiple receivers, it is a <b>very bad idea</b> to have more than one active receiver in a room, as senders send video data directly to every receiver.</p><details><summary>URL parameters (advanced)</summary><p>Sender & Receiver:</p><ul><li><code>role</code> = Role (<code>sender</code> or <code>receiver</code>)</li><li><code>id</code> = Room ID</li><li>Fragment (text after <code>#</code>) = Room Password (required for E2E encryption)</li></ul><p>All of the below parameters are optional.</p><p>Sender & Receiver:</p><ul><li><code>codecPreferences</code> = <a href="https://blog.mozilla.org/webrtc/cross-browser-support-for-choosing-webrtc-codecs/">Preferred WebRTC Codec Ordering</a> (JSON-encoded list of MIME types); It is highly recommended that you use the same list on both ends to avoid connection establishment issues</li></ul><p>Sender Only:</p><ul><li><code>showAudio</code> = Enable audio (boolean)</li><li><code>showVideo</code> = Enable video (boolean)</li><li><code>channelCount</code> = Preferred audio channel count (integer)</li><li><code>width</code> = Preferred video width (pixels)</li><li><code>height</code> = Preferred video height (pixels)</li><li><code>frameRate</code> = Preferred video frame rate (frames/second)</li><li><code>aspectRatio</code> = Preferred video aspect ratio (number, rounded to 10 decimal places)</li><li><code></code> = </li><li><code>displayMedia</code> = Use <a href="https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getDisplayMedia">getDisplayMedia</a> instead of <a href="https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia">getUserMedia</a> when creating a MediaStream (boolean)</li><li><code>autoGainControl</code> = <a href="https://w3c.github.io/mediacapture-main/#def-constraint-autoGainControl">Audio MediaTrackConstraints Automatic Gain Control</a> (boolean)</li><li><code>echoCancellation</code> = <a href="https://w3c.github.io/mediacapture-main/#def-constraint-echoCancellation">Audio MediaTrackConstraints Echo Cancellation</a> (limited to boolean)</li><li><code>noiseSuppression</code> = <a href="https://w3c.github.io/mediacapture-main/#def-constraint-noiseSuppression">Audio MediaTrackConstraints Noise Suppression</a> (boolean)</li><li><code>backgroundBlur</code> = <a href="https://w3c.github.io/mediacapture-main/#def-constraint-backgroundBlur">Video MediaTrackConstraints Background Blur</a> (boolean)</li><li><code>audioContentHint</code> = <a href="https://w3c.github.io/mst-content-hint/#audio-content-hints">MediaStreamTrack Audio Content Hint</a></li><li><code>videoContentHint</code> = <a href="https://w3c.github.io/mst-content-hint/#video-content-hints">MediaStreamTrack Video Content Hint</a></li><li><code>maxAudioBitrate</code> = <a href="https://w3c.github.io/webrtc-pc/#dom-rtcrtpencodingparameters-maxbitrate">WebRTC Maximum Audio Bitrate</a> (kilobits/second)</li><li><code>dynamicAudioBitrate</code> = Uses JavaScript to dynamically adjust the maximum audio bitrate between 64 kbit/s and <code>maxAudioBitrate</code> based on inferred connection bandwidth (boolean)</li><li><code>dynamicVideoFramerate</code> = Uses JavaScript to dynamically adjust the maximum video frame rate between 24 fps and <code>frameRate</code> based on video bitrate (boolean)</li><li><code>maxVideoBitrate</code> = <a href="https://w3c.github.io/webrtc-pc/#dom-rtcrtpencodingparameters-maxbitrate">WebRTC Maximum Video Bitrate</a> (kilobits/second)</li><li><code>degradationPreference</code> = <a href="https://w3c.github.io/mst-content-hint/#dictionary-rtcrtpsendparameters-new-members">WebRTC Video Degradation Preference</a> (<a href="https://w3c.github.io/mst-content-hint/#dom-rtcdegradationpreference">RTCDegradationPreference</a>)</li><li><code>networkPriority</code> = <a href="https://www.w3.org/TR/webrtc-priority/#dom-rtcrtpencodingparameters-networkpriority">WebRTC Network QoS Priority</a> (<a href="https://www.w3.org/TR/webrtc-priority/#rtc-priority-type">RTCPriorityType</a>)</li></ul><p>Receiver Only:</p><ul><li><code>jitterBufferTarget</code> = <a href="https://w3c.github.io/webrtc-pc/#dom-rtcrtpreceiver-jitterbuffertarget">WebRTC Jitter Buffer Target</a> (miliseconds)</li></ul></details>'
 	);
 }
 
@@ -517,7 +517,6 @@ async function launchSender(room: Room) {
 	const channelCount = Number(params.get("channelCount"));
 	if (params.has("channelCount") && Number.isFinite(channelCount)) {
 		audioConstraints.channelCount = {
-			min: 0,
 			ideal: channelCount,
 		};
 	}
@@ -525,7 +524,6 @@ async function launchSender(room: Room) {
 	const frameRate = Number(params.get("frameRate"));
 	if (params.has("frameRate") && Number.isFinite(frameRate)) {
 		videoConstraints.frameRate = {
-			min: 0,
 			ideal: frameRate,
 		};
 	}
@@ -533,7 +531,6 @@ async function launchSender(room: Room) {
 	const height = Number(params.get("height"));
 	if (params.has("height") && Number.isFinite(height)) {
 		videoConstraints.height = {
-			min: 0,
 			ideal: height,
 		};
 	}
@@ -541,7 +538,6 @@ async function launchSender(room: Room) {
 	const width = Number(params.get("width"));
 	if (params.has("width") && Number.isFinite(width)) {
 		videoConstraints.width = {
-			min: 0,
 			ideal: width,
 		};
 	}
@@ -562,7 +558,7 @@ async function launchSender(room: Room) {
 		};
 	}
 
-	const constraints: MediaStreamConstraints = {
+	const constraints: MediaStreamConstraints | DisplayMediaStreamOptions = {
 		audio: audioConstraints,
 		video: videoConstraints,
 	};
@@ -575,7 +571,26 @@ async function launchSender(room: Room) {
 		constraints.video = false;
 	}
 
-	const stream = await navigator.mediaDevices.getUserMedia(constraints);
+	let stream;
+
+	if (params.get("displayMedia") === "true") {
+		// @ts-ignore
+		constraints.monitorTypeSurfaces = "include";
+		// @ts-ignore
+		constraints.preferCurrentTab = false;
+		// @ts-ignore
+		constraints.selfBrowserSurface = "exclude";
+		// @ts-ignore
+		constraints.surfaceSwitching = "include";
+		// @ts-ignore
+		constraints.systemAudio = "include";
+		// @ts-ignore
+		//constraints.windowAudio = "window";
+
+		stream = await navigator.mediaDevices.getDisplayMedia(constraints);
+	} else {
+		stream = await navigator.mediaDevices.getUserMedia(constraints);
+	}
 
 	const audioContentHint = params.get("audioContentHint");
 	if (audioContentHint) {
