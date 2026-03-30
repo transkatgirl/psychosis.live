@@ -220,6 +220,8 @@ async function launchApp(
 		Number.isFinite(maxAudioBitrate) &&
 		params.get("dynamicAudioBitrate") === "true"
 	) {
+		const audioBitrateMax = maxAudioBitrate * 1000;
+
 		window.setInterval(async () => {
 			for (const [peerId, peer] of Object.entries(room.getPeers())) {
 				const stats = await peer.getStats();
@@ -233,32 +235,43 @@ async function launchApp(
 						report.kind == "video" &&
 						report.targetBitrate
 					) {
-						audioBitrateLower =
-							Math.max(
-								Math.floor(report.targetBitrate / 128000),
-								2
-							) * 32000;
-						audioBitrateUpper =
-							Math.max(
-								Math.ceil(report.targetBitrate / 128000),
-								2
-							) * 32000;
+						if (report.targetBitrate >= 512000) {
+							audioBitrateLower = Math.min(
+								Math.max(
+									Math.floor(report.targetBitrate / 256000),
+									2
+								) * 64000,
+								audioBitrateMax
+							);
+							audioBitrateUpper = Math.min(
+								Math.max(
+									Math.ceil(report.targetBitrate / 256000),
+									2
+								) * 64000,
+								audioBitrateMax
+							);
+						} else {
+							audioBitrateLower = Math.min(
+								Math.max(
+									Math.floor(report.targetBitrate / 128000),
+									2
+								) * 32000,
+								audioBitrateMax
+							);
+							audioBitrateUpper = Math.min(
+								Math.max(
+									Math.ceil(report.targetBitrate / 128000),
+									2
+								) * 32000,
+								audioBitrateMax
+							);
+						}
 					}
 				});
 
 				if (audioBitrateLower == 0 || audioBitrateUpper == Infinity) {
 					continue;
 				}
-
-				if (audioBitrateLower > maxAudioBitrate * 1000) {
-					audioBitrateLower = maxAudioBitrate * 1000;
-				}
-
-				if (audioBitrateUpper > maxAudioBitrate * 1000) {
-					audioBitrateUpper = maxAudioBitrate * 1000;
-				}
-
-				console.log(audioBitrateLower, audioBitrateUpper);
 
 				for (const transceiver of peer.getTransceivers()) {
 					if (transceiver.sender.track?.kind == "audio") {
@@ -295,9 +308,7 @@ async function launchApp(
 						}
 
 						if (changed) {
-							await transceiver.sender
-								.setParameters(parameters)
-								.catch((error) => console.error(error));
+							await transceiver.sender.setParameters(parameters);
 						}
 					}
 				}
