@@ -168,9 +168,10 @@ function generateURL(role: Role, id: string, pass: string): string {
 		url.searchParams.set("maxVideoBitrate", 15 * 1000);
 		url.searchParams.set("networkPriority", "medium");
 	}
-	/*if (role == Role.Receiver) {
+	if (role == Role.Receiver) {
+		// TODO: Add setting to hide video controls on receiver
 		url.searchParams.set("jitterBufferTarget", 1500);
-	}*/
+	}
 	url.searchParams.set(
 		"codecPreferences",
 		JSON.stringify([
