@@ -97,7 +97,9 @@ export default (
 		const parsed = sdpTransform.parse(sdp);
 
 		// UGLY HACK that *seems* to work for enabling audio RTX
-		// based on https://groups.google.com/g/discuss-webrtc/c/JVRU91Xwb6U/m/0Mb8CQV7AAAJ
+		// based on:
+		// - https://groups.google.com/g/discuss-webrtc/c/JVRU91Xwb6U/m/0Mb8CQV7AAAJ
+		// - https://issues.webrtc.org/issues/42229513
 
 		for (const media of parsed.media) {
 			if (media.type == "audio") {
