@@ -94,7 +94,7 @@ export default (
 			? rewriteMdnsCandidatesToLoopback(sdp)
 			: sdp;
 
-		const parsed = sdpTransform.parse(sdp);
+		/*const parsed = sdpTransform.parse(sdp);
 
 		// UGLY HACK that *seems* to work for enabling audio RTX
 		// based on https://groups.google.com/g/discuss-webrtc/c/JVRU91Xwb6U/m/0Mb8CQV7AAAJ
@@ -143,7 +143,7 @@ export default (
 			}
 		}
 
-		return sdpTransform.write(parsed);
+		return sdpTransform.write(parsed);*/
 	};
 
 	const normalizeCandidate = (
