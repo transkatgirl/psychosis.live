@@ -115,7 +115,15 @@ export default (
 					}
 				}
 
-				if (!hasRTX && media.payloads) {
+				if (media.rtcpFb && hasOpus) {
+					for (const entry of media.rtcpFb) {
+						if (entry.payload == 111 && entry.type == "nack") {
+							hasRTX = true;
+						}
+					}
+				}
+
+				if (hasOpus && !hasRTX && media.payloads) {
 					let payloads = sdpTransform.parsePayloads(media.payloads);
 					payloads.splice(payloads.indexOf(111) + 1, 0, 112);
 
@@ -128,6 +136,9 @@ export default (
 					};
 
 					if (media.rtcpFb) {
+						DEV: console.log(
+							"force enabling audio NACK using SDP munging"
+						);
 						media.rtcpFb.push({ payload: 111, type: "nack" });
 						media.rtcpFb.sort(payloadOrdering);
 					}
