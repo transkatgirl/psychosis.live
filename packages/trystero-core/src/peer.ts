@@ -726,8 +726,6 @@ async function updateSender(
 		}
 
 		if (sender.track?.kind == "video") {
-			//encoding.scalabilityMode = "L1T1";
-
 			if (mediaConfig?.sender?.videoPriority) {
 				encoding.priority = mediaConfig.sender.videoPriority;
 			}
