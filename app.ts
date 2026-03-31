@@ -43,7 +43,7 @@ function helperMenu() {
 	document.title = "psychosis.live";
 
 	document.body.innerHTML =
-		'<h1>psychosis.live</h1><p>This service allows you to stream <em>end-to-end encrypted</em> video from your smartphone into OBS over practically any internet connection, allowing you to stream anything from anywhere with an internet connection.</p><p>Unlike similar services, such as <a href="https://vdo.ninja">VDO.Ninja</a>, psychosis.live focuses on <em>both</em> ensuring watchability over poor connections and delivering the highest quality possible over good connections.</p>';
+		'<h1>psychosis.live</h1><p>This service allows you to stream <em>end-to-end encrypted</em> video from your smartphone into OBS over practically any internet connection, allowing you to stream anything from anywhere with an internet connection.</p><p>Unlike similar services, such as <a href="https://vdo.ninja">VDO.Ninja</a>, psychosis.live focuses on <em>both</em> ensuring watchability over poor connections and delivering the highest quality possible over good connections.</p><p>It is highly recommended (but not required) that you use Google Chrome on both sides of the connection for the best possible experience, as WebRTC implementation quality can vary significantly between browsers.</p>';
 
 	const roomLabel = document.createElement("label");
 	roomLabel.htmlFor = "room";
@@ -131,7 +131,7 @@ function helperMenu() {
 
 	document.body.insertAdjacentHTML(
 		"beforeend",
-		"<p>Requires a fairly powerful device due to use of newer video codecs, especially if using high resolutions and frame rates.</p><p>Theoretically supports up to 25 simultaneous senders. However, it is recommended that you stick to &lt;= 4 simultaneous senders to avoid overloading your receiver.</p>"
+		"<p>Requires a fairly powerful device due to use of newer video codecs, especially if using high resolutions and frame rates.</p><p>Supports up to 25 simultaneous senders. However, it is recommended that you stick to &lt;= 4 simultaneous senders to avoid overloading your receiver.</p>"
 	);
 
 	document.body.appendChild(receiverLabel);
