@@ -144,6 +144,8 @@ export default (
 		}
 
 		return sdpTransform.write(parsed);*/
+
+		return sdp;
 	};
 
 	const normalizeCandidate = (
