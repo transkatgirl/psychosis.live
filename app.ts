@@ -613,6 +613,7 @@ async function launchSender(room: Room) {
 	video.controls = true;
 	video.playsInline = true;
 	video.srcObject = stream;
+	video.classList.add("preview");
 	document.body.appendChild(video);
 
 	room.addStream(stream);

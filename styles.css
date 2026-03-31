@@ -22,6 +22,11 @@ body:not(#app) {
 	overflow: auto;
 }
 
+video.preview {
+	width: 100vw;
+	height: 100vh;
+}
+
 input[type="text"] {
 	font-family: monospace;
 }
