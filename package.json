@@ -7,14 +7,16 @@
 		"packages/*"
 	],
 	"devDependencies": {
-		"@types/bun": "latest"
+		"@types/bun": "latest",
+		"@types/sdp-transform": "^2.15.0"
 	},
 	"peerDependencies": {
 		"typescript": "^5"
 	},
 	"dependencies": {
-		"bs58": "^6.0.0",
 		"@trystero-p2p/core": "workspace:*",
-		"@trystero-p2p/mqtt": "workspace:*"
+		"@trystero-p2p/mqtt": "workspace:*",
+		"bs58": "^6.0.0",
+		"sdp-transform": "^3.0.0"
 	}
 }

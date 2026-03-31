@@ -6,6 +6,7 @@ import type {
 	PeerHandlers,
 	Signal,
 } from "./types";
+import * as sdpTransform from "sdp-transform";
 
 const iceTimeout = 15_000;
 const disconnectedCloseDelayMs = 5_000;
@@ -88,10 +89,62 @@ export default (
 		}
 	};
 
-	const normalizeSdp = (sdp: string): string =>
-		_test_only_mdnsHostFallbackToLoopback
+	const normalizeSdp = (sdp: string): string => {
+		sdp = _test_only_mdnsHostFallbackToLoopback
 			? rewriteMdnsCandidatesToLoopback(sdp)
 			: sdp;
+
+		const parsed = sdpTransform.parse(sdp);
+
+		// UGLY HACK that *seems* to work for enabling audio RTX
+		// based on https://groups.google.com/g/discuss-webrtc/c/JVRU91Xwb6U/m/0Mb8CQV7AAAJ
+
+		for (const media of parsed.media) {
+			if (media.type == "audio") {
+				let hasOpus = false;
+				let hasRTX = false;
+
+				for (const entry of media.rtp) {
+					if (entry.codec == "opus") {
+						hasOpus = true;
+					}
+					if (entry.codec == "rtx") {
+						hasRTX = true;
+					}
+				}
+
+				if (!hasRTX && media.payloads) {
+					let payloads = sdpTransform.parsePayloads(media.payloads);
+					payloads.splice(payloads.indexOf(111) + 1, 0, 112);
+
+					let payloadOrdering = (a: any, b: any) => {
+						const indexA = payloads.indexOf(a.payload);
+						const indexB = payloads.indexOf(b.payload);
+						const orderA = indexA >= 0 ? indexA : Number.MAX_VALUE;
+						const orderB = indexB >= 0 ? indexB : Number.MAX_VALUE;
+						return orderA - orderB;
+					};
+
+					if (media.rtcpFb) {
+						media.rtcpFb.push({ payload: 111, type: "nack" });
+						media.rtcpFb.sort(payloadOrdering);
+					}
+					media.rtp.push({
+						payload: 112,
+						codec: "rtx",
+						rate: 48000,
+						encoding: 2,
+					});
+					media.rtp.sort(payloadOrdering);
+					//media.fmtp.push({ payload: 112, config: "apt=111" });
+					media.fmtp.sort(payloadOrdering);
+					media.payloads.replace("111 ", "111 112 ");
+				}
+			}
+		}
+
+		return sdpTransform.write(parsed);
+	};
 
 	const normalizeCandidate = (
 		candidate: RTCIceCandidateInit
@@ -308,6 +361,9 @@ export default (
 					pc.localDescription?.type === offerType
 				) {
 					await pc.setLocalDescription({ type: "rollback" });
+					DEV: console.log("setLocalDescription", {
+						type: "rollback",
+					});
 				}
 
 				if (typeof pc.restartIce === "function") {
@@ -318,15 +374,13 @@ export default (
 			if (restartIce) {
 				const offer = await pc.createOffer({ iceRestart: true });
 
-				//DEV: console.log("offer description", offer);
-
 				await pc.setLocalDescription(offer);
+				DEV: console.log("setLocalDescription", offer);
 			} else {
 				const offer = await pc.createOffer({ iceRestart: false });
 
-				//DEV: console.log("offer description", offer);
-
 				await pc.setLocalDescription(offer);
+				DEV: console.log("setLocalDescription", offer);
 			}
 
 			const offer = await emitLocalDescriptionSignal();
@@ -514,16 +568,20 @@ export default (
 							return;
 						}
 
-						await all([
-							pc.setLocalDescription({ type: "rollback" }),
-							pc.setRemoteDescription(rtcSdp),
-						]);
+						await pc.setLocalDescription({ type: "rollback" });
+						DEV: console.log("setLocalDescription", {
+							type: "rollback",
+						});
+						await pc.setRemoteDescription(rtcSdp);
+						DEV: console.log("setRemoteDescription", rtcSdp);
 					} else {
 						await pc.setRemoteDescription(rtcSdp);
+						DEV: console.log("setRemoteDescription", rtcSdp);
 					}
 
 					await flushPendingRemoteCandidates();
 					await pc.setLocalDescription();
+					DEV: console.log("setLocalDescription");
 					const answer = await emitLocalDescriptionSignal();
 
 					return answer;
@@ -534,6 +592,7 @@ export default (
 
 					try {
 						await pc.setRemoteDescription(rtcSdp);
+						DEV: console.log("setRemoteDescription", rtcSdp);
 						await flushPendingRemoteCandidates();
 					} finally {
 						isSettingRemoteAnswerPending = false;
@@ -635,7 +694,7 @@ export const defaultIceServers: RTCIceServer[] = [
 	"stun:stun.cloudflare.com:3478",*/
 ].map((url) => ({ urls: url }));
 
-function sortCodecs(codecs: RTCRtpCodec[], preferredOrder: string[]) {
+export function sortCodecs(codecs: RTCRtpCodec[], preferredOrder: string[]) {
 	return codecs.sort((a, b) => {
 		const indexA = preferredOrder.indexOf(a.mimeType);
 		const indexB = preferredOrder.indexOf(b.mimeType);
