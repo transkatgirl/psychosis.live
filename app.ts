@@ -168,9 +168,9 @@ function generateURL(role: Role, id: string, pass: string): string {
 		url.searchParams.set("maxVideoBitrate", 15 * 1000);
 		url.searchParams.set("networkPriority", "medium");
 	}
-	if (role == Role.Receiver) {
-		//url.searchParams.set("jitterBufferTarget", 1500);
-	}
+	/*if (role == Role.Receiver) {
+		url.searchParams.set("jitterBufferTarget", 1500);
+	}*/
 	url.searchParams.set(
 		"codecPreferences",
 		JSON.stringify([
@@ -180,6 +180,7 @@ function generateURL(role: Role, id: string, pass: string): string {
 			"video/H264",
 			"video/VP8",
 			"audio/opus",
+			"audio/red",
 			"audio/mp4a-latm",
 			"audio/G722",
 			"audio/PCMU",
