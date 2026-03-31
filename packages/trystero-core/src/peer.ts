@@ -90,62 +90,9 @@ export default (
 	};
 
 	const normalizeSdp = (sdp: string): string => {
-		sdp = _test_only_mdnsHostFallbackToLoopback
+		return (sdp = _test_only_mdnsHostFallbackToLoopback
 			? rewriteMdnsCandidatesToLoopback(sdp)
-			: sdp;
-
-		/*const parsed = sdpTransform.parse(sdp);
-
-		// UGLY HACK that *seems* to work for enabling audio RTX
-		// based on https://groups.google.com/g/discuss-webrtc/c/JVRU91Xwb6U/m/0Mb8CQV7AAAJ
-
-		for (const media of parsed.media) {
-			if (media.type == "audio") {
-				let hasOpus = false;
-				let hasRTX = false;
-
-				for (const entry of media.rtp) {
-					if (entry.codec == "opus") {
-						hasOpus = true;
-					}
-					if (entry.codec == "rtx") {
-						hasRTX = true;
-					}
-				}
-
-				if (!hasRTX && media.payloads) {
-					let payloads = sdpTransform.parsePayloads(media.payloads);
-					payloads.splice(payloads.indexOf(111) + 1, 0, 112);
-
-					let payloadOrdering = (a: any, b: any) => {
-						const indexA = payloads.indexOf(a.payload);
-						const indexB = payloads.indexOf(b.payload);
-						const orderA = indexA >= 0 ? indexA : Number.MAX_VALUE;
-						const orderB = indexB >= 0 ? indexB : Number.MAX_VALUE;
-						return orderA - orderB;
-					};
-
-					if (media.rtcpFb) {
-						media.rtcpFb.push({ payload: 111, type: "nack" });
-						media.rtcpFb.sort(payloadOrdering);
-					}
-					media.rtp.push({
-						payload: 112,
-						codec: "rtx",
-						rate: 48000,
-						encoding: 2,
-					});
-					media.rtp.sort(payloadOrdering);
-					//media.fmtp.push({ payload: 112, config: "apt=111" });
-					media.fmtp.sort(payloadOrdering);
-					media.payloads.replace("111 ", "111 112 ");
-				}
-			}
-		}
-
-		return sdpTransform.write(parsed);*/
-
-		return sdp;
+			: sdp);
 	};
 
 	const normalizeCandidate = (
