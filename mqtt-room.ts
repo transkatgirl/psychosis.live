@@ -178,6 +178,7 @@ export class EncryptedRoom {
 		this.key = key;
 		this.client = client;
 
+		this.client.on("error", console.error);
 		this.client.on("message", async (topic, buffer) => {
 			if (topic == this.topic) {
 				let message;
@@ -200,8 +201,12 @@ export class EncryptedRoom {
 				}
 			}
 		});
-		this.client.on("error", console.error);
-		this.client.subscribe(this.topic);
+		this.client.on("connect", () => {
+			this.client.subscribe(this.topic);
+		});
+		if (client.connected) {
+			this.client.subscribe(this.topic);
+		}
 	}
 	public async send(message: Message) {
 		this.client.publish(
