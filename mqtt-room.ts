@@ -30,6 +30,28 @@ export async function generateKey() {
 	);
 }
 
+export async function deriveKey(password: string, salt: string) {
+	const initialKey = await crypto.subtle.importKey(
+		"raw",
+		new TextEncoder().encode(password) as Uint8Array<ArrayBuffer>,
+		{ name: "PBKDF2" },
+		false,
+		["deriveKey"]
+	);
+	return await crypto.subtle.deriveKey(
+		{
+			name: "PBKDF2",
+			salt: new TextEncoder().encode(salt) as Uint8Array<ArrayBuffer>,
+			iterations: 100000,
+			hash: "SHA-256",
+		},
+		initialKey,
+		{ name: "AES-GCM", length: 256 },
+		false,
+		["encrypt", "decrypt"]
+	);
+}
+
 export async function exportKey(key: CryptoKey) {
 	return await crypto.subtle.exportKey("raw", key).then((buffer) =>
 		new Uint8Array(buffer).toBase64({
