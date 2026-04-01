@@ -1,17 +1,10 @@
-import mqtt, { MqttClient, type IClientOptions } from "mqtt";
+import { MqttClient } from "mqtt";
 
 function convertUint8Array(data: Uint8Array<ArrayBuffer>): ArrayBuffer {
 	return data.buffer.slice(
 		data.byteOffset,
 		data.byteLength + data.byteOffset
 	);
-}
-
-function compareUint8Array(a: Uint8Array, b: Uint8Array) {
-	for (let i = a.length; -1 < i; i -= 1) {
-		if (a[i] !== b[i]) return false;
-	}
-	return true;
 }
 
 function bigintToBytes(number: bigint) {
