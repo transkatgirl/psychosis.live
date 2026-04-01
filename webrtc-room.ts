@@ -14,8 +14,8 @@ export class Room {
 		key: CryptoKey,
 		configuration: RTCConfiguration,
 		configurePeer: (peerId: string, pc: Peer) => void,
-		cleanupPeer: (peerId: string, pc: Peer) => void,
-		monitorPeer: (peerId: string, pc: Peer) => void = () => {},
+		beforePeerClose: (peerId: string, pc: Peer) => void,
+		onPeerScan: (peerId: string, pc: Peer) => void = () => {},
 		mungeIncoming: (
 			peerId: string,
 			message: WebRTCMessage
@@ -63,7 +63,7 @@ export class Room {
 						message.from < selfId,
 						sendResponse,
 						(peer) => {
-							cleanupPeer(peerId, peer);
+							beforePeerClose(peerId, peer);
 						}
 					);
 					configurePeer(peerId, this.peers[peerId]);
@@ -79,7 +79,7 @@ export class Room {
 					if (!peer.pc) {
 						delete this.peers[peerId];
 					} else {
-						monitorPeer(peerId, peer);
+						onPeerScan(peerId, peer);
 					}
 				}
 
@@ -140,7 +140,7 @@ export class Peer {
 			if (!candidate) return;
 
 			try {
-				await sendMessage({ can: candidate?.toJSON() });
+				await sendMessage({ can: candidate.toJSON() });
 			} catch (err) {
 				console.error(err);
 			}
@@ -209,7 +209,9 @@ export class Peer {
 					desc: this.pc.localDescription?.toJSON(),
 				});
 			}
-		} else if (message.can) {
+		}
+
+		if (message.can) {
 			try {
 				await this.pc.addIceCandidate(message.can);
 			} catch (err) {
