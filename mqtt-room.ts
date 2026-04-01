@@ -153,7 +153,7 @@ async function decodeMessage(data: Uint8Array<ArrayBuffer>): Promise<Message> {
 async function encodeMessage(
 	message: Message
 ): Promise<Uint8Array<ArrayBuffer>> {
-	if (message.from != selfId) {
+	if (message.from != selfId || message.from == message.to) {
 		throw "Invalid message ID";
 	}
 
