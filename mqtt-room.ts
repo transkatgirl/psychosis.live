@@ -1,4 +1,5 @@
 import { MqttClient } from "mqtt";
+import type { QoS } from "mqtt-packet";
 
 function convertUint8Array(data: Uint8Array<ArrayBuffer>): ArrayBuffer {
 	return data.buffer.slice(
@@ -230,7 +231,7 @@ export class MqttRoom {
 			this.client.subscribe(this.topic, { qos: 1 });
 		}
 	}
-	public async send(message: Message) {
+	public async send(message: Message, qos: QoS) {
 		this.client.publish(
 			this.topic,
 			new Uint8Array(
@@ -238,7 +239,8 @@ export class MqttRoom {
 					this.key,
 					convertUint8Array(await encodeMessage(message))
 				)
-			) as Buffer
+			) as Buffer,
+			{ qos }
 		);
 	}
 }
