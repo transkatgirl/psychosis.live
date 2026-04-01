@@ -103,29 +103,29 @@ export default (
 
 		for (const media of parsed.media) {
 			if (media.type == "audio") {
-				let hasOpus = false;
+				let opus: number | undefined;
 				let hasRTX = false;
 
 				for (const entry of media.rtp) {
 					if (entry.codec == "opus") {
-						hasOpus = true;
+						opus = entry.payload;
 					}
 					if (entry.codec == "rtx") {
 						hasRTX = true;
 					}
 				}
 
-				if (media.rtcpFb && hasOpus) {
+				if (media.rtcpFb && opus) {
 					for (const entry of media.rtcpFb) {
-						if (entry.payload == 111 && entry.type == "nack") {
+						if (entry.payload == opus && entry.type == "nack") {
 							hasRTX = true;
 						}
 					}
 				}
 
-				if (hasOpus && !hasRTX && media.payloads) {
+				if (opus && !hasRTX && media.payloads) {
 					let payloads = sdpTransform.parsePayloads(media.payloads);
-					payloads.splice(payloads.indexOf(111) + 1, 0, 112);
+					payloads.splice(payloads.indexOf(opus) + 1, 0, 112);
 
 					let payloadOrdering = (a: any, b: any) => {
 						const indexA = payloads.indexOf(a.payload);
@@ -139,7 +139,7 @@ export default (
 						DEV: console.log(
 							"force enabling audio NACK using SDP munging"
 						);
-						media.rtcpFb.push({ payload: 111, type: "nack" });
+						media.rtcpFb.push({ payload: opus, type: "nack" });
 						media.rtcpFb.sort(payloadOrdering);
 					}
 					/*media.rtp.push({
