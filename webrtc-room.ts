@@ -31,10 +31,10 @@ export class Room {
 					);
 				};
 
-				const peer = message.from.toString();
+				const peerId = message.from.toString();
 
 				if (message.to && message.payload) {
-					const pc = this.peers[peer];
+					const pc = this.peers[peerId];
 
 					if (pc) {
 						pc.handleMessage(
@@ -42,8 +42,8 @@ export class Room {
 							sendResponse
 						);
 					}
-				} else if (!(peer in this.peers)) {
-					this.peers[peer] = new Peer(
+				} else if (!(peerId in this.peers)) {
+					this.peers[peerId] = new Peer(
 						configuration,
 						message.from < selfId,
 						sendResponse
@@ -55,6 +55,12 @@ export class Room {
 		});
 
 		this.intervalId = window.setInterval(() => {
+			for (const [peerId, peer] of Object.entries(this.peers)) {
+				if (!peer.pc) {
+					delete this.peers[peerId];
+				}
+			}
+
 			this.room.send(
 				{
 					from: selfId,
@@ -84,18 +90,18 @@ export class Room {
 
 */
 
-interface WebRTCMessage {
+export interface WebRTCMessage {
 	desc?: RTCSessionDescriptionInit;
 	can?: RTCIceCandidateInit;
 }
 
-class Peer {
-	pc: RTCPeerConnection;
+export class Peer {
+	public pc: RTCPeerConnection | null;
 	polite: boolean;
 	makingOffer = false;
 	ignoreOffer = false;
 	isSettingRemoteAnswerPending = false;
-	constructor(
+	public constructor(
 		configuration: RTCConfiguration,
 		polite: boolean,
 		sendResponse: (message: WebRTCMessage) => void
@@ -103,13 +109,36 @@ class Peer {
 		this.pc = new RTCPeerConnection(configuration);
 		this.polite = polite;
 		this.pc.onicecandidate = ({ candidate }) => {
+			if (!candidate) return;
+
 			try {
 				sendResponse({ can: candidate?.toJSON() });
 			} catch (err) {
 				console.error(err);
 			}
 		};
+		this.pc.oniceconnectionstatechange = () => {
+			if (!this.pc) return;
+
+			switch (this.pc.iceConnectionState) {
+				case "closed":
+				case "failed":
+					this.close();
+					break;
+			}
+		};
+		this.pc.onsignalingstatechange = () => {
+			if (!this.pc) return;
+
+			switch (this.pc.signalingState) {
+				case "closed":
+					this.close();
+					break;
+			}
+		};
 		this.pc.onnegotiationneeded = async () => {
+			if (!this.pc) return;
+
 			try {
 				this.makingOffer = true;
 				await this.pc.setLocalDescription();
@@ -123,10 +152,12 @@ class Peer {
 			}
 		};
 	}
-	async handleMessage(
+	public async handleMessage(
 		message: WebRTCMessage,
 		sendResponse: (message: WebRTCMessage) => void
 	) {
+		if (!this.pc) return;
+
 		if (message.desc) {
 			const readyForOffer =
 				!this.makingOffer &&
@@ -159,5 +190,15 @@ class Peer {
 				}
 			}
 		}
+	}
+	public close() {
+		if (!this.pc) return;
+
+		this.pc.onicecandidate = null;
+		this.pc.oniceconnectionstatechange = null;
+		this.pc.onsignalingstatechange = null;
+		this.pc.onnegotiationneeded = null;
+		this.pc.close();
+		this.pc = null;
 	}
 }
