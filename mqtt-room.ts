@@ -184,7 +184,7 @@ export const selfId: bigint = bytesToBigint(
 	convertUint8Array(generateRandom(8))
 );
 
-export class EncryptedRoom {
+export class MqttRoom {
 	topic: string;
 	key: CryptoKey;
 	client: MqttClient;
