@@ -170,7 +170,7 @@ export class EncryptedRoom {
 		client: MqttClient,
 		topic: string,
 		key: CryptoKey,
-		onMessage: (message: Message) => {}
+		onMessage: (message: Message) => void
 	) {
 		this.topic = topic;
 		this.key = key;
@@ -186,7 +186,9 @@ export class EncryptedRoom {
 						new Uint8Array(
 							await decrypt(
 								this.key,
-								convertUint8Array(new Uint8Array(buffer))
+								convertUint8Array(
+									buffer as Uint8Array<ArrayBuffer>
+								)
 							)
 						)
 					);
@@ -194,27 +196,27 @@ export class EncryptedRoom {
 					console.error(error);
 				}
 
-				if (message) {
+				if (message && message.from != selfId) {
 					onMessage(message);
 				}
 			}
 		});
 		this.client.on("connect", () => {
-			this.client.subscribe(this.topic);
+			this.client.subscribe(this.topic, { qos: 1 });
 		});
 		if (client.connected) {
-			this.client.subscribe(this.topic);
+			this.client.subscribe(this.topic, { qos: 1 });
 		}
 	}
 	public async send(message: Message) {
 		this.client.publish(
 			this.topic,
-			Buffer.from(
+			new Uint8Array(
 				await encrypt(
 					this.key,
 					convertUint8Array(await encodeMessage(message))
 				)
-			)
+			) as Buffer
 		);
 	}
 }
