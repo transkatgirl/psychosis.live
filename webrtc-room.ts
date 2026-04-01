@@ -12,33 +12,46 @@ export class Room {
 		client: MqttClient,
 		topic: string,
 		key: CryptoKey,
-		configuration: RTCConfiguration
+		configuration: RTCConfiguration,
+		configurePeer: (peerId: string, pc: Peer) => void,
+		cleanupPeer: (peerId: string, pc: Peer) => void,
+		mungeIncoming: (
+			peerId: string,
+			message: WebRTCMessage
+		) => WebRTCMessage = (_, m) => m,
+		mungeOutgoing: (
+			peerId: string,
+			message: WebRTCMessage
+		) => WebRTCMessage = (_, m) => m
 	) {
 		this.configuration = configuration;
 
 		this.room = new MqttRoom(client, topic, key, async (message) => {
 			try {
-				const sendResponse = (response: any) => {
+				const peerId = message.from.toString();
+
+				const sendResponse = (response: WebRTCMessage) => {
 					this.room.send(
 						{
 							from: selfId,
 							to: message.from,
 							payload: this.encoder.encode(
-								JSON.stringify(response)
+								JSON.stringify(mungeOutgoing(peerId, response))
 							),
 						},
 						2
 					);
 				};
 
-				const peerId = message.from.toString();
-
 				if (message.to && message.payload) {
 					const pc = this.peers[peerId];
 
 					if (pc) {
 						pc.handleMessage(
-							JSON.parse(this.decoder.decode(message.payload)),
+							mungeIncoming(
+								peerId,
+								JSON.parse(this.decoder.decode(message.payload))
+							),
 							sendResponse
 						);
 					}
@@ -46,8 +59,12 @@ export class Room {
 					this.peers[peerId] = new Peer(
 						configuration,
 						message.from < selfId,
-						sendResponse
+						sendResponse,
+						(peer) => {
+							cleanupPeer(peerId, peer);
+						}
 					);
+					configurePeer(peerId, this.peers[peerId]);
 				}
 			} catch (err) {
 				console.error(err);
@@ -101,18 +118,21 @@ export class Peer {
 	makingOffer = false;
 	ignoreOffer = false;
 	isSettingRemoteAnswerPending = false;
+	beforeClose: (pc: Peer) => void;
 	public constructor(
 		configuration: RTCConfiguration,
 		polite: boolean,
-		sendResponse: (message: WebRTCMessage) => void
+		sendMessage: (message: WebRTCMessage) => void,
+		beforeClose: (pc: Peer) => void
 	) {
 		this.pc = new RTCPeerConnection(configuration);
 		this.polite = polite;
+		this.beforeClose = beforeClose;
 		this.pc.onicecandidate = ({ candidate }) => {
 			if (!candidate) return;
 
 			try {
-				sendResponse({ can: candidate?.toJSON() });
+				sendMessage({ can: candidate?.toJSON() });
 			} catch (err) {
 				console.error(err);
 			}
@@ -142,7 +162,7 @@ export class Peer {
 			try {
 				this.makingOffer = true;
 				await this.pc.setLocalDescription();
-				sendResponse({
+				sendMessage({
 					desc: this.pc.localDescription?.toJSON(),
 				});
 			} catch (err) {
@@ -193,6 +213,8 @@ export class Peer {
 	}
 	public close() {
 		if (!this.pc) return;
+
+		this.beforeClose(this);
 
 		this.pc.onicecandidate = null;
 		this.pc.oniceconnectionstatechange = null;
