@@ -30,8 +30,8 @@ export class Room {
 			try {
 				const peerId = message.from.toString();
 
-				const sendResponse = (response: WebRTCMessage) => {
-					this.room.send(
+				const sendResponse = async (response: WebRTCMessage) => {
+					await this.room.send(
 						{
 							from: selfId,
 							to: message.from,
@@ -47,7 +47,7 @@ export class Room {
 					const pc = this.peers[peerId];
 
 					if (pc) {
-						pc.handleMessage(
+						await pc.handleMessage(
 							mungeIncoming(
 								peerId,
 								JSON.parse(this.decoder.decode(message.payload))
@@ -71,14 +71,14 @@ export class Room {
 			}
 		});
 
-		this.intervalId = window.setInterval(() => {
+		this.intervalId = window.setInterval(async () => {
 			for (const [peerId, peer] of Object.entries(this.peers)) {
 				if (!peer.pc) {
 					delete this.peers[peerId];
 				}
 			}
 
-			this.room.send(
+			await this.room.send(
 				{
 					from: selfId,
 				},
@@ -122,17 +122,17 @@ export class Peer {
 	public constructor(
 		configuration: RTCConfiguration,
 		polite: boolean,
-		sendMessage: (message: WebRTCMessage) => void,
+		sendMessage: (message: WebRTCMessage) => Promise<void>,
 		beforeClose: (pc: Peer) => void
 	) {
 		this.pc = new RTCPeerConnection(configuration);
 		this.polite = polite;
 		this.beforeClose = beforeClose;
-		this.pc.onicecandidate = ({ candidate }) => {
+		this.pc.onicecandidate = async ({ candidate }) => {
 			if (!candidate) return;
 
 			try {
-				sendMessage({ can: candidate?.toJSON() });
+				await sendMessage({ can: candidate?.toJSON() });
 			} catch (err) {
 				console.error(err);
 			}
@@ -162,7 +162,7 @@ export class Peer {
 			try {
 				this.makingOffer = true;
 				await this.pc.setLocalDescription();
-				sendMessage({
+				await sendMessage({
 					desc: this.pc.localDescription?.toJSON(),
 				});
 			} catch (err) {
@@ -174,7 +174,7 @@ export class Peer {
 	}
 	public async handleMessage(
 		message: WebRTCMessage,
-		sendResponse: (message: WebRTCMessage) => void
+		sendMessage: (message: WebRTCMessage) => Promise<void>
 	) {
 		if (!this.pc) return;
 
@@ -197,7 +197,7 @@ export class Peer {
 
 			if (message.desc.type === "offer") {
 				await this.pc.setLocalDescription();
-				sendResponse({
+				await sendMessage({
 					desc: this.pc.localDescription?.toJSON(),
 				});
 			}
