@@ -7,6 +7,13 @@ function convertUint8Array(data: Uint8Array<ArrayBuffer>): ArrayBuffer {
 	);
 }
 
+function compareUnit8Array(a: Uint8Array, b: Uint8Array) {
+	for (let i = a.length; -1 < i; i -= 1) {
+		if (a[i] !== b[i]) return false;
+	}
+	return true;
+}
+
 export async function generateKey() {
 	return await crypto.subtle.generateKey(
 		{
@@ -64,7 +71,7 @@ async function decrypt(key: CryptoKey, data: ArrayBuffer) {
 	);
 }
 
-export function generateRandom(length: number) {
+function generateRandom(length: number) {
 	const data = new Uint8Array(length);
 	crypto.getRandomValues(data);
 	return data;
@@ -121,6 +128,10 @@ async function decodeMessage(data: Uint8Array<ArrayBuffer>): Promise<Message> {
 async function encodeMessage(
 	message: Message
 ): Promise<Uint8Array<ArrayBuffer>> {
+	if (!compareUnit8Array(message.from, selfId)) {
+		throw "Invalid message ID";
+	}
+
 	if (message.from.length == IDENTIFIER_LENGTH) {
 		if (message.to) {
 			if (message.to.length == IDENTIFIER_LENGTH) {
