@@ -92,14 +92,14 @@ function generateRandom(length: number) {
 async function compress(bytes: ArrayBuffer): Promise<ArrayBuffer> {
 	const compressedStream = (
 		new Response(bytes).body as ReadableStream<Uint8Array<ArrayBuffer>>
-	).pipeThrough(new CompressionStream("deflate"));
+	).pipeThrough(new CompressionStream("deflate-raw"));
 	return await new Response(compressedStream).arrayBuffer();
 }
 
 async function decompress(bytes: ArrayBuffer): Promise<ArrayBuffer> {
 	const decompressedStream = (
 		new Response(bytes).body as ReadableStream<Uint8Array<ArrayBuffer>>
-	).pipeThrough(new DecompressionStream("deflate"));
+	).pipeThrough(new DecompressionStream("deflate-raw"));
 	return await new Response(decompressedStream).arrayBuffer();
 }
 
