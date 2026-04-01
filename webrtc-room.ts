@@ -15,6 +15,7 @@ export class Room {
 		configuration: RTCConfiguration,
 		configurePeer: (peerId: string, pc: Peer) => void,
 		cleanupPeer: (peerId: string, pc: Peer) => void,
+		monitorPeer: (peerId: string, pc: Peer) => void = () => {},
 		mungeIncoming: (
 			peerId: string,
 			message: WebRTCMessage
@@ -22,7 +23,8 @@ export class Room {
 		mungeOutgoing: (
 			peerId: string,
 			message: WebRTCMessage
-		) => WebRTCMessage = (_, m) => m
+		) => WebRTCMessage = (_, m) => m,
+		interval: number = 1000
 	) {
 		this.configuration = configuration;
 
@@ -75,6 +77,8 @@ export class Room {
 			for (const [peerId, peer] of Object.entries(this.peers)) {
 				if (!peer.pc) {
 					delete this.peers[peerId];
+				} else {
+					monitorPeer(peerId, peer);
 				}
 			}
 
@@ -84,7 +88,7 @@ export class Room {
 				},
 				0
 			);
-		}, 1000);
+		}, interval);
 	}
 }
 
