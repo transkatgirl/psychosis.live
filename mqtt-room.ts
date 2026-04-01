@@ -14,6 +14,18 @@ function compareUint8Array(a: Uint8Array, b: Uint8Array) {
 	return true;
 }
 
+function bigintToBytes(number: bigint) {
+	const buffer = new ArrayBuffer(8);
+	const view = new DataView(buffer);
+	view.setBigUint64(0, number, false);
+	return buffer;
+}
+
+function bytesToBigint(bytes: ArrayBuffer): bigint {
+	const view = new DataView(bytes);
+	return view.getBigUint64(0, false);
+}
+
 export async function generateKey() {
 	return await crypto.subtle.generateKey(
 		{
@@ -91,34 +103,31 @@ async function decompress(bytes: ArrayBuffer): Promise<ArrayBuffer> {
 	return await new Response(decompressedStream).arrayBuffer();
 }
 
-export type Identifier = Uint8Array<ArrayBuffer>;
-export const IDENTIFIER_LENGTH = 16;
+export type Identifier = bigint;
 
 export interface Message {
-	from: Identifier;
-	to?: Identifier;
+	from: bigint;
+	to?: bigint;
 	payload?: Uint8Array<ArrayBuffer>;
 }
 
 async function decodeMessage(data: Uint8Array<ArrayBuffer>): Promise<Message> {
-	if (data.length > IDENTIFIER_LENGTH * 2) {
+	if (data.length > 16) {
 		return {
-			from: data.slice(0, IDENTIFIER_LENGTH),
-			to: data.slice(IDENTIFIER_LENGTH, IDENTIFIER_LENGTH * 2),
+			from: bytesToBigint(convertUint8Array(data.slice(0, 8))),
+			to: bytesToBigint(convertUint8Array(data.slice(8, 16))),
 			payload: new Uint8Array(
-				await decompress(
-					convertUint8Array(data.slice(IDENTIFIER_LENGTH * 2))
-				)
+				await decompress(convertUint8Array(data.slice(16)))
 			),
 		};
-	} else if (data.length == IDENTIFIER_LENGTH * 2) {
+	} else if (data.length == 16) {
 		return {
-			from: data.slice(0, IDENTIFIER_LENGTH),
-			to: data.slice(IDENTIFIER_LENGTH, IDENTIFIER_LENGTH * 2),
+			from: bytesToBigint(convertUint8Array(data.slice(0, 8))),
+			to: bytesToBigint(convertUint8Array(data.slice(8, 16))),
 		};
-	} else if (data.length == IDENTIFIER_LENGTH) {
+	} else if (data.length == 8) {
 		return {
-			from: data,
+			from: bytesToBigint(convertUint8Array(data)),
 		};
 	}
 
@@ -128,41 +137,37 @@ async function decodeMessage(data: Uint8Array<ArrayBuffer>): Promise<Message> {
 async function encodeMessage(
 	message: Message
 ): Promise<Uint8Array<ArrayBuffer>> {
-	if (!compareUint8Array(message.from, selfId)) {
+	if (message.from != selfId) {
 		throw "Invalid message ID";
 	}
 
-	if (message.from.length == IDENTIFIER_LENGTH) {
-		if (message.to) {
-			if (message.to.length == IDENTIFIER_LENGTH) {
-				if (message.payload) {
-					const compressed = new Uint8Array(
-						await compress(convertUint8Array(message.payload))
-					);
+	if (message.to) {
+		if (message.payload) {
+			const compressed = new Uint8Array(
+				await compress(convertUint8Array(message.payload))
+			);
 
-					const buffer = new Uint8Array(
-						IDENTIFIER_LENGTH * 2 + compressed.length
-					);
-					buffer.set(message.from, 0);
-					buffer.set(message.to, IDENTIFIER_LENGTH);
-					buffer.set(compressed, IDENTIFIER_LENGTH * 2);
-					return buffer;
-				} else {
-					const buffer = new Uint8Array(IDENTIFIER_LENGTH * 2);
-					buffer.set(message.from, 0);
-					buffer.set(message.to, IDENTIFIER_LENGTH);
-					return buffer;
-				}
-			}
-		} else if (!message.payload) {
-			return message.from;
+			const buffer = new Uint8Array(16 + compressed.length);
+			buffer.set(new Uint8Array(bigintToBytes(message.from)), 0);
+			buffer.set(new Uint8Array(bigintToBytes(message.to)), 8);
+			buffer.set(compressed, 16);
+			return buffer;
+		} else {
+			const buffer = new Uint8Array(16);
+			buffer.set(new Uint8Array(bigintToBytes(message.from)), 0);
+			buffer.set(new Uint8Array(bigintToBytes(message.to)), 8);
+			return buffer;
 		}
+	} else if (!message.payload) {
+		return new Uint8Array(bigintToBytes(message.from));
 	}
 
 	throw "Invalid message";
 }
 
-export const selfId: Identifier = generateRandom(IDENTIFIER_LENGTH);
+export const selfId: bigint = bytesToBigint(
+	convertUint8Array(generateRandom(8))
+);
 
 export class EncryptedRoom {
 	topic: string;
