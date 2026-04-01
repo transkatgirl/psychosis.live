@@ -74,20 +74,24 @@ export class Room {
 		});
 
 		this.intervalId = window.setInterval(async () => {
-			for (const [peerId, peer] of Object.entries(this.peers)) {
-				if (!peer.pc) {
-					delete this.peers[peerId];
-				} else {
-					monitorPeer(peerId, peer);
+			try {
+				for (const [peerId, peer] of Object.entries(this.peers)) {
+					if (!peer.pc) {
+						delete this.peers[peerId];
+					} else {
+						monitorPeer(peerId, peer);
+					}
 				}
-			}
 
-			await this.room.send(
-				{
-					from: selfId,
-				},
-				0
-			);
+				await this.room.send(
+					{
+						from: selfId,
+					},
+					0
+				);
+			} catch (err) {
+				console.error(err);
+			}
 		}, interval);
 	}
 }
