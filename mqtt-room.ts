@@ -1,0 +1,206 @@
+import mqtt, { MqttClient, type IClientOptions } from "mqtt";
+
+function convertUint8Array(data: Uint8Array<ArrayBuffer>): ArrayBuffer {
+	return data.buffer.slice(
+		data.byteOffset,
+		data.byteLength + data.byteOffset
+	);
+}
+
+export async function generateKey() {
+	return await crypto.subtle.generateKey(
+		{
+			name: "AES-GCM",
+			length: 256,
+		},
+		true,
+		["encrypt", "decrypt"]
+	);
+}
+
+export async function exportKey(key: CryptoKey) {
+	return await crypto.subtle.exportKey("raw", key).then((buffer) =>
+		new Uint8Array(buffer).toBase64({
+			alphabet: "base64url",
+			omitPadding: false,
+		})
+	);
+}
+
+export async function importKey(encoded: string) {
+	let data = Uint8Array.fromBase64(encoded, {
+		alphabet: "base64url",
+		lastChunkHandling: "strict",
+	});
+
+	return await crypto.subtle.importKey(
+		"raw",
+		convertUint8Array(data),
+		{ name: "AES-GCM" },
+		true,
+		["encrypt", "decrypt"]
+	);
+}
+
+async function encrypt(key: CryptoKey, data: ArrayBuffer) {
+	const iv = generateRandom(12);
+	const encrypted = await crypto.subtle.encrypt(
+		{ name: "AES-GCM", iv },
+		key,
+		data
+	);
+
+	const buffer = new Uint8Array(12 + encrypted.byteLength);
+	buffer.set(iv, 0);
+	buffer.set(new Uint8Array(encrypted), 12);
+	return convertUint8Array(buffer);
+}
+
+async function decrypt(key: CryptoKey, data: ArrayBuffer) {
+	return await crypto.subtle.decrypt(
+		{ name: "AES-GCM", iv: data.slice(0, 12) },
+		key,
+		data.slice(12)
+	);
+}
+
+export function generateRandom(length: number) {
+	const data = new Uint8Array(length);
+	crypto.getRandomValues(data);
+	return data;
+}
+
+async function compress(bytes: ArrayBuffer): Promise<ArrayBuffer> {
+	const compressedStream = (
+		new Response(bytes).body as ReadableStream<Uint8Array<ArrayBuffer>>
+	).pipeThrough(new CompressionStream("deflate"));
+	return await new Response(compressedStream).arrayBuffer();
+}
+
+async function decompress(bytes: ArrayBuffer): Promise<ArrayBuffer> {
+	const decompressedStream = (
+		new Response(bytes).body as ReadableStream<Uint8Array<ArrayBuffer>>
+	).pipeThrough(new DecompressionStream("deflate"));
+	return await new Response(decompressedStream).arrayBuffer();
+}
+
+export type Identifier = Uint8Array<ArrayBuffer>;
+export const IDENTIFIER_LENGTH = 16;
+
+export interface Message {
+	from: Identifier;
+	to?: Identifier;
+	payload?: Uint8Array<ArrayBuffer>;
+}
+
+async function decodeMessage(data: Uint8Array<ArrayBuffer>): Promise<Message> {
+	if (data.length > IDENTIFIER_LENGTH * 2) {
+		return {
+			from: data.slice(0, IDENTIFIER_LENGTH),
+			to: data.slice(IDENTIFIER_LENGTH, IDENTIFIER_LENGTH * 2),
+			payload: new Uint8Array(
+				await decompress(
+					convertUint8Array(data.slice(IDENTIFIER_LENGTH * 2))
+				)
+			),
+		};
+	} else if (data.length == IDENTIFIER_LENGTH * 2) {
+		return {
+			from: data.slice(0, IDENTIFIER_LENGTH),
+			to: data.slice(IDENTIFIER_LENGTH, IDENTIFIER_LENGTH * 2),
+		};
+	} else if (data.length == IDENTIFIER_LENGTH) {
+		return {
+			from: data,
+		};
+	}
+
+	throw "Malformed input length";
+}
+
+async function encodeMessage(
+	message: Message
+): Promise<Uint8Array<ArrayBuffer>> {
+	if (message.from.length == IDENTIFIER_LENGTH) {
+		if (message.to) {
+			if (message.to.length == IDENTIFIER_LENGTH) {
+				if (message.payload) {
+					const compressed = new Uint8Array(
+						await compress(convertUint8Array(message.payload))
+					);
+
+					const buffer = new Uint8Array(
+						IDENTIFIER_LENGTH * 2 + compressed.length
+					);
+					buffer.set(message.from, 0);
+					buffer.set(message.to, IDENTIFIER_LENGTH);
+					buffer.set(compressed, IDENTIFIER_LENGTH * 2);
+					return buffer;
+				} else {
+					const buffer = new Uint8Array(IDENTIFIER_LENGTH * 2);
+					buffer.set(message.from, 0);
+					buffer.set(message.to, IDENTIFIER_LENGTH);
+					return buffer;
+				}
+			}
+		} else if (!message.payload) {
+			return message.from;
+		}
+	}
+
+	throw "Invalid message";
+}
+
+export const selfId: Identifier = generateRandom(IDENTIFIER_LENGTH);
+
+export class EncryptedRoom {
+	topic: string;
+	key: CryptoKey;
+	client: MqttClient;
+	public constructor(
+		client: MqttClient,
+		topic: string,
+		key: CryptoKey,
+		onMessage: (message: Message) => {}
+	) {
+		this.topic = topic;
+		this.key = key;
+		this.client = client;
+
+		this.client.on("message", async (topic, buffer) => {
+			if (topic == this.topic) {
+				let message;
+
+				try {
+					message = await decodeMessage(
+						new Uint8Array(
+							await decrypt(
+								this.key,
+								convertUint8Array(new Uint8Array(buffer))
+							)
+						)
+					);
+				} catch (error) {
+					console.error(error);
+				}
+
+				if (message) {
+					onMessage(message);
+				}
+			}
+		});
+		this.client.on("error", console.error);
+		this.client.subscribe(this.topic);
+	}
+	public async send(message: Message) {
+		this.client.publish(
+			this.topic,
+			Buffer.from(
+				await encrypt(
+					this.key,
+					convertUint8Array(await encodeMessage(message))
+				)
+			)
+		);
+	}
+}
