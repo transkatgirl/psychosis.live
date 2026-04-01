@@ -77,6 +77,15 @@ export async function importKey(encoded: string) {
 	);
 }
 
+export async function hashTextBase64(input: string) {
+	return new Uint8Array(
+		await crypto.subtle.digest(
+			"SHA-256",
+			new TextEncoder().encode(input) as Uint8Array<ArrayBuffer>
+		)
+	).toBase64();
+}
+
 async function encrypt(key: CryptoKey, data: ArrayBuffer) {
 	const iv = generateRandom(12);
 	const encrypted = await crypto.subtle.encrypt(

@@ -1,5 +1,25 @@
 import type { MqttClient } from "mqtt";
-import { MqttRoom, selfId } from "./mqtt-room";
+import { deriveKey, hashTextBase64, MqttRoom, selfId } from "./mqtt-room";
+
+export interface RoomCredentials {
+	topic: string;
+	key: CryptoKey;
+}
+
+export async function createRoomCredentials(
+	identifier: string,
+	password: string
+): Promise<RoomCredentials> {
+	const [key, hashedIdentifier] = await Promise.all([
+		deriveKey(password, identifier),
+		hashTextBase64(identifier),
+	]);
+
+	return {
+		topic: "webrtc/" + hashedIdentifier,
+		key,
+	};
+}
 
 export class Room {
 	room: MqttRoom;
@@ -10,8 +30,7 @@ export class Room {
 	intervalId: number;
 	public constructor(
 		client: MqttClient,
-		topic: string,
-		key: CryptoKey,
+		credentials: RoomCredentials,
 		configuration: RTCConfiguration,
 		configurePeer: (peerId: string, pc: Peer) => void,
 		beforePeerClose: (peerId: string, pc: Peer) => void,
@@ -28,50 +47,59 @@ export class Room {
 	) {
 		this.configuration = configuration;
 
-		this.room = new MqttRoom(client, topic, key, async (message) => {
-			try {
-				const peerId = message.from.toString();
+		this.room = new MqttRoom(
+			client,
+			credentials.topic,
+			credentials.key,
+			async (message) => {
+				try {
+					const peerId = message.from.toString();
 
-				const sendResponse = async (response: WebRTCMessage) => {
-					await this.room.send(
-						{
-							from: selfId,
-							to: message.from,
-							payload: this.encoder.encode(
-								JSON.stringify(mungeOutgoing(peerId, response))
-							),
-						},
-						2
-					);
-				};
-
-				if (message.to && message.payload) {
-					const pc = this.peers[peerId];
-
-					if (pc) {
-						await pc.handleMessage(
-							mungeIncoming(
-								peerId,
-								JSON.parse(this.decoder.decode(message.payload))
-							),
-							sendResponse
+					const sendResponse = async (response: WebRTCMessage) => {
+						await this.room.send(
+							{
+								from: selfId,
+								to: message.from,
+								payload: this.encoder.encode(
+									JSON.stringify(
+										mungeOutgoing(peerId, response)
+									)
+								),
+							},
+							2
 						);
-					}
-				} else if (!(peerId in this.peers)) {
-					this.peers[peerId] = new Peer(
-						configuration,
-						message.from < selfId,
-						sendResponse,
-						(peer) => {
-							beforePeerClose(peerId, peer);
+					};
+
+					if (message.to && message.payload) {
+						const pc = this.peers[peerId];
+
+						if (pc) {
+							await pc.handleMessage(
+								mungeIncoming(
+									peerId,
+									JSON.parse(
+										this.decoder.decode(message.payload)
+									)
+								),
+								sendResponse
+							);
 						}
-					);
-					configurePeer(peerId, this.peers[peerId]);
+					} else if (!(peerId in this.peers)) {
+						this.peers[peerId] = new Peer(
+							configuration,
+							message.from < selfId,
+							sendResponse,
+							(peer) => {
+								beforePeerClose(peerId, peer);
+							}
+						);
+						configurePeer(peerId, this.peers[peerId]);
+					}
+				} catch (err) {
+					console.error(err);
 				}
-			} catch (err) {
-				console.error(err);
 			}
-		});
+		);
 
 		this.intervalId = window.setInterval(async () => {
 			try {
@@ -137,7 +165,7 @@ export class Peer {
 		this.polite = polite;
 		this.beforeClose = beforeClose;
 		this.pc.onicecandidate = async ({ candidate }) => {
-			if (!candidate) return;
+			if (!this.pc || !candidate) return;
 
 			try {
 				await sendMessage({ can: candidate.toJSON() });
