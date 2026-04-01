@@ -7,7 +7,7 @@ function convertUint8Array(data: Uint8Array<ArrayBuffer>): ArrayBuffer {
 	);
 }
 
-function compareUnit8Array(a: Uint8Array, b: Uint8Array) {
+function compareUint8Array(a: Uint8Array, b: Uint8Array) {
 	for (let i = a.length; -1 < i; i -= 1) {
 		if (a[i] !== b[i]) return false;
 	}
@@ -128,7 +128,7 @@ async function decodeMessage(data: Uint8Array<ArrayBuffer>): Promise<Message> {
 async function encodeMessage(
 	message: Message
 ): Promise<Uint8Array<ArrayBuffer>> {
-	if (!compareUnit8Array(message.from, selfId)) {
+	if (!compareUint8Array(message.from, selfId)) {
 		throw "Invalid message ID";
 	}
 
