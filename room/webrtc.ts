@@ -31,9 +31,9 @@ export class Room {
 		mqttEndpoint: string,
 		credentials: RoomCredentials,
 		configuration: RTCConfiguration,
-		configurePeer: (peerId: string, pc: Peer) => void,
-		beforePeerClose: (peerId: string, pc: Peer) => void,
-		onPeerScan: (peerId: string, pc: Peer) => void = () => {},
+		configurePeer: (peerId: string, peer: Peer) => void,
+		beforePeerClose: (peerId: string, peer: Peer) => void,
+		onPeerScan: (peerId: string, peer: Peer) => void = () => {},
 		mungeIncoming: (
 			peerId: string,
 			message: WebRTCMessage
