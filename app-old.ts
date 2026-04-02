@@ -1,29 +1,14 @@
 import bs58 from "bs58";
 import {
-	createRoomCredentials,
-	Room,
-	type RoomCredentials,
-} from "./room/webrtc";
-import { selfId, setSelfId } from "./room/core";
-import {
-	mungeSDP,
-	setCodecPreferences,
-	setReceiverSettings,
-	setSenderSettings,
-} from "./media";
-
-const mqttEndpoint = "wss://broker.emqx.io:8084/mqtt";
-const rtcConfig: RTCConfiguration = {
-	iceCandidatePoolSize: 10,
-	iceServers: [
-		{ urls: "stun:stun.l.google.com:19302" },
-		{ urls: "stun:stun1.l.google.com:19302" },
-		{ urls: "stun:stun2.l.google.com:19302" },
-		{ urls: "stun:stun3.l.google.com:19302" },
-		{ urls: "stun:stun4.l.google.com:19302" },
-		{ urls: "stun:stun.cloudflare.com:3478" },
-	],
-};
+	joinRoom,
+	selfId,
+	type MqttRoomConfig,
+} from "./packages/trystero-mqtt/src";
+import type { Room } from "./packages/trystero-core/src";
+import type {
+	ReceiverMediaConfig,
+	SenderMediaConfig,
+} from "./packages/trystero-core/src/types";
 
 const fragment = new URL(window.location.href).hash.substring(1);
 const params: URLSearchParams = new URL(window.location.href).searchParams;
@@ -45,7 +30,7 @@ if (params.has("role") && params.has("id")) {
 		role = Role.Receiver;
 	}
 
-	if (role && id && password) {
+	if (role && id) {
 		await launchApp(role, id, password, params);
 	} else {
 		helperMenu();
@@ -154,7 +139,7 @@ function helperMenu() {
 
 	document.body.insertAdjacentHTML(
 		"beforeend",
-		'<p>Although this app will not <em>stop you from</em> having multiple receivers, it is a <b>very bad idea</b> to have more than one active receiver in a room, as senders send video data directly to every receiver.</p><details><summary>URL parameters (advanced)</summary><p>Sender & Receiver:</p><ul><li><code>role</code> = Role (<code>sender</code> or <code>receiver</code>)</li><li><code>id</code> = Room ID</li><li>Fragment (text after <code>#</code>) = Room Password (required for E2E encryption)</li></ul><p>All of the below parameters are optional.</p><p>Sender & Receiver:</p><ul><li><code>codecPreferences</code> = <a href="https://blog.mozilla.org/webrtc/cross-browser-support-for-choosing-webrtc-codecs/">Preferred WebRTC Codec Ordering</a> (JSON-encoded list of MIME types); It is highly recommended that you use the same list on both ends to avoid connection establishment issues</li></ul><p>Sender Only:</p><ul><li><code>showAudio</code> = Enable audio (boolean)</li><li><code>showVideo</code> = Enable video (boolean)</li><li><code>channelCount</code> = Preferred audio channel count (integer)</li><li><code>width</code> = Preferred video width (pixels)</li><li><code>height</code> = Preferred video height (pixels)</li><li><code>frameRate</code> = Preferred video frame rate (frames/second)</li><li><code>aspectRatio</code> = Preferred video aspect ratio (number, rounded to 10 decimal places)</li><li><code></code> = </li><li><code>displayMedia</code> = Use <a href="https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getDisplayMedia">getDisplayMedia</a> instead of <a href="https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia">getUserMedia</a> when creating a MediaStream (boolean)</li><li><code>autoGainControl</code> = <a href="https://w3c.github.io/mediacapture-main/#def-constraint-autoGainControl">Audio MediaTrackConstraints Automatic Gain Control</a> (boolean)</li><li><code>echoCancellation</code> = <a href="https://w3c.github.io/mediacapture-main/#def-constraint-echoCancellation">Audio MediaTrackConstraints Echo Cancellation</a> (limited to boolean)</li><li><code>noiseSuppression</code> = <a href="https://w3c.github.io/mediacapture-main/#def-constraint-noiseSuppression">Audio MediaTrackConstraints Noise Suppression</a> (boolean)</li><li><code>backgroundBlur</code> = <a href="https://w3c.github.io/mediacapture-main/#def-constraint-backgroundBlur">Video MediaTrackConstraints Background Blur</a> (boolean)</li><li><code>audioContentHint</code> = <a href="https://w3c.github.io/mst-content-hint/#audio-content-hints">MediaStreamTrack Audio Content Hint</a></li><li><code>videoContentHint</code> = <a href="https://w3c.github.io/mst-content-hint/#video-content-hints">MediaStreamTrack Video Content Hint</a></li><li><code>maxAudioBitrate</code> = <a href="https://w3c.github.io/webrtc-pc/#dom-rtcrtpencodingparameters-maxbitrate">WebRTC Maximum Audio Bitrate</a> (kilobits/second)</li><li><code>dynamicAudioBitrate</code> = Uses JavaScript to dynamically adjust the maximum audio bitrate between 64 kbit/s and <code>maxAudioBitrate</code> based on video bitrate (boolean); Always disabled if <code>displayMedia</code> = true</li><li><code>dynamicVideoFramerate</code> = Uses JavaScript to dynamically adjust the maximum video frame rate between 24 fps and <code>frameRate</code> based on video bitrate (boolean)</li><li><code>maxVideoBitrate</code> = <a href="https://w3c.github.io/webrtc-pc/#dom-rtcrtpencodingparameters-maxbitrate">WebRTC Maximum Video Bitrate</a> (kilobits/second)</li><li><code>degradationPreference</code> = <a href="https://w3c.github.io/mst-content-hint/#dictionary-rtcrtpsendparameters-new-members">WebRTC Video Degradation Preference</a> (<a href="https://w3c.github.io/mst-content-hint/#dom-rtcdegradationpreference">RTCDegradationPreference</a>)</li></ul><p>Receiver Only:</p><ul><li><code>jitterBufferTarget</code> = <a href="https://w3c.github.io/webrtc-pc/#dom-rtcrtpreceiver-jitterbuffertarget">WebRTC Jitter Buffer Target</a> (miliseconds)</li></ul></details>'
+		'<p>Although this app will not <em>stop you from</em> having multiple receivers, it is a <b>very bad idea</b> to have more than one active receiver in a room, as senders send video data directly to every receiver.</p><details><summary>URL parameters (advanced)</summary><p>Sender & Receiver:</p><ul><li><code>role</code> = Role (<code>sender</code> or <code>receiver</code>)</li><li><code>id</code> = Room ID</li><li>Fragment (text after <code>#</code>) = Room Password (required for E2E encryption)</li></ul><p>All of the below parameters are optional.</p><p>Sender & Receiver:</p><ul><li><code>codecPreferences</code> = <a href="https://blog.mozilla.org/webrtc/cross-browser-support-for-choosing-webrtc-codecs/">Preferred WebRTC Codec Ordering</a> (JSON-encoded list of MIME types); It is highly recommended that you use the same list on both ends to avoid connection establishment issues</li></ul><p>Sender Only:</p><ul><li><code>showAudio</code> = Enable audio (boolean)</li><li><code>showVideo</code> = Enable video (boolean)</li><li><code>channelCount</code> = Preferred audio channel count (integer)</li><li><code>width</code> = Preferred video width (pixels)</li><li><code>height</code> = Preferred video height (pixels)</li><li><code>frameRate</code> = Preferred video frame rate (frames/second)</li><li><code>aspectRatio</code> = Preferred video aspect ratio (number, rounded to 10 decimal places)</li><li><code></code> = </li><li><code>displayMedia</code> = Use <a href="https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getDisplayMedia">getDisplayMedia</a> instead of <a href="https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia">getUserMedia</a> when creating a MediaStream (boolean)</li><li><code>autoGainControl</code> = <a href="https://w3c.github.io/mediacapture-main/#def-constraint-autoGainControl">Audio MediaTrackConstraints Automatic Gain Control</a> (boolean)</li><li><code>echoCancellation</code> = <a href="https://w3c.github.io/mediacapture-main/#def-constraint-echoCancellation">Audio MediaTrackConstraints Echo Cancellation</a> (limited to boolean)</li><li><code>noiseSuppression</code> = <a href="https://w3c.github.io/mediacapture-main/#def-constraint-noiseSuppression">Audio MediaTrackConstraints Noise Suppression</a> (boolean)</li><li><code>backgroundBlur</code> = <a href="https://w3c.github.io/mediacapture-main/#def-constraint-backgroundBlur">Video MediaTrackConstraints Background Blur</a> (boolean)</li><li><code>audioContentHint</code> = <a href="https://w3c.github.io/mst-content-hint/#audio-content-hints">MediaStreamTrack Audio Content Hint</a></li><li><code>videoContentHint</code> = <a href="https://w3c.github.io/mst-content-hint/#video-content-hints">MediaStreamTrack Video Content Hint</a></li><li><code>maxAudioBitrate</code> = <a href="https://w3c.github.io/webrtc-pc/#dom-rtcrtpencodingparameters-maxbitrate">WebRTC Maximum Audio Bitrate</a> (kilobits/second)</li><li><code>dynamicAudioBitrate</code> = Uses JavaScript to dynamically adjust the maximum audio bitrate between 64 kbit/s and <code>maxAudioBitrate</code> based on video bitrate (boolean); Always disabled if <code>displayMedia</code> = true</li><li><code>dynamicVideoFramerate</code> = Uses JavaScript to dynamically adjust the maximum video frame rate between 24 fps and <code>frameRate</code> based on video bitrate (boolean)</li><li><code>maxVideoBitrate</code> = <a href="https://w3c.github.io/webrtc-pc/#dom-rtcrtpencodingparameters-maxbitrate">WebRTC Maximum Video Bitrate</a> (kilobits/second)</li><li><code>degradationPreference</code> = <a href="https://w3c.github.io/mst-content-hint/#dictionary-rtcrtpsendparameters-new-members">WebRTC Video Degradation Preference</a> (<a href="https://w3c.github.io/mst-content-hint/#dom-rtcdegradationpreference">RTCDegradationPreference</a>)</li><li><code>networkPriority</code> = <a href="https://www.w3.org/TR/webrtc-priority/#dom-rtcrtpencodingparameters-networkpriority">WebRTC Network QoS Priority</a> (<a href="https://www.w3.org/TR/webrtc-priority/#rtc-priority-type">RTCPriorityType</a>)</li></ul><p>Receiver Only:</p><ul><li><code>jitterBufferTarget</code> = <a href="https://w3c.github.io/webrtc-pc/#dom-rtcrtpreceiver-jitterbuffertarget">WebRTC Jitter Buffer Target</a> (miliseconds)</li></ul></details>'
 	);
 }
 
@@ -181,6 +166,7 @@ function generateURL(role: Role, id: string, pass: string): string {
 		url.searchParams.set("dynamicAudioBitrate", "true");
 		url.searchParams.set("dynamicVideoFramerate", "true");
 		url.searchParams.set("maxVideoBitrate", 15 * 1000);
+		url.searchParams.set("networkPriority", "medium");
 	}
 	if (role == Role.Receiver) {
 		// TODO: Add setting to hide video controls on receiver
@@ -208,244 +194,72 @@ function generateURL(role: Role, id: string, pass: string): string {
 async function launchApp(
 	role: Role,
 	roomId: string,
-	password: string,
+	password: string | undefined,
 	params: URLSearchParams
 ) {
 	document.body.id = "app";
 
-	if (role == Role.Sender && selfId % 2n == 0n) {
-		setSelfId(selfId - 1n); // Signaling hack: Senders have odd IDs
-	}
+	window.addEventListener("error", (e) => {
+		console.error(e.message);
+	});
 
-	if (role == Role.Receiver && selfId % 2n == 1n) {
-		setSelfId(selfId - 1n); // Signaling hack: Receivers have even IDs
-	}
-
-	console.log(`role = ${role}, peer ID = ${selfId}`);
-
-	const credentials = await createRoomCredentials(roomId, password);
-
-	if (role == Role.Sender) {
-		await launchSender(credentials);
-	}
-
-	if (role == Role.Receiver) {
-		await launchReceiver(credentials);
-	}
-}
-
-async function launchSender(credentials: RoomCredentials) {
-	let codecOrderPreference: any;
-	let degradationPreference;
-	let maxVideoBitrate;
-	let maxAudioBitrate;
-	let maxFramerate;
+	let senderMediaConfig: SenderMediaConfig = {
+		videoPriority: "medium",
+		audioPriority: "high",
+	};
+	let receiverMediaConfig: ReceiverMediaConfig = {};
 
 	if (params.has("codecPreferences")) {
-		codecOrderPreference = JSON.parse(
+		let codecOrderPreference = JSON.parse(
 			params.get("codecPreferences") as string
 		);
 
-		if (!Array.isArray(codecOrderPreference)) {
-			codecOrderPreference = undefined;
+		if (Array.isArray(codecOrderPreference)) {
+			receiverMediaConfig.codecOrderPreference = codecOrderPreference;
 		}
-	} else {
-		codecOrderPreference = undefined;
 	}
 
-	degradationPreference = params.get(
-		"degradationPreference"
-	) as RTCDegradationPreference | null;
-	if (degradationPreference === null) {
-		degradationPreference = undefined;
+	const networkPriority = params.get("networkPriority");
+	if (networkPriority) {
+		senderMediaConfig.networkPriority = networkPriority as RTCPriorityType;
 	}
 
-	maxVideoBitrate = Number(params.get("maxVideoBitrate"));
-	if (!(params.has("maxVideoBitrate") && Number.isFinite(maxVideoBitrate))) {
-		maxVideoBitrate = undefined;
+	const degradationPreference = params.get("degradationPreference");
+	if (degradationPreference) {
+		senderMediaConfig.degradationPreference =
+			degradationPreference as RTCDegradationPreference;
+	}
+
+	const maxVideoBitrate = Number(params.get("maxVideoBitrate"));
+	if (params.has("maxVideoBitrate") && Number.isFinite(maxVideoBitrate)) {
+		senderMediaConfig.maxVideoBitrate = maxVideoBitrate;
 	}
 
 	let audioBitrateCeil = undefined;
 
-	maxAudioBitrate = Number(params.get("maxAudioBitrate"));
+	const maxAudioBitrate = Number(params.get("maxAudioBitrate"));
 	if (params.has("maxAudioBitrate") && Number.isFinite(maxAudioBitrate)) {
-		maxAudioBitrate = maxAudioBitrate;
+		senderMediaConfig.maxAudioBitrate = maxAudioBitrate;
 		audioBitrateCeil = maxAudioBitrate * 1000;
-	} else {
-		maxAudioBitrate = undefined;
 	}
 
-	let framerateCeil: number | undefined;
+	let framerateCeil = undefined;
 
-	maxFramerate = Number(params.get("maxFramerate"));
+	const maxFramerate = Number(params.get("maxFramerate"));
 	if (params.has("maxFramerate") && Number.isFinite(maxFramerate)) {
-		maxFramerate = maxFramerate;
+		senderMediaConfig.maxFramerate = maxFramerate;
 		framerateCeil = maxFramerate;
 	} else {
 		const frameRate = Number(params.get("frameRate"));
 		if (params.has("frameRate") && Number.isFinite(frameRate)) {
-			maxFramerate = frameRate;
+			senderMediaConfig.maxFramerate = frameRate;
 			framerateCeil = frameRate;
-		} else {
-			maxFramerate = undefined;
 		}
 	}
 
-	// TODO: allow specifying all constraints
-	// TODO: display stats: video bitrate, audio bitrate, network stats, cpu usage
-
-	let showAudio = params.get("showAudio") === "true";
-	if (!params.has("showAudio")) {
-		showAudio = true;
-	}
-
-	let showVideo = params.get("showVideo") === "true";
-	if (!params.has("showVideo")) {
-		showVideo = true;
-	}
-
-	const audioConstraints: MediaTrackConstraints = {
-		autoGainControl: params.get("autoGainControl") === "true",
-		echoCancellation: params.get("echoCancellation") === "true",
-		noiseSuppression: params.get("noiseSuppression") === "true",
-	};
-	const videoConstraints: MediaTrackConstraints = {
-		backgroundBlur: params.get("backgroundBlur") === "true",
-	};
-
-	const channelCount = Number(params.get("channelCount"));
-	if (params.has("channelCount") && Number.isFinite(channelCount)) {
-		audioConstraints.channelCount = {
-			ideal: channelCount,
-		};
-	}
-
-	const frameRate = Number(params.get("frameRate"));
-	if (params.has("frameRate") && Number.isFinite(frameRate)) {
-		videoConstraints.frameRate = {
-			ideal: frameRate,
-		};
-	}
-
-	const height = Number(params.get("height"));
-	if (params.has("height") && Number.isFinite(height)) {
-		videoConstraints.height = {
-			ideal: height,
-		};
-	}
-
-	const width = Number(params.get("width"));
-	if (params.has("width") && Number.isFinite(width)) {
-		videoConstraints.width = {
-			ideal: width,
-		};
-	}
-
-	const aspectRatio = Number(params.get("aspectRatio"));
-	if (params.has("aspectRatio") && Number.isFinite(aspectRatio)) {
-		videoConstraints.aspectRatio = {
-			ideal: aspectRatio,
-		};
-	} else if (
-		params.has("height") &&
-		Number.isFinite(height) &&
-		params.has("width") &&
-		Number.isFinite(width)
-	) {
-		videoConstraints.aspectRatio = {
-			ideal: width / height,
-		};
-	}
-
-	const constraints: MediaStreamConstraints | DisplayMediaStreamOptions = {
-		audio: audioConstraints,
-		video: videoConstraints,
-	};
-
-	if (!showAudio) {
-		constraints.audio = false;
-	}
-
-	if (!showVideo) {
-		constraints.video = false;
-	}
-
-	let stream: MediaStream;
-
-	if (params.get("displayMedia") === "true") {
-		// @ts-ignore
-		constraints.monitorTypeSurfaces = "include";
-		// @ts-ignore
-		constraints.preferCurrentTab = false;
-		// @ts-ignore
-		constraints.selfBrowserSurface = "exclude";
-		// @ts-ignore
-		constraints.surfaceSwitching = "include";
-		// @ts-ignore
-		constraints.systemAudio = "include";
-		// @ts-ignore
-		//constraints.windowAudio = "window";
-
-		stream = await navigator.mediaDevices.getDisplayMedia(constraints);
-	} else {
-		stream = await navigator.mediaDevices.getUserMedia(constraints);
-	}
-
-	const audioContentHint = params.get("audioContentHint");
-	if (audioContentHint) {
-		for (const audioTrack of stream.getAudioTracks()) {
-			audioTrack.contentHint = audioContentHint;
-		}
-	}
-
-	const videoContentHint = params.get("videoContentHint");
-	if (videoContentHint) {
-		for (const videoTrack of stream.getVideoTracks()) {
-			videoTrack.contentHint = videoContentHint;
-		}
-	}
-
-	const video = document.createElement("video");
-	video.autoplay = true;
-	video.muted = true;
-	video.controls = true;
-	video.playsInline = true;
-	video.srcObject = stream;
-	video.classList.add("preview");
-	document.body.appendChild(video);
-
-	(globalThis as any).room = new Room(
-		mqttEndpoint,
-		credentials,
-		rtcConfig,
-		(peerId, peer) => {
-			if (BigInt(peerId) % 2n == 0n) {
-				stream.getTracks().forEach((track) => {
-					if (!peer.pc) return;
-
-					let transceiver = peer.pc.addTransceiver(track, {
-						streams: [stream],
-					});
-					if (codecOrderPreference) {
-						setCodecPreferences(transceiver, codecOrderPreference);
-					}
-					setSenderSettings(
-						transceiver.sender,
-						maxVideoBitrate,
-						maxFramerate,
-						maxAudioBitrate,
-						"medium",
-						"high",
-						degradationPreference
-					);
-				});
-			}
-		},
-		(_peerId, _peer) => {},
-		async (peerId, peer) => {
-			if (!peer.pc) return;
-
-			const stats = await peer.pc.getStats();
+	window.setInterval(async () => {
+		for (const [peerId, peer] of Object.entries(room.getPeers())) {
+			const stats = await peer.getStats();
 
 			let audioBitrateLower = 0;
 			let audioBitrateUpper = Infinity;
@@ -518,7 +332,7 @@ async function launchSender(credentials: RoomCredentials) {
 				}
 			});
 
-			for (const transceiver of peer.pc.getTransceivers()) {
+			for (const transceiver of peer.getTransceivers()) {
 				if (transceiver.sender.track?.kind == "video") {
 					let parameters = transceiver.sender.getParameters();
 
@@ -607,124 +421,259 @@ async function launchSender(credentials: RoomCredentials) {
 					}
 				}
 			}
-		},
-		(_, message) => {
-			if (message.desc?.sdp) {
-				message.desc.sdp = mungeSDP(message.desc.sdp);
-			}
-			return message;
-		},
-		(_, message) => {
-			if (message.desc?.sdp) {
-				message.desc.sdp = mungeSDP(message.desc.sdp);
-			}
-			return message;
 		}
-	);
+	});
+
+	const jitterBufferTarget = Number(params.get("jitterBufferTarget"));
+	if (
+		params.has("jitterBufferTarget") &&
+		Number.isFinite(jitterBufferTarget)
+	) {
+		receiverMediaConfig.jitterBufferTarget = jitterBufferTarget;
+	}
+
+	let config: MqttRoomConfig = {
+		appId: "psychosis.live",
+		trickleIce: false, // Enabling causes reconnection after network loss to fail
+		rtcConfig: {
+			iceTransportPolicy: "all",
+			iceCandidatePoolSize: 10,
+			bundlePolicy: "max-bundle",
+			iceServers: [
+				{ urls: "stun:stun.l.google.com:19302" },
+				{ urls: "stun:stun1.l.google.com:19302" },
+				{ urls: "stun:stun2.l.google.com:19302" },
+				{ urls: "stun:stun3.l.google.com:19302" },
+				{ urls: "stun:stun4.l.google.com:19302" },
+				{ urls: "stun:stun.cloudflare.com:3478" },
+			],
+		},
+		turnConfig: [],
+		mediaConfig: {
+			sender: senderMediaConfig,
+			receiver: receiverMediaConfig,
+		},
+	};
+	if (password) {
+		config.password = password;
+	}
+
+	console.log(`role = ${role}, peer ID = ${selfId}`);
+
+	const room = joinRoom(config, roomId, {
+		onPeerHandshake: async (peerId, send, receive, isInitiator) => {
+			console.log(`handshaked with ${peerId}`);
+		},
+		onJoinError: (details) => {
+			console.error(details);
+		},
+	});
+
+	/*window.setInterval(async () => {
+		for (const [peerId, peer] of Object.entries(room.getPeers())) {
+			const stats = await peer.getStats();
+
+			stats.forEach((report) => {
+				if (
+					report.type == "outbound-rtp" &&
+					report.kind == "video" &&
+					report.targetBitrate // in bits
+				) {
+					console.log(report);
+				}
+			});
+		}
+	}, 2000);*/
+
+	if (role == Role.Sender) {
+		await launchSender(room);
+	}
+
+	if (role == Role.Receiver) {
+		await launchReceiver(room);
+	}
 }
 
-async function launchReceiver(credentials: RoomCredentials) {
-	let jitterBufferTarget;
-	let codecOrderPreference: any;
+async function launchSender(room: Room) {
+	// TODO: allow specifying all constraints
+	// TODO: display stats: video bitrate, audio bitrate, network stats, cpu usage
 
-	jitterBufferTarget = Number(params.get("jitterBufferTarget"));
-	if (
-		!(
-			params.has("jitterBufferTarget") &&
-			Number.isFinite(jitterBufferTarget)
-		)
+	let showAudio = params.get("showAudio") === "true";
+	if (!params.has("showAudio")) {
+		showAudio = true;
+	}
+
+	let showVideo = params.get("showVideo") === "true";
+	if (!params.has("showVideo")) {
+		showVideo = true;
+	}
+
+	const audioConstraints: MediaTrackConstraints = {
+		autoGainControl: params.get("autoGainControl") === "true",
+		echoCancellation: params.get("echoCancellation") === "true",
+		noiseSuppression: params.get("noiseSuppression") === "true",
+	};
+	const videoConstraints: MediaTrackConstraints = {
+		backgroundBlur: params.get("backgroundBlur") === "true",
+	};
+
+	const channelCount = Number(params.get("channelCount"));
+	if (params.has("channelCount") && Number.isFinite(channelCount)) {
+		audioConstraints.channelCount = {
+			ideal: channelCount,
+		};
+	}
+
+	const frameRate = Number(params.get("frameRate"));
+	if (params.has("frameRate") && Number.isFinite(frameRate)) {
+		videoConstraints.frameRate = {
+			ideal: frameRate,
+		};
+	}
+
+	const height = Number(params.get("height"));
+	if (params.has("height") && Number.isFinite(height)) {
+		videoConstraints.height = {
+			ideal: height,
+		};
+	}
+
+	const width = Number(params.get("width"));
+	if (params.has("width") && Number.isFinite(width)) {
+		videoConstraints.width = {
+			ideal: width,
+		};
+	}
+
+	const aspectRatio = Number(params.get("aspectRatio"));
+	if (params.has("aspectRatio") && Number.isFinite(aspectRatio)) {
+		videoConstraints.aspectRatio = {
+			ideal: aspectRatio,
+		};
+	} else if (
+		params.has("height") &&
+		Number.isFinite(height) &&
+		params.has("width") &&
+		Number.isFinite(width)
 	) {
-		jitterBufferTarget = undefined;
+		videoConstraints.aspectRatio = {
+			ideal: width / height,
+		};
 	}
 
-	if (params.has("codecPreferences")) {
-		codecOrderPreference = JSON.parse(
-			params.get("codecPreferences") as string
-		);
+	const constraints: MediaStreamConstraints | DisplayMediaStreamOptions = {
+		audio: audioConstraints,
+		video: videoConstraints,
+	};
 
-		if (!Array.isArray(codecOrderPreference)) {
-			codecOrderPreference = undefined;
-		}
+	if (!showAudio) {
+		constraints.audio = false;
+	}
+
+	if (!showVideo) {
+		constraints.video = false;
+	}
+
+	let stream;
+
+	if (params.get("displayMedia") === "true") {
+		// @ts-ignore
+		constraints.monitorTypeSurfaces = "include";
+		// @ts-ignore
+		constraints.preferCurrentTab = false;
+		// @ts-ignore
+		constraints.selfBrowserSurface = "exclude";
+		// @ts-ignore
+		constraints.surfaceSwitching = "include";
+		// @ts-ignore
+		constraints.systemAudio = "include";
+		// @ts-ignore
+		//constraints.windowAudio = "window";
+
+		stream = await navigator.mediaDevices.getDisplayMedia(constraints);
 	} else {
-		codecOrderPreference = undefined;
+		stream = await navigator.mediaDevices.getUserMedia(constraints);
 	}
 
+	const audioContentHint = params.get("audioContentHint");
+	if (audioContentHint) {
+		for (const audioTrack of stream.getAudioTracks()) {
+			audioTrack.contentHint = audioContentHint;
+		}
+	}
+
+	const videoContentHint = params.get("videoContentHint");
+	if (videoContentHint) {
+		for (const videoTrack of stream.getVideoTracks()) {
+			videoTrack.contentHint = videoContentHint;
+		}
+	}
+
+	const video = document.createElement("video");
+	video.autoplay = true;
+	video.muted = true;
+	video.controls = true;
+	video.playsInline = true;
+	video.srcObject = stream;
+	video.classList.add("preview");
+	document.body.appendChild(video);
+
+	room.addStream(stream);
+	room.onPeerJoin((peerId) => {
+		console.log(`${peerId} joined`);
+		room.addStream(stream, peerId);
+	});
+	room.onPeerStream((stream, peerId) => {
+		console.log(`${peerId} started streaming`);
+	});
+	room.onPeerLeave((peerId) => {
+		console.log(`${peerId} left`);
+	});
+
+	// @ts-ignore
+	globalThis.room = room;
+}
+
+async function launchReceiver(room: Room) {
 	const peerVideos: Record<string, HTMLVideoElement> = {};
 	const videoContainer = document.createElement("div");
 	videoContainer.classList.add("gallery");
 	document.body.appendChild(videoContainer);
 
-	(globalThis as any).room = new Room(
-		mqttEndpoint,
-		credentials,
-		rtcConfig,
-		(peerId, peer) => {
-			if (!peer.pc) return;
+	room.onPeerJoin((peerId) => {
+		console.log(`${peerId} joined`);
+	});
+	room.onPeerStream((stream, peerId) => {
+		console.log(`${peerId} started streaming`);
 
-			peer.pc.ontrack = (event) => {
-				if (codecOrderPreference) {
-					setCodecPreferences(
-						event.transceiver,
-						codecOrderPreference
-					);
-				}
-				setReceiverSettings(event.receiver, jitterBufferTarget);
+		let video = peerVideos[peerId];
 
-				let video = peerVideos[peerId];
+		if (!video) {
+			video = document.createElement("video");
+			video.autoplay = true;
+			video.controls = true;
+			video.playsInline = true;
 
-				if (!video) {
-					video = document.createElement("video");
-					video.autoplay = true;
-					video.controls = true;
-					video.playsInline = true;
-					video.id = peerId;
-					video.title = peerId;
+			videoContainer.appendChild(video);
+			updateGalleryStyles(videoContainer);
+		}
 
-					videoContainer.appendChild(video);
-					updateGalleryStyles(videoContainer);
-				}
+		video.srcObject = stream;
+		video.id = peerId;
+		DEV: video.title = peerId;
+		peerVideos[peerId] = video;
+	});
+	room.onPeerLeave((peerId) => {
+		console.log(`${peerId} left`);
+		let video = peerVideos[peerId];
 
-				const stream = event.streams[0];
-
-				if (stream) {
-					video.srcObject = stream;
-				}
-
-				peerVideos[peerId] = video;
-			};
-			// @ts-ignore
-			peer.pc.onremovetrack = () => {
-				let video = peerVideos[peerId];
-				if (
-					video &&
-					(video.srcObject as MediaStream).getTracks().length == 0
-				) {
-					video.srcObject = null;
-					videoContainer.removeChild(video);
-					delete peerVideos[peerId];
-					updateGalleryStyles(videoContainer);
-				}
-			};
-		},
-		(peerId, peer) => {
-			if (!peer.pc) return;
-
-			peer.pc.ontrack = null;
-			// @ts-ignore
-			peer.pc.onremovetrack = null;
-
-			let video = peerVideos[peerId];
-			if (video) {
-				// @ts-ignore
-				video.srcObject.getTracks().forEach((track) => track.stop());
-				video.srcObject = null;
-				videoContainer.removeChild(video);
-				delete peerVideos[peerId];
-				updateGalleryStyles(videoContainer);
-			}
-		},
-		(_peerId, _peer) => {}
-	);
+		if (video) {
+			video.srcObject = null;
+			videoContainer.removeChild(video);
+			delete peerVideos[peerId];
+			updateGalleryStyles(videoContainer);
+		}
+	});
 
 	const resizeObserver = new ResizeObserver((entries) => {
 		requestAnimationFrame(() => {
