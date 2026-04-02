@@ -175,16 +175,31 @@ export async function adaptiveSettings(
 			report.targetBitrate
 		) {
 			if (audioBitrateCeil && dynamicAudioBitrate) {
-				audioBitrateLower = Math.min(
-					Math.max(Math.floor(report.targetBitrate / 128000), 1.5) *
-						32000,
-					audioBitrateCeil
-				);
-				audioBitrateUpper = Math.min(
-					Math.max(Math.ceil(report.targetBitrate / 128000), 1.5) *
-						32000,
-					audioBitrateCeil
-				);
+				if (report.targetBitrate >= 128000) {
+					audioBitrateLower = Math.min(
+						Math.max(Math.floor(report.targetBitrate / 128000), 2) *
+							32000,
+						audioBitrateCeil
+					);
+					audioBitrateUpper = Math.min(
+						Math.max(Math.ceil(report.targetBitrate / 128000), 2) *
+							32000,
+						audioBitrateCeil
+					);
+				} else {
+					audioBitrateLower = Math.min(
+						Math.max(
+							Math.floor(report.targetBitrate / 64000),
+							1.5
+						) * 32000,
+						audioBitrateCeil
+					);
+					audioBitrateUpper = Math.min(
+						Math.max(Math.ceil(report.targetBitrate / 64000), 1.5) *
+							32000,
+						audioBitrateCeil
+					);
+				}
 			}
 
 			if (framerateCeil && dynamicVideoFramerate) {
