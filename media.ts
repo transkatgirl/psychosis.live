@@ -153,3 +153,157 @@ function sortCodecs(codecs: RTCRtpCodec[], preferredOrder: string[]) {
 		return orderA - orderB;
 	});
 }
+
+export async function adaptiveSettings(
+	pc: RTCPeerConnection,
+	dynamicAudioBitrate: boolean,
+	dynamicVideoFramerate: boolean,
+	audioBitrateCeil?: number,
+	framerateCeil?: number
+) {
+	const stats = await pc.getStats();
+
+	let audioBitrateLower = 0;
+	let audioBitrateUpper = Infinity;
+	let videoFramerateLower = 0;
+	let videoFramerateUpper = Infinity;
+
+	stats.forEach((report) => {
+		if (
+			report.type == "outbound-rtp" &&
+			report.kind == "video" &&
+			report.targetBitrate
+		) {
+			if (audioBitrateCeil && dynamicAudioBitrate) {
+				audioBitrateLower = Math.min(
+					Math.max(Math.floor(report.targetBitrate / 128000), 1.5) *
+						32000,
+					audioBitrateCeil
+				);
+				audioBitrateUpper = Math.min(
+					Math.max(Math.ceil(report.targetBitrate / 128000), 1.5) *
+						32000,
+					audioBitrateCeil
+				);
+			}
+
+			if (framerateCeil && dynamicVideoFramerate) {
+				if (report.targetBitrate >= 500000) {
+					videoFramerateLower = Math.min(
+						Math.max(Math.floor(report.targetBitrate / 500000), 1) *
+							30,
+						framerateCeil
+					);
+					videoFramerateUpper = Math.min(
+						Math.max(Math.ceil(report.targetBitrate / 500000), 1) *
+							30,
+						framerateCeil
+					);
+				} else {
+					videoFramerateLower = Math.min(
+						Math.max(
+							Math.floor(report.targetBitrate / 250000),
+							1.6
+						) * 15,
+						framerateCeil
+					);
+					videoFramerateUpper = Math.min(
+						Math.max(
+							Math.ceil(report.targetBitrate / 250000),
+							1.6
+						) * 15,
+						framerateCeil
+					);
+				}
+			}
+		}
+	});
+
+	for (const transceiver of pc.getTransceivers()) {
+		if (transceiver.sender.track?.kind == "video") {
+			let parameters = transceiver.sender.getParameters();
+
+			let changed = false;
+
+			for (const encoding of parameters.encodings) {
+				if (encoding.maxFramerate) {
+					if (
+						videoFramerateLower != 0 &&
+						videoFramerateUpper != Infinity
+					) {
+						if (
+							encoding.maxFramerate > videoFramerateUpper &&
+							encoding.maxFramerate != videoFramerateLower
+						) {
+							DEV: console.log(
+								"set video maxFramerate",
+								videoFramerateLower
+							);
+							encoding.maxFramerate = videoFramerateLower;
+							changed = true;
+						}
+
+						if (
+							encoding.maxFramerate < videoFramerateLower &&
+							encoding.maxFramerate != videoFramerateUpper
+						) {
+							DEV: console.log(
+								"set video maxFramerate",
+								videoFramerateUpper
+							);
+							encoding.maxFramerate = videoFramerateUpper;
+							changed = true;
+						}
+					}
+				}
+			}
+
+			if (changed) {
+				await transceiver.sender.setParameters(parameters);
+			}
+		}
+
+		if (transceiver.sender.track?.kind == "audio") {
+			let parameters = transceiver.sender.getParameters();
+
+			let changed = false;
+
+			for (const encoding of parameters.encodings) {
+				if (encoding.maxBitrate) {
+					if (
+						audioBitrateLower != 0 &&
+						audioBitrateUpper != Infinity
+					) {
+						if (
+							encoding.maxBitrate > audioBitrateUpper &&
+							encoding.maxBitrate != audioBitrateLower
+						) {
+							DEV: console.log(
+								"set audio maxBitrate",
+								audioBitrateLower / 1000
+							);
+							encoding.maxBitrate = audioBitrateLower;
+							changed = true;
+						}
+
+						if (
+							encoding.maxBitrate < audioBitrateLower &&
+							encoding.maxBitrate != audioBitrateUpper
+						) {
+							DEV: console.log(
+								"set audio maxBitrate",
+								audioBitrateUpper / 1000
+							);
+							encoding.maxBitrate = audioBitrateUpper;
+							changed = true;
+						}
+					}
+				}
+			}
+
+			if (changed) {
+				await transceiver.sender.setParameters(parameters);
+			}
+		}
+	}
+}
