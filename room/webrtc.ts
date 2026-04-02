@@ -42,13 +42,14 @@ export class Room {
 			peerId: string,
 			message: WebRTCMessage
 		) => WebRTCMessage = (_, m) => m,
-		interval: number = 1_500
+		interval: number = 2_000,
+		timeout: number = 15_000
 	) {
 		this.room = new MqttRoom(
 			mqtt.connect(mqttEndpoint, {
 				reconnectPeriod: interval,
 				reconnectOnConnackError: true,
-				connectTimeout: 15_000,
+				connectTimeout: timeout,
 				queueQoSZero: false,
 				protocolVersion: 5,
 				autoAssignTopicAlias: true,
@@ -89,7 +90,8 @@ export class Room {
 							sendResponse,
 							(peer) => {
 								beforePeerClose(peerId, peer);
-							}
+							},
+							timeout
 						);
 						configurePeer(peerId, this.peers[peerId]);
 					}
