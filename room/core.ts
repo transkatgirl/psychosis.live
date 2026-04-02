@@ -1,3 +1,4 @@
+import bs58 from "bs58";
 import { MqttClient, type ClientSubscribeCallback } from "mqtt";
 import type { QoS } from "mqtt-packet";
 
@@ -78,12 +79,14 @@ export async function importKey(encoded: string) {
 }
 
 export async function hashText(input: string) {
-	return new Uint8Array(
-		await crypto.subtle.digest(
-			"SHA-256",
-			new TextEncoder().encode(input) as Uint8Array<ArrayBuffer>
+	return bs58.encode(
+		new Uint8Array(
+			await crypto.subtle.digest(
+				"SHA-256",
+				new TextEncoder().encode(input) as Uint8Array<ArrayBuffer>
+			)
 		)
-	).toHex();
+	);
 }
 
 async function encrypt(key: CryptoKey, data: ArrayBuffer) {

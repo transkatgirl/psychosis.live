@@ -16,7 +16,7 @@ export async function createRoomCredentials(
 	]);
 
 	return {
-		topic: "webrtc/" + hashedIdentifier,
+		topic: hashedIdentifier,
 		key,
 	};
 }
@@ -51,7 +51,6 @@ export class Room {
 				connectTimeout: 15_000,
 				queueQoSZero: false,
 				protocolVersion: 5,
-				autoUseTopicAlias: true,
 				autoAssignTopicAlias: true,
 			}),
 			credentials.topic,
