@@ -77,13 +77,13 @@ export async function importKey(encoded: string) {
 	);
 }
 
-export async function hashTextBase64(input: string) {
+export async function hashText(input: string) {
 	return new Uint8Array(
 		await crypto.subtle.digest(
 			"SHA-256",
 			new TextEncoder().encode(input) as Uint8Array<ArrayBuffer>
 		)
-	).toBase64();
+	).toHex();
 }
 
 async function encrypt(key: CryptoKey, data: ArrayBuffer) {

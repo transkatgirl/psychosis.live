@@ -1,5 +1,5 @@
-import { connect } from "mqtt";
-import { deriveKey, hashTextBase64, MqttRoom, selfId } from "./core";
+import mqtt from "mqtt";
+import { deriveKey, hashText, MqttRoom, selfId } from "./core";
 
 export interface RoomCredentials {
 	topic: string;
@@ -12,7 +12,7 @@ export async function createRoomCredentials(
 ): Promise<RoomCredentials> {
 	const [key, hashedIdentifier] = await Promise.all([
 		deriveKey(password, identifier),
-		hashTextBase64(identifier),
+		hashText(identifier),
 	]);
 
 	return {
@@ -42,10 +42,10 @@ export class Room {
 			peerId: string,
 			message: WebRTCMessage
 		) => WebRTCMessage = (_, m) => m,
-		interval: number = 1_000
+		interval: number = 1_500
 	) {
 		this.room = new MqttRoom(
-			connect(mqttEndpoint, {
+			mqtt.connect(mqttEndpoint, {
 				reconnectPeriod: interval,
 				reconnectOnConnackError: true,
 				connectTimeout: 15_000,
