@@ -202,6 +202,7 @@ export class MqttRoom {
 		client: MqttClient,
 		topic: string,
 		key: CryptoKey,
+		onJoin: () => void,
 		onMessage: (message: Message) => void
 	) {
 		this.topic = topic;
@@ -234,7 +235,18 @@ export class MqttRoom {
 			}
 		});
 		this.client.on("connect", () => {
-			this.client.subscribe(this.topic, { qos: 1 });
+			this.client.subscribe(this.topic, { qos: 1 }, (error) => {
+				if (error) {
+					console.error(error);
+					this.client.reconnect();
+				} else {
+					try {
+						onJoin();
+					} catch (error) {
+						console.error(error);
+					}
+				}
+			});
 		});
 		if (client.connected) {
 			this.client.subscribe(this.topic, { qos: 1 });

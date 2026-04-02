@@ -51,6 +51,14 @@ export class Room {
 			client,
 			credentials.topic,
 			credentials.key,
+			async () => {
+				await this.room.send(
+					{
+						from: selfId,
+					},
+					0
+				);
+			},
 			async (message) => {
 				try {
 					const peerId = message.from.toString();
@@ -123,25 +131,6 @@ export class Room {
 		}, interval);
 	}
 }
-
-/*
-
-		const key = await deriveKey(password, roomId);
-		const test = new MqttRoom(
-			mqtt.connect("wss://broker.emqx.io:8084/mqtt", {
-				reconnectPeriod: 1_000,
-				reconnectOnConnackError: true,
-				connectTimeout: 10_000,
-			}),
-			roomId,
-			key,
-			(message) => {
-				console.log(message);
-			}
-		);
-
-
-*/
 
 export interface WebRTCMessage {
 	desc?: RTCSessionDescriptionInit;
