@@ -134,8 +134,8 @@ async function decompress(bytes: ArrayBuffer): Promise<ArrayBuffer> {
 export type Identifier = bigint;
 
 export interface Message {
-	from: bigint;
-	to?: bigint;
+	from: Identifier;
+	to?: Identifier;
 	payload?: Uint8Array<ArrayBuffer>;
 }
 
@@ -193,7 +193,9 @@ async function encodeMessage(
 	throw "Invalid message";
 }
 
-export let selfId: bigint = bytesToBigint(convertUint8Array(generateRandom(8)));
+export let selfId: Identifier = bytesToBigint(
+	convertUint8Array(generateRandom(8))
+);
 
 if (selfId == 0n) {
 	throw "Identifier generation failed";
