@@ -11,7 +11,7 @@ export async function createRoomCredentials(
 	password: string
 ): Promise<RoomCredentials> {
 	const [key, hashedIdentifier] = await Promise.all([
-		deriveKey(password, identifier),
+		deriveKey(password, identifier, 10000),
 		hashText(identifier),
 	]);
 
