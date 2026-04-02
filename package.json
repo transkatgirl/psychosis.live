@@ -19,6 +19,7 @@
 		"bs58": "^6.0.0",
 		"mqtt": "^5.15.1",
 		"mqtt-packet": "^9.0.2",
-		"sdp-transform": "^3.0.0"
+		"sdp-transform": "^3.0.0",
+		"webrtc-adapter": "^9.0.4"
 	}
 }

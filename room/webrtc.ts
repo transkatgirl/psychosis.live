@@ -1,5 +1,6 @@
 import mqtt from "mqtt";
 import { deriveKey, hashText, MqttRoom, selfId } from "./core";
+import adapter from "webrtc-adapter";
 
 export interface RoomCredentials {
 	topic: string;
