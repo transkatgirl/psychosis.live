@@ -153,8 +153,6 @@ export interface WebRTCMessage {
 	can?: RTCIceCandidateInit;
 }
 
-// TODO: Add handshake timeouts
-
 export class Peer {
 	public pc: RTCPeerConnection | null;
 	polite: boolean;
@@ -162,11 +160,13 @@ export class Peer {
 	ignoreOffer = false;
 	isSettingRemoteAnswerPending = false;
 	beforeClose: (pc: Peer) => void;
+	timeoutId: number | undefined;
 	public constructor(
 		configuration: RTCConfiguration,
 		polite: boolean,
 		sendMessage: (message: WebRTCMessage) => Promise<void>,
-		beforeClose: (pc: Peer) => void
+		beforeClose: (pc: Peer) => void,
+		timeout: number = 15_000
 	) {
 		this.pc = new RTCPeerConnection(configuration);
 		this.polite = polite;
@@ -188,6 +188,23 @@ export class Peer {
 				case "failed":
 					this.close();
 					break;
+				default:
+					this.setCloseTimeout(timeout);
+			}
+		};
+		this.pc.onconnectionstatechange = () => {
+			if (!this.pc) return;
+
+			switch (this.pc.connectionState) {
+				case "connected":
+					this.clearCloseTimeout();
+					break;
+				case "closed":
+				case "failed":
+					this.close();
+					break;
+				default:
+					this.setCloseTimeout(timeout);
 			}
 		};
 		this.pc.onsignalingstatechange = () => {
@@ -197,10 +214,13 @@ export class Peer {
 				case "closed":
 					this.close();
 					break;
+				default:
+					this.setCloseTimeout(timeout);
 			}
 		};
 		this.pc.onnegotiationneeded = async () => {
 			if (!this.pc) return;
+			this.setCloseTimeout(timeout);
 
 			try {
 				this.makingOffer = true;
@@ -263,9 +283,25 @@ export class Peer {
 
 		this.pc.onicecandidate = null;
 		this.pc.oniceconnectionstatechange = null;
+		this.pc.onconnectionstatechange = null;
 		this.pc.onsignalingstatechange = null;
 		this.pc.onnegotiationneeded = null;
+		this.clearCloseTimeout();
 		this.pc.close();
 		this.pc = null;
+	}
+	setCloseTimeout(timeout: number) {
+		if (!this.pc) return;
+
+		if (this.timeoutId) {
+			window.clearTimeout(this.timeoutId);
+		}
+
+		this.timeoutId = window.setTimeout(() => this.close(), timeout);
+	}
+	clearCloseTimeout() {
+		if (this.timeoutId) {
+			window.clearTimeout(this.timeoutId);
+		}
 	}
 }
