@@ -82,7 +82,19 @@ export class Room {
 						);
 					};
 
-					if (message.to && message.payload) {
+					if (!(peerId in this.peers)) {
+						this.peers[peerId] = new Peer(
+							configuration,
+							message.from < selfId,
+							sendResponse,
+							(peer) => {
+								beforePeerClose(peerId, peer);
+							}
+						);
+						configurePeer(peerId, this.peers[peerId]);
+					}
+
+					if (message.to == selfId && message.payload) {
 						const pc = this.peers[peerId];
 
 						if (pc) {
@@ -96,16 +108,6 @@ export class Room {
 								sendResponse
 							);
 						}
-					} else if (!(peerId in this.peers)) {
-						this.peers[peerId] = new Peer(
-							configuration,
-							message.from < selfId,
-							sendResponse,
-							(peer) => {
-								beforePeerClose(peerId, peer);
-							}
-						);
-						configurePeer(peerId, this.peers[peerId]);
 					}
 				} catch (err) {
 					console.error(err);
