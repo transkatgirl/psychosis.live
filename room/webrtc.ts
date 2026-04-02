@@ -16,7 +16,7 @@ export async function createRoomCredentials(
 	]);
 
 	return {
-		topic: hashedIdentifier,
+		topic: hashedIdentifier.slice(0, 22),
 		key,
 	};
 }
@@ -216,6 +216,7 @@ export class Peer {
 		};
 		this.pc.onnegotiationneeded = async () => {
 			if (!this.pc) return;
+			this.setCloseTimeout(timeout);
 
 			try {
 				this.makingOffer = true;
