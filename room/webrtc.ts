@@ -188,8 +188,6 @@ export class Peer {
 				case "failed":
 					this.close();
 					break;
-				default:
-					this.setCloseTimeout(timeout);
 			}
 		};
 		this.pc.onconnectionstatechange = () => {
@@ -214,13 +212,10 @@ export class Peer {
 				case "closed":
 					this.close();
 					break;
-				default:
-					this.setCloseTimeout(timeout);
 			}
 		};
 		this.pc.onnegotiationneeded = async () => {
 			if (!this.pc) return;
-			this.setCloseTimeout(timeout);
 
 			try {
 				this.makingOffer = true;
