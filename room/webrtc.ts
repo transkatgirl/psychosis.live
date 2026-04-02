@@ -78,7 +78,7 @@ export class Room {
 									)
 								),
 							},
-							2
+							0
 						);
 					};
 
