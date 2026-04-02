@@ -1,4 +1,4 @@
-import type { MqttClient } from "mqtt";
+import { connect } from "mqtt";
 import { deriveKey, hashTextBase64, MqttRoom, selfId } from "./mqtt-room";
 
 export interface RoomCredentials {
@@ -28,7 +28,7 @@ export class Room {
 	decoder: TextDecoder = new TextDecoder();
 	intervalId: number;
 	public constructor(
-		client: MqttClient,
+		mqttEndpoint: string,
 		credentials: RoomCredentials,
 		configuration: RTCConfiguration,
 		configurePeer: (peerId: string, pc: Peer) => void,
@@ -42,10 +42,15 @@ export class Room {
 			peerId: string,
 			message: WebRTCMessage
 		) => WebRTCMessage = (_, m) => m,
-		interval: number = 1000
+		interval: number = 1_000
 	) {
 		this.room = new MqttRoom(
-			client,
+			connect(mqttEndpoint, {
+				reconnectPeriod: interval,
+				reconnectOnConnackError: true,
+				connectTimeout: 15_000,
+				queueQoSZero: false,
+			}),
 			credentials.topic,
 			credentials.key,
 			async () => {
