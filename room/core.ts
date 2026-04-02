@@ -193,9 +193,15 @@ async function encodeMessage(
 	throw "Invalid message";
 }
 
-export const selfId: bigint = bytesToBigint(
-	convertUint8Array(generateRandom(8))
-);
+export let selfId: bigint = bytesToBigint(convertUint8Array(generateRandom(8)));
+
+if (selfId == 0n) {
+	throw "Identifier generation failed";
+}
+
+export function setSelfId(id: bigint) {
+	selfId = bytesToBigint(bigintToBytes(id));
+}
 
 export class MqttRoom {
 	topic: string;
