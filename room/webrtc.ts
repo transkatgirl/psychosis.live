@@ -1,5 +1,5 @@
 import { connect } from "mqtt";
-import { deriveKey, hashTextBase64, MqttRoom, selfId } from "./mqtt-room";
+import { deriveKey, hashTextBase64, MqttRoom, selfId } from "./core";
 
 export interface RoomCredentials {
 	topic: string;
