@@ -1,4 +1,4 @@
-import { MqttClient } from "mqtt";
+import { MqttClient, type ClientSubscribeCallback } from "mqtt";
 import type { QoS } from "mqtt-packet";
 
 function convertUint8Array(data: Uint8Array<ArrayBuffer>): ArrayBuffer {
@@ -234,22 +234,23 @@ export class MqttRoom {
 				}
 			}
 		});
-		this.client.on("connect", () => {
-			this.client.subscribe(this.topic, { qos: 1 }, (error) => {
-				if (error) {
+		const onConnect: ClientSubscribeCallback = (error) => {
+			if (error) {
+				console.error(error);
+				this.client.reconnect();
+			} else {
+				try {
+					onJoin();
+				} catch (error) {
 					console.error(error);
-					this.client.reconnect();
-				} else {
-					try {
-						onJoin();
-					} catch (error) {
-						console.error(error);
-					}
 				}
-			});
+			}
+		};
+		this.client.on("connect", () => {
+			this.client.subscribe(this.topic, { qos: 1 }, onConnect);
 		});
 		if (client.connected) {
-			this.client.subscribe(this.topic, { qos: 1 });
+			this.client.subscribe(this.topic, { qos: 1 }, onConnect);
 		}
 	}
 	public async send(message: Message, qos: QoS) {
@@ -263,5 +264,8 @@ export class MqttRoom {
 			) as Buffer,
 			{ qos }
 		);
+	}
+	public async leave() {
+		await this.client.endAsync();
 	}
 }

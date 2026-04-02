@@ -26,7 +26,6 @@ export class Room {
 	peers: Record<string, Peer> = {};
 	encoder: TextEncoder = new TextEncoder();
 	decoder: TextDecoder = new TextDecoder();
-	configuration: RTCConfiguration;
 	intervalId: number;
 	public constructor(
 		client: MqttClient,
@@ -45,8 +44,6 @@ export class Room {
 		) => WebRTCMessage = (_, m) => m,
 		interval: number = 1000
 	) {
-		this.configuration = configuration;
-
 		this.room = new MqttRoom(
 			client,
 			credentials.topic,
@@ -129,6 +126,16 @@ export class Room {
 				console.error(err);
 			}
 		}, interval);
+	}
+	public async leave() {
+		window.clearInterval(this.intervalId);
+
+		await this.room.leave();
+
+		for (const [peerId, peer] of Object.entries(this.peers)) {
+			peer.close();
+			delete this.peers[peerId];
+		}
 	}
 }
 
