@@ -1,6 +1,5 @@
 import mqtt from "mqtt";
 import { deriveKey, hashText, MqttRoom, selfId } from "./core";
-import adapter from "webrtc-adapter";
 
 export interface RoomCredentials {
 	topic: string;
@@ -173,7 +172,7 @@ export class Peer {
 		this.polite = polite;
 		this.beforeClose = beforeClose;
 		this.pc.onicecandidate = async ({ candidate }) => {
-			if (!this.pc || !candidate) return;
+			if (!this.pc || !candidate?.candidate) return;
 
 			try {
 				await sendMessage({ can: candidate.toJSON() });
