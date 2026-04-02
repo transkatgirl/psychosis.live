@@ -274,7 +274,11 @@ export class Peer {
 	public close() {
 		if (!this.pc) return;
 
-		this.beforeClose(this);
+		try {
+			this.beforeClose(this);
+		} catch (error) {
+			console.error(error);
+		}
 
 		this.pc.onicecandidate = null;
 		this.pc.oniceconnectionstatechange = null;
