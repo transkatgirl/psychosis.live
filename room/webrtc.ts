@@ -153,6 +153,8 @@ export interface WebRTCMessage {
 	can?: RTCIceCandidateInit;
 }
 
+// TODO: Add handshake timeouts
+
 export class Peer {
 	public pc: RTCPeerConnection | null;
 	polite: boolean;
