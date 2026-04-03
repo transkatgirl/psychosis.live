@@ -215,6 +215,11 @@ export class Peer {
 		this.pc.oniceconnectionstatechange = () => {
 			if (!this.pc) return;
 
+			DEV: console.log(
+				"iceconnectionstatechange",
+				this.pc.iceConnectionState
+			);
+
 			switch (this.pc.iceConnectionState) {
 				case "closed":
 				case "failed":
@@ -224,6 +229,8 @@ export class Peer {
 		};
 		this.pc.onconnectionstatechange = () => {
 			if (!this.pc) return;
+
+			DEV: console.log("connectionstatechange", this.pc.connectionState);
 
 			switch (this.pc.connectionState) {
 				case "connected":
@@ -240,6 +247,8 @@ export class Peer {
 		this.pc.onsignalingstatechange = () => {
 			if (!this.pc) return;
 
+			DEV: console.log("signalingstatechange", this.pc.signalingState);
+
 			switch (this.pc.signalingState) {
 				case "closed":
 					this.close();
@@ -249,6 +258,8 @@ export class Peer {
 		this.pc.onnegotiationneeded = async () => {
 			if (!this.pc) return;
 			this.setCloseTimeout(timeout);
+
+			DEV: console.log("negotiationneeded");
 
 			try {
 				this.makingOffer = true;
