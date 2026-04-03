@@ -147,7 +147,7 @@ function helperMenu() {
 
 	document.body.insertAdjacentHTML(
 		"beforeend",
-		"<p>Requires a fairly powerful device due to use of newer video codecs, especially if using high resolutions and frame rates.</p><p>Supports up to 25 simultaneous senders. However, it is recommended that you stick to &lt;= 4 simultaneous senders to avoid overloading your receiver.</p>"
+		"<p>Requires a fairly powerful device due to use of newer video codecs, especially if using high resolutions and frame rates.</p><p>Supports up to 25 simultaneous senders. However, it is recommended that you stick to &lt;= 4 simultaneous senders to avoid overloading your receiver.</p><p>If you plan on streaming from very slow networks, it is recommended that you assign as few senders to a room as possible. Every additional client results in an additional ~1 kbit/s of traffic to all clients (this may be fixed in the future).</p>"
 	);
 
 	document.body.appendChild(receiverLabel);
