@@ -101,8 +101,11 @@ export class Room {
 							configuration,
 							message.from < selfId,
 							sendResponse,
-							(peer) => {
+							async (peer) => {
 								beforePeerClose(peerId, peer);
+								if (this.room.client.connected) {
+									await sendResponse({});
+								}
 							},
 							timeout
 						);
@@ -154,6 +157,17 @@ export class Room {
 	}
 	public async leave() {
 		window.clearInterval(this.intervalId);
+
+		for (const [peerId, peer] of Object.entries(this.peers)) {
+			await this.room.send(
+				{
+					from: selfId,
+					to: BigInt(peerId),
+					payload: this.encoder.encode(JSON.stringify({})),
+				},
+				0
+			);
+		}
 
 		await this.room.leave();
 
@@ -289,9 +303,19 @@ export class Peer {
 				}
 			}
 		}
+
+		if (!message.desc && !message.can) {
+			this.close();
+		}
 	}
 	public close() {
 		if (!this.pc) return;
+
+		this.pc.onicecandidate = null;
+		this.pc.oniceconnectionstatechange = null;
+		this.pc.onconnectionstatechange = null;
+		this.pc.onsignalingstatechange = null;
+		this.pc.onnegotiationneeded = null;
 
 		try {
 			this.beforeClose(this);
@@ -299,11 +323,6 @@ export class Peer {
 			console.error(error);
 		}
 
-		this.pc.onicecandidate = null;
-		this.pc.oniceconnectionstatechange = null;
-		this.pc.onconnectionstatechange = null;
-		this.pc.onsignalingstatechange = null;
-		this.pc.onnegotiationneeded = null;
 		this.clearCloseTimeout();
 		this.pc.close();
 		this.pc = null;
