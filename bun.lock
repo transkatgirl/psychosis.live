@@ -5,8 +5,6 @@
     "": {
       "name": "client",
       "dependencies": {
-        "@trystero-p2p/core": "workspace:*",
-        "@trystero-p2p/mqtt": "workspace:*",
         "bs58": "^6.0.0",
         "mqtt": "^5.15.1",
         "mqtt-packet": "^9.0.2",
@@ -21,43 +19,9 @@
         "typescript": "^5",
       },
     },
-    "packages/trystero-core": {
-      "name": "@trystero-p2p/core",
-      "version": "0.23.0",
-      "dependencies": {
-        "sdp-transform": "^3.0.0",
-      },
-      "devDependencies": {
-        "@types/sdp-transform": "^2.15.0",
-      },
-    },
-    "packages/trystero-mqtt": {
-      "name": "@trystero-p2p/mqtt",
-      "version": "0.23.0",
-      "dependencies": {
-        "@trystero-p2p/core": "workspace:*",
-        "mqtt": "^5.15.0",
-      },
-    },
-    "packages/trystero-nostr": {
-      "name": "@trystero-p2p/nostr",
-      "version": "0.23.0",
-      "dependencies": {
-        "@noble/secp256k1": "^3.0.0",
-        "@trystero-p2p/core": "workspace:*",
-      },
-    },
   },
   "packages": {
     "@babel/runtime": ["@babel/runtime@7.29.2", "", {}, "sha512-JiDShH45zKHWyGe4ZNVRrCjBz8Nh9TMmZG1kh4QTK8hCBTWBi8Da+i7s1fJw7/lYpM4ccepSNfqzZ/QvABBi5g=="],
-
-    "@noble/secp256k1": ["@noble/secp256k1@3.0.0", "", {}, "sha512-NJBaR352KyIvj3t6sgT/+7xrNyF9Xk9QlLSIqUGVUYlsnDTAUqY8LOmwpcgEx4AMJXRITQ5XEVHD+mMaPfr3mg=="],
-
-    "@trystero-p2p/core": ["@trystero-p2p/core@workspace:packages/trystero-core"],
-
-    "@trystero-p2p/mqtt": ["@trystero-p2p/mqtt@workspace:packages/trystero-mqtt"],
-
-    "@trystero-p2p/nostr": ["@trystero-p2p/nostr@workspace:packages/trystero-nostr"],
 
     "@types/bun": ["@types/bun@1.3.11", "", { "dependencies": { "bun-types": "1.3.11" } }, "sha512-5vPne5QvtpjGpsGYXiFyycfpDF2ECyPcTSsFBMa0fraoxiQyMJ3SmuQIGhzPg2WJuWxVBoxWJ2kClYTcw/4fAg=="],
 
