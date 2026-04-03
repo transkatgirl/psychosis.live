@@ -60,7 +60,7 @@ function helperMenu() {
 	document.title = "psychosis.live";
 
 	document.body.innerHTML =
-		'<h1>psychosis.live</h1><p>This service allows you to stream <em>end-to-end encrypted</em> video from your smartphone into OBS over practically any internet connection, allowing you to stream anything from anywhere with an internet connection.</p><p>Unlike similar services, such as <a href="https://vdo.ninja">VDO.Ninja</a>, psychosis.live focuses on <em>both</em> ensuring watchability over poor connections and delivering the highest quality possible over good connections.</p><p>It is highly recommended (but not required) that you use Google Chrome on both sides of the connection for the best possible experience, as WebRTC implementation quality can vary significantly between browsers.</p>';
+		'<h1>psychosis.live</h1><p>This service allows you to stream <em>end-to-end encrypted</em> video from your smartphone into OBS over practically any internet connection, allowing you to stream anything from anywhere with an internet connection.</p><p>Unlike similar services, such as <a href="https://vdo.ninja">VDO.Ninja</a>, psychosis.live focuses on <em>both</em> ensuring watchability over poor connections and delivering the highest quality possible over good connections.</p><p>It is highly recommended (but not required) that you use Google Chrome on both sides of the connection for the best possible experience, as WebRTC implementations can vary significantly between browsers.</p>';
 
 	const roomLabel = document.createElement("label");
 	roomLabel.htmlFor = "room";
@@ -186,7 +186,7 @@ function generateURL(role: Role, id: string, pass: string): string {
 	}
 	if (role == Role.Receiver) {
 		// TODO: Add setting to hide video controls on receiver
-		url.searchParams.set("jitterBufferTarget", 1500);
+		url.searchParams.set("jitterBufferTarget", 1000);
 	}
 	url.searchParams.set(
 		"codecPreferences",
