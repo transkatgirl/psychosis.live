@@ -532,25 +532,25 @@ async function launchReceiver(credentials: RoomCredentials) {
 					updateGalleryStyles(videoContainer);
 				}
 
+				peerVideos[peerId] = video;
+
 				const stream = event.streams[0];
 
 				if (stream) {
 					video.srcObject = stream;
-				}
-
-				peerVideos[peerId] = video;
-			};
-			// @ts-ignore
-			peer.pc.onremovetrack = () => {
-				let video = peerVideos[peerId];
-				if (
-					video &&
-					(video.srcObject as MediaStream).getTracks().length == 0
-				) {
-					video.srcObject = null;
-					videoContainer.removeChild(video);
-					delete peerVideos[peerId];
-					updateGalleryStyles(videoContainer);
+					stream.onremovetrack = () => {
+						let video = peerVideos[peerId];
+						if (
+							video &&
+							(video.srcObject as MediaStream).getTracks()
+								.length == 0
+						) {
+							video.srcObject = null;
+							videoContainer.removeChild(video);
+							delete peerVideos[peerId];
+							updateGalleryStyles(videoContainer);
+						}
+					};
 				}
 			};
 		},
@@ -558,13 +558,15 @@ async function launchReceiver(credentials: RoomCredentials) {
 			if (!peer.pc) return;
 
 			peer.pc.ontrack = null;
-			// @ts-ignore
-			peer.pc.onremovetrack = null;
 
 			let video = peerVideos[peerId];
 			if (video) {
-				// @ts-ignore
-				video.srcObject.getTracks().forEach((track) => track.stop());
+				if (video.srcObject) {
+					(video.srcObject as MediaStream)
+						.getTracks()
+						.forEach((track) => track.stop());
+					(video.srcObject as MediaStream).onremovetrack = null;
+				}
 				video.srcObject = null;
 				videoContainer.removeChild(video);
 				delete peerVideos[peerId];
