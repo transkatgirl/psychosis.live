@@ -435,7 +435,7 @@ async function launchSender(credentials: RoomCredentials) {
 						maxVideoBitrate,
 						maxFramerate,
 						maxAudioBitrate,
-						"low",
+						"very-low",
 						"high",
 						degradationPreference
 					);

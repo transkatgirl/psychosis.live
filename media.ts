@@ -97,7 +97,11 @@ export async function setSenderSettings(
 
 			if (videoPriority) {
 				encoding.priority = videoPriority;
-				encoding.networkPriority = videoPriority;
+				if (videoPriority == "very-low") {
+					encoding.networkPriority = "low";
+				} else {
+					encoding.networkPriority = videoPriority;
+				}
 			}
 		}
 
@@ -108,7 +112,11 @@ export async function setSenderSettings(
 
 			if (audioPriority) {
 				encoding.priority = audioPriority;
-				encoding.networkPriority = audioPriority;
+				if (audioPriority == "very-low") {
+					encoding.networkPriority = "low";
+				} else {
+					encoding.networkPriority = audioPriority;
+				}
 			}
 		}
 	}

@@ -60,6 +60,7 @@ export class Room {
 
 		this.room = new MqttRoom(
 			mqtt.connect(mqttEndpoint, {
+				keepalive: timeout,
 				reconnectPeriod: interval,
 				reconnectOnConnackError: true,
 				connectTimeout: timeout,
