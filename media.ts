@@ -70,55 +70,61 @@ export function mungeSDP(sdp: string): string {
 	return sdpTransform.write(parsed);
 }
 
-export async function setSenderSettings(
-	sender: RTCRtpSender,
+export function buildSenderEncoding(
+	kind: string,
 	maxVideoBitrate?: number,
 	maxFramerate?: number,
 	maxAudioBitrate?: number,
 	videoPriority?: RTCPriorityType,
-	audioPriority?: RTCPriorityType,
+	audioPriority?: RTCPriorityType
+): RTCRtpEncodingParameters {
+	const encoding: RTCRtpEncodingParameters = {};
+
+	if (kind == "video") {
+		if (maxVideoBitrate) {
+			encoding.maxBitrate = maxVideoBitrate * 1000;
+		}
+
+		if (maxFramerate) {
+			encoding.maxFramerate = maxFramerate;
+		}
+
+		if (videoPriority) {
+			encoding.priority = videoPriority;
+			if (videoPriority == "very-low") {
+				encoding.networkPriority = "low";
+			} else {
+				encoding.networkPriority = videoPriority;
+			}
+		}
+	}
+
+	if (kind == "audio") {
+		if (maxAudioBitrate) {
+			encoding.maxBitrate = maxAudioBitrate * 1000;
+		}
+
+		if (audioPriority) {
+			encoding.priority = audioPriority;
+			if (audioPriority == "very-low") {
+				encoding.networkPriority = "low";
+			} else {
+				encoding.networkPriority = audioPriority;
+			}
+		}
+	}
+
+	return encoding;
+}
+
+export async function setSenderSettings(
+	sender: RTCRtpSender,
 	degradationPreference?: RTCDegradationPreference
 ) {
 	const parameters = sender.getParameters();
 
 	if (degradationPreference) {
 		parameters.degradationPreference = degradationPreference;
-	}
-
-	for (const encoding of parameters.encodings) {
-		if (sender.track?.kind == "video") {
-			if (maxVideoBitrate) {
-				encoding.maxBitrate = maxVideoBitrate * 1000;
-			}
-
-			if (maxFramerate) {
-				encoding.maxFramerate = maxFramerate;
-			}
-
-			if (videoPriority) {
-				encoding.priority = videoPriority;
-				if (videoPriority == "very-low") {
-					encoding.networkPriority = "low";
-				} else {
-					encoding.networkPriority = videoPriority;
-				}
-			}
-		}
-
-		if (sender.track?.kind == "audio") {
-			if (maxAudioBitrate) {
-				encoding.maxBitrate = maxAudioBitrate * 1000;
-			}
-
-			if (audioPriority) {
-				encoding.priority = audioPriority;
-				if (audioPriority == "very-low") {
-					encoding.networkPriority = "low";
-				} else {
-					encoding.networkPriority = audioPriority;
-				}
-			}
-		}
 	}
 
 	await sender.setParameters(parameters);

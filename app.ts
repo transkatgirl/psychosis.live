@@ -7,6 +7,7 @@ import {
 import { selfId, setSelfId } from "./room/core";
 import {
 	adaptiveSettings,
+	buildSenderEncoding,
 	mungeSDP,
 	setCodecPreferences,
 	setReceiverSettings,
@@ -425,6 +426,16 @@ async function launchSender(credentials: RoomCredentials) {
 					if (!peer.pc) return;
 
 					let transceiver = peer.pc.addTransceiver(track, {
+						sendEncodings: [
+							buildSenderEncoding(
+								track.kind,
+								maxVideoBitrate,
+								maxFramerate,
+								maxAudioBitrate,
+								"very-low",
+								"high"
+							),
+						],
 						streams: [stream],
 					});
 					if (codecOrderPreference) {
@@ -432,11 +443,6 @@ async function launchSender(credentials: RoomCredentials) {
 					}
 					setSenderSettings(
 						transceiver.sender,
-						maxVideoBitrate,
-						maxFramerate,
-						maxAudioBitrate,
-						"very-low",
-						"high",
 						degradationPreference
 					);
 				});
