@@ -21,12 +21,22 @@ export async function createRoomCredentials(
 	};
 }
 
+let activeRooms: Record<number, Room> = {};
+let nextRoomId = 0;
+
+window.addEventListener("beforeunload", async () => {
+	for (const [roomId, room] of Object.entries(activeRooms)) {
+		await room.leave();
+	}
+});
+
 export class Room {
 	room: MqttRoom;
 	peers: Record<string, Peer> = {};
 	encoder: TextEncoder = new TextEncoder();
 	decoder: TextDecoder = new TextDecoder();
 	intervalId: number;
+	id: number;
 	public constructor(
 		mqttEndpoint: string,
 		credentials: RoomCredentials,
@@ -45,6 +55,9 @@ export class Room {
 		interval: number = 2_000,
 		timeout: number = 15_000
 	) {
+		this.id = nextRoomId;
+		nextRoomId += 1;
+
 		this.room = new MqttRoom(
 			mqtt.connect(mqttEndpoint, {
 				reconnectPeriod: interval,
@@ -137,6 +150,7 @@ export class Room {
 				console.error(err);
 			}
 		}, interval);
+		activeRooms[this.id] = this;
 	}
 	public async leave() {
 		window.clearInterval(this.intervalId);
@@ -147,6 +161,8 @@ export class Room {
 			peer.close();
 			delete this.peers[peerId];
 		}
+
+		delete activeRooms[this.id];
 	}
 }
 

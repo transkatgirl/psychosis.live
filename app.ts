@@ -562,10 +562,10 @@ async function launchReceiver(credentials: RoomCredentials) {
 			let video = peerVideos[peerId];
 			if (video) {
 				if (video.srcObject) {
+					(video.srcObject as MediaStream).onremovetrack = null;
 					(video.srcObject as MediaStream)
 						.getTracks()
 						.forEach((track) => track.stop());
-					(video.srcObject as MediaStream).onremovetrack = null;
 				}
 				video.srcObject = null;
 				videoContainer.removeChild(video);
