@@ -275,6 +275,7 @@ export class Peer {
 				this.makingOffer = false;
 			}
 		};
+		this.setCloseTimeout(timeout);
 	}
 	public async handleMessage(
 		message: WebRTCMessage,
