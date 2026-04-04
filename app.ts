@@ -1,6 +1,7 @@
 import bs58 from "bs58";
 import {
 	createRoomCredentials,
+	Peer,
 	Room,
 	type RoomCredentials,
 } from "./room/webrtc";
@@ -428,6 +429,10 @@ async function launchSender(credentials: RoomCredentials) {
 	video.classList.add("preview");
 	document.body.appendChild(video);
 
+	const overlay = document.createElement("div");
+	overlay.classList.add("stats-overlay");
+	document.body.appendChild(overlay);
+
 	(globalThis as any).room = new Room(
 		mqttEndpoint,
 		credentials,
@@ -464,18 +469,24 @@ async function launchSender(credentials: RoomCredentials) {
 			}
 		},
 		(_peerId, _peer) => {},
-		async (peerId, peer) => {
-			if (!peer.pc) return;
+		async (peers) => {
+			for (const [peerId, peer] of Object.entries(peers)) {
+				if (!peer.pc) continue;
 
-			await adaptiveSettings(
-				peer.pc,
-				params.get("dynamicAudioBitrate") === "true" &&
-					params.get("displayMedia") !== "true",
-				params.get("dynamicVideoFramerate") === "true" &&
-					params.get("displayMedia") !== "true",
-				audioBitrateCeil,
-				framerateCeil
-			);
+				await adaptiveSettings(
+					peer.pc,
+					params.get("dynamicAudioBitrate") === "true" &&
+						params.get("displayMedia") !== "true",
+					params.get("dynamicVideoFramerate") === "true" &&
+						params.get("displayMedia") !== "true",
+					audioBitrateCeil,
+					framerateCeil
+				);
+			}
+
+			if (params.get("showStats") === "true") {
+				await connectionOverlay(overlay, peers);
+			}
 		},
 		(_, message) => {
 			if (message.desc?.sdp) {
@@ -538,6 +549,10 @@ async function launchReceiver(credentials: RoomCredentials) {
 	const videoContainer = document.createElement("div");
 	videoContainer.classList.add("gallery");
 	document.body.appendChild(videoContainer);
+
+	const overlay = document.createElement("div");
+	overlay.classList.add("stats-overlay");
+	document.body.appendChild(overlay);
 
 	(globalThis as any).room = new Room(
 		mqttEndpoint,
@@ -617,7 +632,11 @@ async function launchReceiver(credentials: RoomCredentials) {
 				updateGalleryStyles(videoContainer);
 			}
 		},
-		(_peerId, _peer) => {}
+		async (peers) => {
+			if (params.get("showStats") === "true") {
+				await connectionOverlay(overlay, peers);
+			}
+		}
 	);
 
 	const resizeObserver = new ResizeObserver((entries) => {
@@ -682,4 +701,138 @@ function updateGalleryStyles(container: HTMLElement) {
 			container.style.gridTemplateRows = "repeat(5, 1fr)";
 		}
 	}
+}
+
+async function connectionOverlay(
+	overlay: HTMLDivElement,
+	peers: Record<string, Peer>
+) {
+	overlay.innerHTML = "";
+
+	const peerList = document.createElement("ul");
+
+	for (const [peerId, peer] of Object.entries(peers)) {
+		const peerEntry = document.createElement("div");
+
+		const peerStats = await peer.pc?.getStats();
+
+		let targetVideoBitrate;
+		let targetAudioBitrate;
+		let jitterBufferDelay: number | undefined;
+
+		let outgoingBandwidth;
+		let incomingBandwidth;
+		let roundTripTime: number | undefined;
+		let lossFraction;
+
+		console.log("");
+
+		peerStats?.forEach((report) => {
+			console.log(report);
+
+			if (report.type === "outbound-rtp" && report.kind === "video") {
+				targetVideoBitrate = Math.round(report.targetBitrate / 1000);
+			}
+
+			if (report.type === "outbound-rtp" && report.kind === "audio") {
+				targetAudioBitrate = Math.round(report.targetBitrate / 1000);
+			}
+
+			if (report.type === "inbound-rtp" && !jitterBufferDelay) {
+				if (peer.metadata.lastInboundTimestamp) {
+					jitterBufferDelay = Math.round(
+						((report.jitterBufferDelay -
+							peer.metadata.lastJitterBufferDelay) /
+							(report.jitterBufferEmittedCount -
+								peer.metadata.lastJitterBufferEmitted)) *
+							1000
+					);
+				}
+
+				peer.metadata.lastJitterBufferDelay = report.jitterBufferDelay;
+				peer.metadata.lastJitterBufferEmitted =
+					report.jitterBufferEmittedCount;
+				peer.metadata.lastInboundTimestamp = report.timestamp;
+			}
+
+			if (report.type === "transport") {
+				if (peer.metadata.lastTransportTimestamp) {
+					const sinceLast =
+						report.timestamp - peer.metadata.lastTransportTimestamp;
+
+					outgoingBandwidth = Math.round(
+						((report.bytesSent - peer.metadata.lastBytesSent) * 8) /
+							sinceLast
+					);
+					incomingBandwidth = Math.round(
+						((report.bytesReceived -
+							peer.metadata.lastBytesReceived) *
+							8) /
+							sinceLast
+					);
+				}
+
+				peer.metadata.lastBytesSent = report.bytesSent;
+				peer.metadata.lastBytesReceived = report.bytesReceived;
+				peer.metadata.lastTransportTimestamp = report.timestamp;
+			}
+
+			if (
+				(report.type === "remote-inbound-rtp" ||
+					report.type === "remote-outbound-rtp") &&
+				(report.kind === "video" || !roundTripTime)
+			) {
+				if (peer.metadata.lastRTTMeasurements) {
+					roundTripTime = Math.round(
+						((report.totalRoundTripTime -
+							peer.metadata.lastTotalRTT) /
+							(report.roundTripTimeMeasurements -
+								peer.metadata.lastRTTMeasurements)) *
+							1000
+					);
+				}
+				if (report.fractionLost !== undefined) {
+					lossFraction = Math.round(report.fractionLost * 1000) / 10;
+				}
+
+				peer.metadata.lastTotalRTT = report.totalRoundTripTime;
+				peer.metadata.lastRTTMeasurements =
+					report.roundTripTimeMeasurements;
+			}
+		});
+
+		let label;
+
+		label = `${peerId} (${peer.pc?.connectionState})`;
+
+		if (targetAudioBitrate || targetVideoBitrate) {
+			label =
+				label +
+				`\nA: ${targetAudioBitrate} kbit/s V: ${targetVideoBitrate} kbit/s`;
+		}
+
+		if (jitterBufferDelay) {
+			label = label + `\nBuffer: ${jitterBufferDelay} ms`;
+		}
+
+		if (outgoingBandwidth || incomingBandwidth) {
+			label =
+				label +
+				`\nD: ${incomingBandwidth} kbit/s U: ${outgoingBandwidth} kbit/s`;
+
+			if (roundTripTime) {
+				label = label + ` RTT: ${roundTripTime} ms`;
+			}
+
+			if (lossFraction !== undefined) {
+				label = label + ` Loss: ${lossFraction}%`;
+			}
+		}
+
+		peerEntry.innerText = label;
+
+		peerList.appendChild(peerEntry);
+	}
+
+	overlay.appendChild(peerList);
 }

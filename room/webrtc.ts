@@ -43,7 +43,7 @@ export class Room {
 		configuration: RTCConfiguration,
 		configurePeer: (peerId: string, peer: Peer) => void,
 		beforePeerClose: (peerId: string, peer: Peer) => void,
-		onPeerScan: (peerId: string, peer: Peer) => void = () => {},
+		onScan: (peers: Record<string, Peer>) => void = () => {},
 		mungeIncoming: (
 			peerId: string,
 			message: WebRTCMessage
@@ -139,10 +139,10 @@ export class Room {
 				for (const [peerId, peer] of Object.entries(this.peers)) {
 					if (!peer.pc) {
 						delete this.peers[peerId];
-					} else {
-						onPeerScan(peerId, peer);
 					}
 				}
+
+				onScan(this.peers);
 
 				await this.room.send(
 					{
@@ -188,6 +188,7 @@ export interface WebRTCMessage {
 
 export class Peer {
 	public pc: RTCPeerConnection | null;
+	public metadata: any = {};
 	polite: boolean;
 	makingOffer = false;
 	ignoreOffer = false;
@@ -216,10 +217,10 @@ export class Peer {
 		this.pc.oniceconnectionstatechange = () => {
 			if (!this.pc) return;
 
-			DEV: console.log(
+			/*console.log(
 				"iceconnectionstatechange",
 				this.pc.iceConnectionState
-			);
+			);*/
 
 			switch (this.pc.iceConnectionState) {
 				case "closed":
@@ -231,7 +232,7 @@ export class Peer {
 		this.pc.onconnectionstatechange = () => {
 			if (!this.pc) return;
 
-			DEV: console.log("connectionstatechange", this.pc.connectionState);
+			//console.log("connectionstatechange", this.pc.connectionState);
 
 			switch (this.pc.connectionState) {
 				case "connected":
@@ -248,7 +249,7 @@ export class Peer {
 		this.pc.onsignalingstatechange = () => {
 			if (!this.pc) return;
 
-			DEV: console.log("signalingstatechange", this.pc.signalingState);
+			//console.log("signalingstatechange", this.pc.signalingState);
 
 			switch (this.pc.signalingState) {
 				case "closed":
@@ -260,7 +261,7 @@ export class Peer {
 			if (!this.pc) return;
 			this.setCloseTimeout(timeout);
 
-			DEV: console.log("negotiationneeded");
+			//console.log("negotiationneeded");
 
 			try {
 				this.makingOffer = true;

@@ -45,3 +45,16 @@ video {
 	max-width: 100%;
 	max-height: 100%;
 }
+
+.stats-overlay {
+	position: absolute;
+	top: 0;
+	left: 0;
+	color: white;
+	background-color: rgba(0, 0, 0, 0.5);
+}
+
+.stats-overlay ul {
+	list-style: none;
+	padding: 0 1em;
+}
