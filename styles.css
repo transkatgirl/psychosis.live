@@ -51,6 +51,7 @@ video {
 	top: 1lh;
 	left: 1lh;
 	color: white;
+	font-family: monospace;
 	background-color: rgba(0, 0, 0, 0.5);
 }
 
