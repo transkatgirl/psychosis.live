@@ -712,12 +712,20 @@ async function statsOverlay(
 
 	const peerList = document.createElement("ul");
 
+	// @ts-ignore
+	if (!globalThis.room.room.client.connected) {
+		const entry = document.createElement("li");
+		entry.innerText = "Disconnected from signaling server";
+
+		peerList.appendChild(entry);
+	}
+
 	for (const [peerId, peer] of Object.entries(peers)) {
 		if (peer.pc?.connectionState === "new") {
 			continue;
 		}
 
-		const peerEntry = document.createElement("div");
+		const peerEntry = document.createElement("li");
 
 		const peerStats = await peer.pc?.getStats();
 
@@ -730,10 +738,10 @@ async function statsOverlay(
 		let roundTripTime: number | undefined;
 		let lossFraction;
 
-		console.log("");
+		//console.log("");
 
 		peerStats?.forEach((report) => {
-			console.log(report);
+			//console.log(report);
 
 			if (report.type === "outbound-rtp" && report.kind === "video") {
 				targetVideoBitrate = Math.round(report.targetBitrate / 1000);
