@@ -1,10 +1,9 @@
 import * as sdpTransform from "sdp-transform";
 
-// sender munge
 export function mungeSDP(sdp: string): string {
 	const parsed = sdpTransform.parse(sdp);
 
-	// UGLY HACK that *seems* to work for enabling audio RTX
+	// UGLY HACK for enabling audio RTX
 	// based on:
 	// - https://groups.google.com/g/discuss-webrtc/c/JVRU91Xwb6U/m/0Mb8CQV7AAAJ
 	// - https://issues.webrtc.org/issues/42229513
@@ -92,7 +91,7 @@ export function buildSenderEncoding(
 		if (videoPriority) {
 			encoding.priority = videoPriority;
 			if (videoPriority == "very-low") {
-				encoding.networkPriority = "low";
+				encoding.networkPriority = "low"; // we still want media to be prioritized above other network traffic
 			} else {
 				encoding.networkPriority = videoPriority;
 			}
@@ -107,7 +106,7 @@ export function buildSenderEncoding(
 		if (audioPriority) {
 			encoding.priority = audioPriority;
 			if (audioPriority == "very-low") {
-				encoding.networkPriority = "low";
+				encoding.networkPriority = "low"; // we still want media to be prioritized above other network traffic
 			} else {
 				encoding.networkPriority = audioPriority;
 			}
@@ -139,7 +138,6 @@ export function setReceiverSettings(
 	}
 }
 
-// call both on addTrack and .ontrack
 export function setCodecPreferences(
 	transceiver: RTCRtpTransceiver,
 	preferredOrder: string[]
