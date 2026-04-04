@@ -177,16 +177,16 @@ function generateURL(role: Role, id: string, pass: string): string {
 		url.searchParams.set("height", 1080);
 		url.searchParams.set("frameRate", 60);
 		url.searchParams.set("autoGainControl", "true");
-		url.searchParams.set("audioContentHint", "music");
+		url.searchParams.set("audioContentHint", "music"); // disables most audio processing
 		url.searchParams.set("videoContentHint", "motion");
-		url.searchParams.set("maxAudioBitrate", 192);
+		url.searchParams.set("maxAudioBitrate", 192); // chosen based on https://wiki.hydrogenaudio.org/index.php?title=Opus#Music_encoding_quality
 		url.searchParams.set("dynamicAudioBitrate", "true");
 		url.searchParams.set("dynamicVideoFramerate", "true");
 		url.searchParams.set("maxVideoBitrate", 15 * 1000);
 	}
 	if (role == Role.Receiver) {
 		// TODO: Add setting to hide video controls on receiver
-		url.searchParams.set("jitterBufferTarget", 1300);
+		url.searchParams.set("jitterBufferTarget", 1300); // chosen based on https://ieeexplore.ieee.org/document/6962149
 	}
 	url.searchParams.set(
 		"codecPreferences",

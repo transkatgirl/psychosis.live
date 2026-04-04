@@ -199,6 +199,7 @@ export async function adaptiveSettings(
 						audioBitrateCeil
 					);
 				} else {
+					// minimum of 48 kbit/s (chosen based on https://wiki.hydrogenaudio.org/index.php?title=Opus#Indicative_bitrate_and_quality)
 					audioBitrateLower = Math.min(
 						Math.max(
 							Math.floor(report.targetBitrate / 64000),
@@ -227,6 +228,7 @@ export async function adaptiveSettings(
 						framerateCeil
 					);
 				} else {
+					// minimum of 24fps (lowest common framerate where motion reliably appears fluid)
 					videoFramerateLower = Math.min(
 						Math.max(
 							Math.floor(report.targetBitrate / 250000),
