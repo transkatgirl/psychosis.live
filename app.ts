@@ -712,6 +712,10 @@ async function connectionOverlay(
 	const peerList = document.createElement("ul");
 
 	for (const [peerId, peer] of Object.entries(peers)) {
+		if (peer.pc?.connectionState === "new") {
+			continue;
+		}
+
 		const peerEntry = document.createElement("div");
 
 		const peerStats = await peer.pc?.getStats();
