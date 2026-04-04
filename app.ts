@@ -186,7 +186,7 @@ function generateURL(role: Role, id: string, pass: string): string {
 	}
 	if (role == Role.Receiver) {
 		// TODO: Add setting to hide video controls on receiver
-		url.searchParams.set("jitterBufferTarget", 1250);
+		url.searchParams.set("jitterBufferTarget", 1300);
 	}
 	url.searchParams.set(
 		"codecPreferences",
