@@ -14,18 +14,15 @@ import {
 	setSenderSettings,
 } from "./media";
 
-const mqttEndpoint = "wss://broker.emqx.io:8084/mqtt";
-const rtcConfig: RTCConfiguration = {
-	iceCandidatePoolSize: 10,
-	iceServers: [
-		{ urls: "stun:stun.l.google.com:19302" },
-		{ urls: "stun:stun1.l.google.com:19302" },
-		{ urls: "stun:stun2.l.google.com:19302" },
-		{ urls: "stun:stun3.l.google.com:19302" },
-		{ urls: "stun:stun4.l.google.com:19302" },
-		{ urls: "stun:stun.cloudflare.com:3478" },
-	],
-};
+const defaultMqttEndpoint = "wss://broker.emqx.io:8084/mqtt";
+const defaultIceServers: RTCIceServer[] = [
+	{ urls: "stun:stun.l.google.com:19302" },
+	{ urls: "stun:stun1.l.google.com:19302" },
+	{ urls: "stun:stun2.l.google.com:19302" },
+	{ urls: "stun:stun3.l.google.com:19302" },
+	{ urls: "stun:stun4.l.google.com:19302" },
+	{ urls: "stun:stun.cloudflare.com:3478" },
+];
 
 const fragment = new URL(window.location.href).hash.substring(1);
 const params: URLSearchParams = new URL(window.location.href).searchParams;
@@ -237,11 +234,27 @@ async function launchApp(
 }
 
 async function launchSender(credentials: RoomCredentials) {
+	let mqttEndpoint = defaultMqttEndpoint;
+	let iceServers: any;
 	let codecOrderPreference: any;
 	let degradationPreference;
 	let maxVideoBitrate;
 	let maxAudioBitrate;
 	let maxFramerate;
+
+	if (params.has("mqttEndpoint")) {
+		mqttEndpoint = params.get("mqttEndpoint") as string;
+	}
+
+	if (params.has("iceServers")) {
+		iceServers = JSON.parse(params.get("iceServers") as string);
+
+		if (!Array.isArray(iceServers)) {
+			iceServers = defaultIceServers;
+		}
+	} else {
+		iceServers = defaultIceServers;
+	}
 
 	if (params.has("codecPreferences")) {
 		codecOrderPreference = JSON.parse(
@@ -419,7 +432,10 @@ async function launchSender(credentials: RoomCredentials) {
 	(globalThis as any).room = new Room(
 		mqttEndpoint,
 		credentials,
-		rtcConfig,
+		{
+			iceCandidatePoolSize: 10,
+			iceServers,
+		},
 		(peerId, peer) => {
 			if (BigInt(peerId) % 2n == 0n) {
 				stream.getTracks().forEach((track) => {
@@ -478,8 +494,24 @@ async function launchSender(credentials: RoomCredentials) {
 }
 
 async function launchReceiver(credentials: RoomCredentials) {
-	let jitterBufferTarget;
+	let mqttEndpoint = defaultMqttEndpoint;
+	let iceServers: any;
 	let codecOrderPreference: any;
+	let jitterBufferTarget;
+
+	if (params.has("mqttEndpoint")) {
+		mqttEndpoint = params.get("mqttEndpoint") as string;
+	}
+
+	if (params.has("iceServers")) {
+		iceServers = JSON.parse(params.get("iceServers") as string);
+
+		if (!Array.isArray(iceServers)) {
+			iceServers = defaultIceServers;
+		}
+	} else {
+		iceServers = defaultIceServers;
+	}
 
 	jitterBufferTarget = Number(params.get("jitterBufferTarget"));
 	if (
@@ -511,7 +543,10 @@ async function launchReceiver(credentials: RoomCredentials) {
 	(globalThis as any).room = new Room(
 		mqttEndpoint,
 		credentials,
-		rtcConfig,
+		{
+			iceCandidatePoolSize: 10,
+			iceServers,
+		},
 		(peerId, peer) => {
 			if (!peer.pc) return;
 
