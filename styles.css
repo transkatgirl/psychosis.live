@@ -48,8 +48,16 @@ video {
 
 .stats-overlay {
 	position: absolute;
-	top: 0;
-	left: 0;
+	top: 1lh;
+	left: 1lh;
+	color: white;
+	background-color: rgba(0, 0, 0, 0.5);
+}
+
+.settings-overlay {
+	position: absolute;
+	bottom: 1lh;
+	right: 1lh;
 	color: white;
 	background-color: rgba(0, 0, 0, 0.5);
 }
