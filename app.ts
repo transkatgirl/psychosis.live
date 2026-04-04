@@ -171,6 +171,7 @@ function generateURL(role: Role, id: string, pass: string): string {
 	url.searchParams.set("id", id);
 	url.hash = pass;
 	if (role == Role.Sender) {
+		url.searchParams.set("stats", "true");
 		url.searchParams.set("width", 1920);
 		url.searchParams.set("height", 1080);
 		url.searchParams.set("frameRate", 60);
@@ -838,5 +839,7 @@ async function statsOverlay(
 		peerList.appendChild(peerEntry);
 	}
 
-	overlay.appendChild(peerList);
+	if (peerList.childElementCount != 0) {
+		overlay.appendChild(peerList);
+	}
 }
