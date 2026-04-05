@@ -529,8 +529,8 @@ async function launchSender(credentials: RoomCredentials) {
 	stream.onaddtrack = async (event) => {
 		const room = (globalThis as any).room as Room;
 
-		for (const [_peerId, peer] of Object.entries(room.peers)) {
-			if (!peer.pc) continue;
+		for (const [peerId, peer] of Object.entries(room.peers)) {
+			if (!peer.pc || BigInt(peerId) % 2n != 0n) continue;
 
 			addTrack(peer.pc, event.track, stream);
 		}
@@ -540,8 +540,8 @@ async function launchSender(credentials: RoomCredentials) {
 	stream.onremovetrack = async (event) => {
 		const room = (globalThis as any).room as Room;
 
-		for (const [_peerId, peer] of Object.entries(room.peers)) {
-			if (!peer.pc) continue;
+		for (const [peerId, peer] of Object.entries(room.peers)) {
+			if (!peer.pc || BigInt(peerId) % 2n != 0n) continue;
 
 			for (const transceiver of peer.pc.getTransceivers()) {
 				if (transceiver.sender.track?.id == event.track.id) {
