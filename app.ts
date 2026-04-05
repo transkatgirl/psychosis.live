@@ -766,6 +766,7 @@ async function statsOverlay(
 		let outgoingBandwidth;
 		let incomingBandwidth;
 		let roundTripTime: number | undefined;
+		let jitter;
 		let lossFraction;
 
 		//console.log("");
@@ -791,6 +792,7 @@ async function statsOverlay(
 							1000
 					);
 				}
+				jitter = Math.round(report.jitter * 1000);
 
 				peer.metadata.lastJitterBufferDelay = report.jitterBufferDelay;
 				peer.metadata.lastJitterBufferEmitted =
@@ -837,6 +839,9 @@ async function statsOverlay(
 				if (report.fractionLost !== undefined) {
 					lossFraction = Math.round(report.fractionLost * 1000) / 10;
 				}
+				if (report.jitter) {
+					jitter = Math.round(report.jitter * 1000);
+				}
 
 				peer.metadata.lastTotalRTT = report.totalRoundTripTime;
 				peer.metadata.lastRTTMeasurements =
@@ -869,6 +874,10 @@ async function statsOverlay(
 
 			if (roundTripTime) {
 				label = label + ` RTT: ${roundTripTime} ms`;
+			}
+
+			if (jitter) {
+				label = label + ` PDV: ${jitter} ms`;
 			}
 
 			if (lossFraction !== undefined) {
