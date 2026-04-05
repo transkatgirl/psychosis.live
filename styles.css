@@ -53,7 +53,7 @@ video {
 	max-width: calc(100vw - 2lh);
 	max-height: calc(100vh - 2lh);
 	color: white;
-	font-family: 1em monospace;
+	font: 1em monospace;
 	background-color: rgba(0, 0, 0, 0.5);
 }
 
