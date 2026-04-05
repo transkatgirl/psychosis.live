@@ -77,7 +77,9 @@ export function buildSenderEncoding(
 	videoPriority?: RTCPriorityType,
 	audioPriority?: RTCPriorityType
 ): RTCRtpEncodingParameters {
-	const encoding: RTCRtpEncodingParameters = {};
+	const encoding: RTCRtpEncodingParameters = {
+		networkPriority: "low", // DSCP tagging can cause problems on some networks
+	};
 
 	if (kind == "video") {
 		if (maxVideoBitrate) {
@@ -90,11 +92,6 @@ export function buildSenderEncoding(
 
 		if (videoPriority) {
 			encoding.priority = videoPriority;
-			if (videoPriority == "very-low") {
-				encoding.networkPriority = "low"; // we still want media to be prioritized above other network traffic
-			} else {
-				encoding.networkPriority = videoPriority;
-			}
 		}
 	}
 
@@ -105,11 +102,6 @@ export function buildSenderEncoding(
 
 		if (audioPriority) {
 			encoding.priority = audioPriority;
-			if (audioPriority == "very-low") {
-				encoding.networkPriority = "low"; // we still want media to be prioritized above other network traffic
-			} else {
-				encoding.networkPriority = audioPriority;
-			}
 		}
 	}
 
