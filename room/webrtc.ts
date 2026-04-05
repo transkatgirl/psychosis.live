@@ -52,7 +52,7 @@ export class Room {
 			peerId: string,
 			message: WebRTCMessage
 		) => WebRTCMessage = (_, m) => m,
-		interval: number = 2_000,
+		interval: number = 1_500,
 		timeout: number = 15_000
 	) {
 		this.id = nextRoomId;
