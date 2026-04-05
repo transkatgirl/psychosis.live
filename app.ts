@@ -442,6 +442,10 @@ async function launchSender(credentials: RoomCredentials) {
 		}
 	};
 
+	const settings = await createInputOverlay(stream);
+	settings.classList.add("settings-overlay");
+	document.body.appendChild(settings);
+
 	(globalThis as any).room = new Room(
 		mqttEndpoint,
 		credentials,
@@ -718,6 +722,16 @@ function updateGalleryStyles(container: HTMLElement) {
 			container.style.gridTemplateRows = "repeat(5, 1fr)";
 		}
 	}
+}
+
+async function createInputOverlay(
+	stream: MediaStream
+): Promise<HTMLDivElement> {
+	const overlay = document.createElement("div");
+
+	overlay.innerHTML = "";
+
+	return overlay;
 }
 
 async function statsOverlay(
