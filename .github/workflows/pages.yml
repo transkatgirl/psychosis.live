@@ -37,7 +37,7 @@ jobs:
             - name: Install dependencies
               run: bun install
             - name: Build
-              run: bun build --target=browser ./index.html --outdir=dist
+              run: bun build --compile --target=browser ./index.html --outdir=dist --minify-whitespace --minify-syntax
             - name: Setup Pages
               uses: actions/configure-pages@v5
             - name: Upload artifact

@@ -4,7 +4,7 @@ A smartphone to OBS streaming tool that lets you stream from anywhere with inter
 ## building
 ```bash
 bun install
-bun build --target=browser ./index.html --outdir=dist
+bun build --compile --target=browser ./index.html --outdir=dist --minify-whitespace --minify-syntax
 ```
 
 ## todo
