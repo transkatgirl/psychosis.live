@@ -802,6 +802,24 @@ async function statsOverlay(
 						jitterBufferDelay ? jitterBufferDelay : 0
 					);
 				}
+				if (
+					lastReport?.packetsLost !== undefined &&
+					lastReport?.packetsReceived !== undefined
+				) {
+					lossFraction = Math.max(
+						(report.packetsLost - lastReport.packetsLost) /
+							(report.packetsLost +
+								report.packetsReceived -
+								(lastReport.packetsLost +
+									lastReport.packetsReceived)),
+						lossFraction ? lossFraction : 0
+					);
+				} else if (report.fractionLost !== undefined) {
+					lossFraction = Math.max(
+						report.fractionLost,
+						lossFraction ? lossFraction : 0
+					);
+				}
 				if (report.jitter) {
 					jitter = Math.max(report.jitter, jitter ? jitter : 0);
 				}
@@ -821,7 +839,19 @@ async function statsOverlay(
 						(report.roundTripTimeMeasurements -
 							lastReport.roundTripTimeMeasurements);
 				}
-				if (report.fractionLost !== undefined) {
+				if (
+					lastReport?.packetsLost !== undefined &&
+					lastReport?.packetsReceived !== undefined
+				) {
+					lossFraction = Math.max(
+						(report.packetsLost - lastReport.packetsLost) /
+							(report.packetsLost +
+								report.packetsReceived -
+								(lastReport.packetsLost +
+									lastReport.packetsReceived)),
+						lossFraction ? lossFraction : 0
+					);
+				} else if (report.fractionLost !== undefined) {
 					lossFraction = Math.max(
 						report.fractionLost,
 						lossFraction ? lossFraction : 0
