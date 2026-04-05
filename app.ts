@@ -324,6 +324,7 @@ async function launchSender(credentials: RoomCredentials) {
 		autoGainControl: params.get("autoGainControl") === "true",
 		echoCancellation: params.get("echoCancellation") === "true",
 		noiseSuppression: params.get("noiseSuppression") === "true",
+		sampleRate: { ideal: 48000 }, // Avoid resampling (Opus uses 48kHz sample rate)
 	};
 	const videoConstraints: MediaTrackConstraints = {
 		backgroundBlur: params.get("backgroundBlur") === "true",
