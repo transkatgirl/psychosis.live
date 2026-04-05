@@ -71,30 +71,22 @@ export class Room {
 			credentials.topic,
 			credentials.key,
 			async () => {
-				await this.room.send(
-					{
-						from: selfId,
-					},
-					0
-				);
+				await this.room.send({
+					from: selfId,
+				});
 			},
 			async (message) => {
 				try {
 					const peerId = message.from.toString();
 
 					const sendResponse = async (response: WebRTCMessage) => {
-						await this.room.send(
-							{
-								from: selfId,
-								to: message.from,
-								payload: this.encoder.encode(
-									JSON.stringify(
-										mungeOutgoing(peerId, response)
-									)
-								),
-							},
-							0
-						);
+						await this.room.send({
+							from: selfId,
+							to: message.from,
+							payload: this.encoder.encode(
+								JSON.stringify(mungeOutgoing(peerId, response))
+							),
+						});
 					};
 
 					if (!(peerId in this.peers)) {
@@ -144,12 +136,9 @@ export class Room {
 
 				onScan(this.peers);
 
-				await this.room.send(
-					{
-						from: selfId,
-					},
-					0
-				);
+				await this.room.send({
+					from: selfId,
+				});
 			} catch (err) {
 				console.error(err);
 			}
@@ -160,14 +149,11 @@ export class Room {
 		window.clearInterval(this.intervalId);
 
 		for (const [peerId, peer] of Object.entries(this.peers)) {
-			await this.room.send(
-				{
-					from: selfId,
-					to: BigInt(peerId),
-					payload: this.encoder.encode(JSON.stringify({})),
-				},
-				0
-			);
+			await this.room.send({
+				from: selfId,
+				to: BigInt(peerId),
+				payload: this.encoder.encode(JSON.stringify({})),
+			});
 		}
 
 		await this.room.leave();
