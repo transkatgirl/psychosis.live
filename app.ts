@@ -837,8 +837,7 @@ async function statsOverlay(
 					);
 				}
 				if (report.fractionLost !== undefined) {
-					lossFraction =
-						Math.round((report.fractionLost / 256) * 1000) / 10;
+					lossFraction = Math.round(report.fractionLost * 1000) / 10;
 				}
 				if (report.jitter) {
 					jitter = Math.round(report.jitter * 1000);
