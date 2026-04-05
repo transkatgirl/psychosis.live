@@ -833,11 +833,18 @@ async function statsOverlay(
 					lastReport?.totalRoundTripTime &&
 					lastReport?.roundTripTimeMeasurements
 				) {
-					roundTripTime =
+					roundTripTime = Math.max(
 						(report.totalRoundTripTime -
 							lastReport.totalRoundTripTime) /
-						(report.roundTripTimeMeasurements -
-							lastReport.roundTripTimeMeasurements);
+							(report.roundTripTimeMeasurements -
+								lastReport.roundTripTimeMeasurements),
+						roundTripTime ? roundTripTime : 0
+					);
+				} else if (report.roundTripTime) {
+					roundTripTime = Math.max(
+						report.roundTripTime,
+						roundTripTime ? roundTripTime : 0
+					);
 				}
 				if (
 					lastReport?.packetsLost !== undefined &&
