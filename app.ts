@@ -764,7 +764,10 @@ function updateGalleryStyles(container: HTMLElement) {
 
 async function inputOverlay(overlay: HTMLDivElement, stream: MediaStream) {
 	const fragment = new DocumentFragment();
-	for (const track of stream.getTracks()) {
+
+	const tracks = stream.getTracks();
+	tracks.sort((a, b) => (b.kind > a.kind ? 1 : a.kind > b.kind ? -1 : 0));
+	for (const track of tracks) {
 		fragment.appendChild(await createTrackUI(track, stream));
 	}
 	overlay.replaceChildren(fragment);
@@ -774,10 +777,13 @@ async function createTrackUI(track: MediaStreamTrack, stream: MediaStream) {
 	const trackUi = document.createElement("div");
 
 	const trackSettings = track.getSettings();
-	const trackConstraints = track.getConstraints();
+	//const trackConstraints = track.getConstraints();
 
 	const trackSelect = document.createElement("select");
 	const devices = await navigator.mediaDevices.enumerateDevices();
+	devices.sort((a, b) =>
+		a.groupId > b.groupId ? 1 : b.groupId > a.groupId ? -1 : 0
+	);
 	for (const device of devices) {
 		if (
 			(device.kind == "audioinput" && track.kind == "audio") ||
@@ -820,11 +826,11 @@ async function createTrackUI(track: MediaStreamTrack, stream: MediaStream) {
 			stream.removeTrack(track);
 			stream.dispatchEvent(
 				new MediaStreamTrackEvent("removetrack", { track })
-			);
+			); // ugly hack... but it works
 			stream.addTrack(newTrack);
 			stream.dispatchEvent(
 				new MediaStreamTrackEvent("addtrack", { track: newTrack })
-			);
+			); // ugly hack... but it works
 			trackUi.remove();
 		}
 	});
