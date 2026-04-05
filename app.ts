@@ -763,6 +763,8 @@ async function statsOverlay(
 		let targetAudioBitrate: number | undefined;
 		let cpuLimited = false;
 		let jitterBufferDelay: number | undefined;
+		let maxPlayoutTimestamp: number | undefined;
+		let minPlayoutTimestamp: number | undefined;
 
 		let incomingBandwidth: number | undefined;
 		let outgoingBandwidth: number | undefined;
@@ -799,7 +801,7 @@ async function statsOverlay(
 							lastReport.jitterBufferDelay) /
 							(report.jitterBufferEmittedCount -
 								lastReport.jitterBufferEmittedCount),
-						jitterBufferDelay ? jitterBufferDelay : 0
+						jitterBufferDelay ? jitterBufferDelay : -Infinity
 					);
 				}
 				if (
@@ -812,16 +814,29 @@ async function statsOverlay(
 								report.packetsReceived -
 								(lastReport.packetsLost +
 									lastReport.packetsReceived)),
-						lossFraction ? lossFraction : 0
+						lossFraction ? lossFraction : -Infinity
 					);
 				} else if (report.fractionLost !== undefined) {
 					lossFraction = Math.max(
 						report.fractionLost,
-						lossFraction ? lossFraction : 0
+						lossFraction ? lossFraction : -Infinity
 					);
 				}
 				if (report.jitter) {
-					jitter = Math.max(report.jitter, jitter ? jitter : 0);
+					jitter = Math.max(
+						report.jitter,
+						jitter ? jitter : -Infinity
+					);
+				}
+				if (report.estimatedPlayoutTimestamp) {
+					maxPlayoutTimestamp = Math.max(
+						report.estimatedPlayoutTimestamp,
+						maxPlayoutTimestamp ? maxPlayoutTimestamp : -Infinity
+					);
+					minPlayoutTimestamp = Math.min(
+						report.estimatedPlayoutTimestamp,
+						minPlayoutTimestamp ? minPlayoutTimestamp : Infinity
+					);
 				}
 			}
 
@@ -838,12 +853,12 @@ async function statsOverlay(
 							lastReport.totalRoundTripTime) /
 							(report.roundTripTimeMeasurements -
 								lastReport.roundTripTimeMeasurements),
-						roundTripTime ? roundTripTime : 0
+						roundTripTime ? roundTripTime : -Infinity
 					);
 				} else if (report.roundTripTime) {
 					roundTripTime = Math.max(
 						report.roundTripTime,
-						roundTripTime ? roundTripTime : 0
+						roundTripTime ? roundTripTime : -Infinity
 					);
 				}
 				if (
@@ -856,16 +871,19 @@ async function statsOverlay(
 								report.packetsReceived -
 								(lastReport.packetsLost +
 									lastReport.packetsReceived)),
-						lossFraction ? lossFraction : 0
+						lossFraction ? lossFraction : -Infinity
 					);
 				} else if (report.fractionLost !== undefined) {
 					lossFraction = Math.max(
 						report.fractionLost,
-						lossFraction ? lossFraction : 0
+						lossFraction ? lossFraction : -Infinity
 					);
 				}
 				if (report.jitter) {
-					jitter = Math.max(report.jitter, jitter ? jitter : 0);
+					jitter = Math.max(
+						report.jitter,
+						jitter ? jitter : -Infinity
+					);
 				}
 			}
 
@@ -900,6 +918,11 @@ async function statsOverlay(
 
 		if (jitterBufferDelay) {
 			jitterBufferDelay = Math.round(jitterBufferDelay * 1000);
+		}
+
+		let desync: number | undefined;
+		if (maxPlayoutTimestamp && minPlayoutTimestamp) {
+			desync = Math.round(maxPlayoutTimestamp - minPlayoutTimestamp);
 		}
 
 		if (incomingBandwidth) {
@@ -940,6 +963,10 @@ async function statsOverlay(
 
 		if (jitterBufferDelay) {
 			label = label + `\nBuffer: ${jitterBufferDelay} ms`;
+
+			if (desync) {
+				label = label + ` Desync: ${desync} ms`;
+			}
 		}
 
 		if (outgoingBandwidth && incomingBandwidth) {
