@@ -50,6 +50,8 @@ video {
 	position: absolute;
 	top: 1lh;
 	left: 1lh;
+	max-width: calc(100vw - 2lh);
+	max-height: calc(100vh - 2lh);
 	color: white;
 	font-family: monospace;
 	background-color: rgba(0, 0, 0, 0.5);
@@ -59,6 +61,8 @@ video {
 	position: absolute;
 	bottom: 1lh;
 	right: 1lh;
+	max-width: calc(100vw - 2lh);
+	max-height: calc(100vh - 2lh);
 	color: white;
 	background-color: rgba(0, 0, 0, 0.5);
 }
