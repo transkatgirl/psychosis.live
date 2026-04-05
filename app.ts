@@ -434,7 +434,7 @@ async function launchSender(credentials: RoomCredentials) {
 	overlay.classList.add("stats-overlay");
 	document.body.appendChild(overlay);
 
-	overlay.onclick = async () => {
+	overlay.ondblclick = async () => {
 		if (document.fullscreenElement) {
 			await document.exitFullscreen();
 		} else {
@@ -563,7 +563,7 @@ async function launchReceiver(credentials: RoomCredentials) {
 	overlay.classList.add("stats-overlay");
 	document.body.appendChild(overlay);
 
-	overlay.onclick = async () => {
+	overlay.ondblclick = async () => {
 		if (document.fullscreenElement) {
 			await document.exitFullscreen();
 		} else {
