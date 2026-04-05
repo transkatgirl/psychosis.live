@@ -442,10 +442,41 @@ async function launchSender(credentials: RoomCredentials) {
 		}
 	};
 
-	const settings = await createInputOverlay(stream);
+	const settings = document.createElement("div");
 	settings.classList.add("settings-overlay");
 	document.body.appendChild(settings);
 
+	await inputOverlay(settings, stream);
+
+	navigator.mediaDevices.addEventListener("devicechange", async () => {
+		await inputOverlay(settings, stream);
+	});
+
+	const addTrack = async (
+		pc: RTCPeerConnection,
+		track: MediaStreamTrack,
+		stream: MediaStream
+	) => {
+		let transceiver = pc.addTransceiver(track, {
+			sendEncodings: [
+				buildSenderEncoding(
+					track.kind,
+					maxVideoBitrate,
+					maxFramerate,
+					maxAudioBitrate,
+					"very-low",
+					"high"
+				),
+			],
+			streams: [stream],
+		});
+		if (codecOrderPreference) {
+			setCodecPreferences(transceiver, codecOrderPreference);
+		}
+		await setSenderSettings(transceiver.sender, degradationPreference);
+	};
+
+	(globalThis as any).stream = stream;
 	(globalThis as any).room = new Room(
 		mqttEndpoint,
 		credentials,
@@ -458,26 +489,7 @@ async function launchSender(credentials: RoomCredentials) {
 				stream.getTracks().forEach((track) => {
 					if (!peer.pc) return;
 
-					let transceiver = peer.pc.addTransceiver(track, {
-						sendEncodings: [
-							buildSenderEncoding(
-								track.kind,
-								maxVideoBitrate,
-								maxFramerate,
-								maxAudioBitrate,
-								"very-low",
-								"high"
-							),
-						],
-						streams: [stream],
-					});
-					if (codecOrderPreference) {
-						setCodecPreferences(transceiver, codecOrderPreference);
-					}
-					setSenderSettings(
-						transceiver.sender,
-						degradationPreference
-					);
+					addTrack(peer.pc, track, stream);
 				});
 			}
 		},
@@ -514,6 +526,32 @@ async function launchSender(credentials: RoomCredentials) {
 			return message;
 		}
 	);
+	stream.onaddtrack = async (event) => {
+		const room = (globalThis as any).room as Room;
+
+		for (const [_peerId, peer] of Object.entries(room.peers)) {
+			if (!peer.pc) continue;
+
+			addTrack(peer.pc, event.track, stream);
+		}
+
+		await inputOverlay(settings, stream);
+	};
+	stream.onremovetrack = async (event) => {
+		const room = (globalThis as any).room as Room;
+
+		for (const [_peerId, peer] of Object.entries(room.peers)) {
+			if (!peer.pc) continue;
+
+			for (const transceiver of peer.pc.getTransceivers()) {
+				if (transceiver.sender.track?.id == event.track.id) {
+					transceiver.stop();
+				}
+			}
+		}
+
+		await inputOverlay(settings, stream);
+	};
 }
 
 async function launchReceiver(credentials: RoomCredentials) {
@@ -724,26 +762,93 @@ function updateGalleryStyles(container: HTMLElement) {
 	}
 }
 
-async function createInputOverlay(
-	stream: MediaStream
-): Promise<HTMLDivElement> {
-	const overlay = document.createElement("div");
+async function inputOverlay(overlay: HTMLDivElement, stream: MediaStream) {
+	const fragment = new DocumentFragment();
+	for (const track of stream.getTracks()) {
+		fragment.appendChild(await createTrackUI(track, stream));
+	}
+	overlay.replaceChildren(fragment);
+}
 
-	overlay.innerHTML = "";
+async function createTrackUI(track: MediaStreamTrack, stream: MediaStream) {
+	const trackUi = document.createElement("div");
 
-	return overlay;
+	const trackSettings = track.getSettings();
+	const trackConstraints = track.getConstraints();
+
+	const trackSelect = document.createElement("select");
+	const devices = await navigator.mediaDevices.enumerateDevices();
+	for (const device of devices) {
+		if (
+			(device.kind == "audioinput" && track.kind == "audio") ||
+			(device.kind == "videoinput" && track.kind == "video")
+		) {
+			const deviceOption = document.createElement("option");
+			deviceOption.value = device.deviceId;
+			deviceOption.selected = trackSettings.deviceId === device.deviceId;
+			deviceOption.innerText = device.label;
+			trackSelect.append(deviceOption);
+		}
+	}
+	trackSelect.addEventListener("change", async (event) => {
+		const trackConstraints = track.getConstraints();
+		trackConstraints.deviceId = {
+			exact: (event.target as HTMLSelectElement).value,
+		};
+		let constraints: MediaStreamConstraints = {};
+		if (track.kind == "video") {
+			constraints = {
+				video: trackConstraints,
+				audio: false,
+			};
+			constraints.video;
+		} else if (track.kind == "audio") {
+			constraints = {
+				video: false,
+				audio: trackConstraints,
+			};
+		} else {
+			return;
+		}
+
+		const temporaryStream = await navigator.mediaDevices.getUserMedia(
+			constraints
+		);
+		const newTrack = temporaryStream.getTracks()[0];
+		if (newTrack) {
+			track.stop();
+			stream.removeTrack(track);
+			stream.dispatchEvent(
+				new MediaStreamTrackEvent("removetrack", { track })
+			);
+			stream.addTrack(newTrack);
+			stream.dispatchEvent(
+				new MediaStreamTrackEvent("addtrack", { track: newTrack })
+			);
+			trackUi.remove();
+		}
+	});
+	trackUi.appendChild(trackSelect);
+
+	const enableCheckbox = document.createElement("input");
+	enableCheckbox.type = "checkbox";
+	enableCheckbox.checked = track.enabled;
+	enableCheckbox.addEventListener("change", (event) => {
+		track.enabled = (event.target as HTMLInputElement).checked;
+	});
+	trackUi.appendChild(enableCheckbox);
+	trackUi.appendChild(document.createElement("br"));
+
+	return trackUi;
 }
 
 async function statsOverlay(
 	overlay: HTMLDivElement,
 	peers: Record<string, Peer>
 ) {
-	overlay.innerHTML = "";
-
 	const peerList = document.createElement("ul");
 
-	// @ts-ignore
-	if (!globalThis.room.room.client.connected) {
+	if (!((globalThis as any).room as Room).room.client.connected) {
 		const entry = document.createElement("li");
 		entry.innerText = "Disconnected from signaling server";
 
@@ -993,6 +1098,6 @@ async function statsOverlay(
 	}
 
 	if (peerList.childElementCount != 0) {
-		overlay.appendChild(peerList);
+		overlay.replaceChildren(peerList);
 	}
 }
