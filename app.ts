@@ -172,19 +172,19 @@ function generateURL(role: Role, id: string, pass: string): string {
 	url.hash = pass;
 	if (role == Role.Sender) {
 		url.searchParams.set("stats", "true");
-		url.searchParams.set("width", 1920);
-		url.searchParams.set("height", 1080);
-		url.searchParams.set("frameRate", 60);
+		url.searchParams.set("width", String(1920));
+		url.searchParams.set("height", String(1080));
+		url.searchParams.set("frameRate", String(60));
 		url.searchParams.set("autoGainControl", "true");
 		url.searchParams.set("audioContentHint", "music"); // disables most audio processing
 		url.searchParams.set("videoContentHint", "motion");
-		url.searchParams.set("maxAudioBitrate", 192); // chosen based on https://wiki.hydrogenaudio.org/index.php?title=Opus#Music_encoding_quality
+		url.searchParams.set("maxAudioBitrate", String(192)); // chosen based on https://wiki.hydrogenaudio.org/index.php?title=Opus#Music_encoding_quality
 		url.searchParams.set("dynamicAudioBitrate", "true");
 		url.searchParams.set("dynamicVideoFramerate", "true");
-		url.searchParams.set("maxVideoBitrate", 15 * 1000);
+		url.searchParams.set("maxVideoBitrate", String(15 * 1000));
 	}
 	if (role == Role.Receiver) {
-		url.searchParams.set("jitterBufferTarget", 1300); // chosen based on https://ieeexplore.ieee.org/document/6962149
+		url.searchParams.set("jitterBufferTarget", String(1300)); // chosen based on https://ieeexplore.ieee.org/document/6962149
 	}
 	url.searchParams.set(
 		"codecPreferences",
