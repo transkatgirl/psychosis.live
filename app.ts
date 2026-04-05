@@ -759,99 +759,133 @@ async function statsOverlay(
 
 		const peerStats = await peer.pc?.getStats();
 
-		let targetVideoBitrate;
-		let targetAudioBitrate;
+		let targetVideoBitrate: number | undefined;
+		let targetAudioBitrate: number | undefined;
+		let cpuLimited = false;
 		let jitterBufferDelay: number | undefined;
 
-		let outgoingBandwidth;
-		let incomingBandwidth;
+		let incomingBandwidth: number | undefined;
+		let outgoingBandwidth: number | undefined;
 		let roundTripTime: number | undefined;
-		let jitter;
-		let lossFraction;
-
-		//console.log("");
+		let jitter: number | undefined;
+		let lossFraction: number | undefined;
 
 		peerStats?.forEach((report) => {
-			//console.log(report);
+			const lastReport = peer.metadata[report.type + "_" + report.id];
 
-			if (report.type === "outbound-rtp" && report.kind === "video") {
-				targetVideoBitrate = Math.round(report.targetBitrate / 1000);
+			if (report.type === "outbound-rtp") {
+				if (report.kind === "video" && report.targetBitrate) {
+					targetVideoBitrate =
+						report.targetBitrate +
+						(targetVideoBitrate ? targetVideoBitrate : 0);
+				}
+				if (report.kind === "audio" && report.targetBitrate) {
+					targetAudioBitrate =
+						report.targetBitrate +
+						(targetAudioBitrate ? targetAudioBitrate : 0);
+				}
+				if (report.qualityLimitationReason === "cpu") {
+					cpuLimited = true;
+				}
 			}
 
-			if (report.type === "outbound-rtp" && report.kind === "audio") {
-				targetAudioBitrate = Math.round(report.targetBitrate / 1000);
-			}
-
-			if (report.type === "inbound-rtp" && !jitterBufferDelay) {
-				if (peer.metadata.lastInboundTimestamp) {
-					jitterBufferDelay = Math.round(
-						((report.jitterBufferDelay -
-							peer.metadata.lastJitterBufferDelay) /
+			if (report.type === "inbound-rtp") {
+				if (
+					lastReport?.jitterBufferDelay &&
+					lastReport?.jitterBufferEmittedCount
+				) {
+					jitterBufferDelay = Math.max(
+						(report.jitterBufferDelay -
+							lastReport.jitterBufferDelay) /
 							(report.jitterBufferEmittedCount -
-								peer.metadata.lastJitterBufferEmitted)) *
-							1000
+								lastReport.jitterBufferEmittedCount),
+						jitterBufferDelay ? jitterBufferDelay : 0
 					);
 				}
-				jitter = Math.round(report.jitter * 1000);
-
-				peer.metadata.lastJitterBufferDelay = report.jitterBufferDelay;
-				peer.metadata.lastJitterBufferEmitted =
-					report.jitterBufferEmittedCount;
-				peer.metadata.lastInboundTimestamp = report.timestamp;
-			}
-
-			if (report.type === "transport") {
-				if (peer.metadata.lastTransportTimestamp) {
-					const sinceLast =
-						report.timestamp - peer.metadata.lastTransportTimestamp;
-
-					outgoingBandwidth = Math.round(
-						((report.bytesSent - peer.metadata.lastBytesSent) * 8) /
-							sinceLast
-					);
-					incomingBandwidth = Math.round(
-						((report.bytesReceived -
-							peer.metadata.lastBytesReceived) *
-							8) /
-							sinceLast
-					);
+				if (report.jitter) {
+					jitter = Math.max(report.jitter, jitter ? jitter : 0);
 				}
-
-				peer.metadata.lastBytesSent = report.bytesSent;
-				peer.metadata.lastBytesReceived = report.bytesReceived;
-				peer.metadata.lastTransportTimestamp = report.timestamp;
 			}
 
 			if (
-				(report.type === "remote-inbound-rtp" ||
-					report.type === "remote-outbound-rtp") &&
-				(report.kind === "video" || !roundTripTime)
+				report.type === "remote-inbound-rtp" ||
+				report.type === "remote-outbound-rtp"
 			) {
-				if (peer.metadata.lastRTTMeasurements) {
-					roundTripTime = Math.round(
-						((report.totalRoundTripTime -
-							peer.metadata.lastTotalRTT) /
-							(report.roundTripTimeMeasurements -
-								peer.metadata.lastRTTMeasurements)) *
-							1000
-					);
+				if (
+					lastReport?.totalRoundTripTime &&
+					lastReport?.roundTripTimeMeasurements
+				) {
+					roundTripTime =
+						(report.totalRoundTripTime -
+							lastReport.totalRoundTripTime) /
+						(report.roundTripTimeMeasurements -
+							lastReport.roundTripTimeMeasurements);
 				}
 				if (report.fractionLost !== undefined) {
-					lossFraction = Math.round(report.fractionLost * 1000) / 10;
+					lossFraction = Math.max(
+						report.fractionLost,
+						lossFraction ? lossFraction : 0
+					);
 				}
 				if (report.jitter) {
-					jitter = Math.round(report.jitter * 1000);
+					jitter = Math.max(report.jitter, jitter ? jitter : 0);
 				}
-
-				peer.metadata.lastTotalRTT = report.totalRoundTripTime;
-				peer.metadata.lastRTTMeasurements =
-					report.roundTripTimeMeasurements;
 			}
+
+			if (report.type === "transport") {
+				if (
+					lastReport?.timestamp &&
+					lastReport?.bytesSent &&
+					lastReport?.bytesReceived
+				) {
+					const sinceLast = report.timestamp - lastReport.timestamp;
+
+					outgoingBandwidth =
+						(report.bytesSent - lastReport.bytesSent) / sinceLast +
+						(outgoingBandwidth ? outgoingBandwidth : 0);
+					incomingBandwidth =
+						(report.bytesReceived - lastReport.bytesReceived) /
+							sinceLast +
+						(incomingBandwidth ? incomingBandwidth : 0);
+				}
+			}
+
+			peer.metadata[report.type + "_" + report.id] = report;
 		});
 
-		let label;
+		if (targetVideoBitrate) {
+			targetVideoBitrate = Math.round(targetVideoBitrate / 1000);
+		}
 
-		label = `${peerId} (${peer.pc?.connectionState})`;
+		if (targetAudioBitrate) {
+			targetAudioBitrate = Math.round(targetAudioBitrate / 1000);
+		}
+
+		if (jitterBufferDelay) {
+			jitterBufferDelay = Math.round(jitterBufferDelay * 1000);
+		}
+
+		if (incomingBandwidth) {
+			incomingBandwidth = Math.round(incomingBandwidth * 8);
+		}
+
+		if (outgoingBandwidth) {
+			outgoingBandwidth = Math.round(outgoingBandwidth * 8);
+		}
+
+		if (roundTripTime) {
+			roundTripTime = Math.round(roundTripTime * 1000);
+		}
+
+		if (jitter) {
+			jitter = Math.round(jitter * 1000);
+		}
+
+		if (lossFraction !== undefined) {
+			lossFraction = Math.round(lossFraction * 1000) / 10;
+		}
+
+		let label = `${peerId} (${peer.pc?.connectionState})`;
 
 		if (targetAudioBitrate && targetVideoBitrate) {
 			label =
@@ -861,6 +895,10 @@ async function statsOverlay(
 			label = label + `\nA: ${targetAudioBitrate} kbit/s`;
 		} else if (targetVideoBitrate) {
 			label = label + `\nV: ${targetVideoBitrate} kbit/s`;
+		}
+
+		if ((targetAudioBitrate || targetVideoBitrate) && cpuLimited) {
+			label = label + " (CPU limited)";
 		}
 
 		if (jitterBufferDelay) {
