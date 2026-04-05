@@ -434,6 +434,14 @@ async function launchSender(credentials: RoomCredentials) {
 	overlay.classList.add("stats-overlay");
 	document.body.appendChild(overlay);
 
+	overlay.onclick = async () => {
+		if (document.fullscreenElement) {
+			await document.exitFullscreen();
+		} else {
+			await document.body.requestFullscreen();
+		}
+	};
+
 	(globalThis as any).room = new Room(
 		mqttEndpoint,
 		credentials,
@@ -554,6 +562,14 @@ async function launchReceiver(credentials: RoomCredentials) {
 	const overlay = document.createElement("div");
 	overlay.classList.add("stats-overlay");
 	document.body.appendChild(overlay);
+
+	overlay.onclick = async () => {
+		if (document.fullscreenElement) {
+			await document.exitFullscreen();
+		} else {
+			await document.body.requestFullscreen();
+		}
+	};
 
 	(globalThis as any).room = new Room(
 		mqttEndpoint,
@@ -818,17 +834,21 @@ async function statsOverlay(
 
 		label = `${peerId} (${peer.pc?.connectionState})`;
 
-		if (targetAudioBitrate || targetVideoBitrate) {
+		if (targetAudioBitrate && targetVideoBitrate) {
 			label =
 				label +
 				`\nA: ${targetAudioBitrate} kbit/s V: ${targetVideoBitrate} kbit/s`;
+		} else if (targetAudioBitrate) {
+			label = label + `\nA: ${targetAudioBitrate} kbit/s`;
+		} else if (targetVideoBitrate) {
+			label = label + `\nV: ${targetVideoBitrate} kbit/s`;
 		}
 
 		if (jitterBufferDelay) {
 			label = label + `\nBuffer: ${jitterBufferDelay} ms`;
 		}
 
-		if (outgoingBandwidth || incomingBandwidth) {
+		if (outgoingBandwidth && incomingBandwidth) {
 			label =
 				label +
 				`\nD: ${incomingBandwidth} kbit/s U: ${outgoingBandwidth} kbit/s`;
