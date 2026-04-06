@@ -1110,5 +1110,7 @@ async function statsOverlay(
 
 	if (peerList.childElementCount != 0) {
 		overlay.replaceChildren(peerList);
+	} else {
+		overlay.replaceChildren();
 	}
 }
