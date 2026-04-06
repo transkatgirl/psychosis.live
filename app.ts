@@ -194,7 +194,7 @@ function generateURL(role: Role, id: string, pass: string): string {
 		"codecPreferences",
 		JSON.stringify([
 			"video/AV1", // in Chrome, AV1 may be faster than VP9 (assuming software encoding only) while delivering better quality; see https://developer.chrome.com/blog/av1/
-			"video/VP9", // VP9 delivers higher quality than H.265 at lower bitrates; see https://blogs.gnome.org/rbultje/2015/09/28/vp9-encodingdecoding-performance-vs-hevch-264/
+			"video/VP9", // in low bitrate conditions, VP9 delivers higher quality than H.265; see https://blogs.gnome.org/rbultje/2015/09/28/vp9-encodingdecoding-performance-vs-hevch-264/
 			"video/H265",
 			"video/H264", // H.264 delivers better visual quality than VP8; see https://www.streamingmedia.com/Articles/Editorial/Featured-Articles/WebM-vs.-H.264-A-Closer-Look-68594.aspx
 			"video/VP8",
