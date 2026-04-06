@@ -58,7 +58,7 @@ function helperMenu() {
 	document.title = "psychosis.live";
 
 	document.body.innerHTML =
-		'<h1>psychosis.live</h1><p>This service allows you to stream <em>end-to-end encrypted</em> video from your smartphone into OBS over practically any internet connection, allowing you to stream anything from anywhere with an internet connection.</p><p>Unlike similar services, such as <a href="https://vdo.ninja">VDO.Ninja</a>, psychosis.live focuses on <em>both</em> preserving watchability over poor connections and delivering the highest quality possible over good connections.</p><p>It is strongly recommended that you <b>use Google Chrome on both sides of the connection</b> for the best possible experience, as WebRTC implementations vary significantly between browsers.</p>';
+		'<h1>psychosis.live</h1><p>This service allows you to stream <em>end-to-end encrypted</em> video from your smartphone into OBS over practically any internet connection, allowing you to stream anything from anywhere with an internet connection.</p><p>Unlike similar services, such as <a href="https://vdo.ninja">VDO.Ninja</a>, psychosis.live focuses on <em>both</em> preserving watchability over poor connections and delivering the highest quality possible over good connections.</p><p>It is strongly recommended that you <b>use Google Chrome on both sides of the connection</b> for the best possible experience, as WebRTC implementations vary significantly between browsers. <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1728573">Do not use Firefox.</a></p>';
 
 	const roomLabel = document.createElement("label");
 	roomLabel.htmlFor = "room";
@@ -185,6 +185,7 @@ function generateURL(role: Role, id: string, pass: string): string {
 	}
 	if (role == Role.Receiver) {
 		url.searchParams.set("jitterBufferTarget", String(1300)); // chosen based on https://ieeexplore.ieee.org/document/6962149
+		// ideally, buffer should be >2x expected RTT
 	}
 	url.searchParams.set(
 		"codecPreferences",
