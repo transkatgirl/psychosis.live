@@ -682,7 +682,7 @@ async function launchReceiver(credentials: RoomCredentials) {
 
 				if (stream) {
 					video.srcObject = stream;
-					stream.onremovetrack = () => {
+					/*stream.onremovetrack = () => {
 						let video = peerVideos[peerId];
 						if (
 							video &&
@@ -694,7 +694,7 @@ async function launchReceiver(credentials: RoomCredentials) {
 							delete peerVideos[peerId];
 							updateGalleryStyles(videoContainer);
 						}
-					};
+					};*/
 				}
 			};
 		},
