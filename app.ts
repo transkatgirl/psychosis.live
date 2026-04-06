@@ -179,24 +179,26 @@ function generateURL(role: Role, id: string, pass: string): string {
 		url.searchParams.set("audioContentHint", "music"); // disables most audio processing
 		url.searchParams.set("videoContentHint", "motion");
 		url.searchParams.set("maxAudioBitrate", String(192)); // chosen based on https://wiki.hydrogenaudio.org/index.php?title=Opus#Music_encoding_quality
-		url.searchParams.set("dynamicAudioBitrate", "true");
+		url.searchParams.set("dynamicAudioBitrate", "true"); // TODO: use SDP munging to enable https://issues.webrtc.org/issues/41480988 when sending audio only
 		url.searchParams.set("dynamicVideoFramerate", "true");
 		url.searchParams.set("maxVideoBitrate", String(15 * 1000));
 	}
 	if (role == Role.Receiver) {
-		url.searchParams.set("jitterBufferTarget", String(1300)); // chosen based on https://ieeexplore.ieee.org/document/6962149
-		// ideally, buffer should be >2x expected RTT
+		//url.searchParams.set("jitterBufferTarget", String(1300)); // chosen based on https://ieeexplore.ieee.org/document/6962149
+		// update: high values of jitterBufferTarget can cause problems with congestion control, as GCC doesn't adapt fast enough
+
+		url.searchParams.set("jitterBufferTarget", String(800)); // buffer must be at least 1.5x RTT (or 2x RTT depending on receiver implementation) for retransmissions to work; see: https://www.rtcbits.com/2017/03/retransmissions-in-webrtc.html
 	}
 	url.searchParams.set(
 		"codecPreferences",
 		JSON.stringify([
-			"video/AV1",
+			"video/AV1", // SLOW but highest quality
 			"video/VP9",
 			"video/H265",
 			"video/H264",
 			"video/VP8",
 			"audio/opus",
-			"audio/red",
+			"audio/red", // consider prioritizing this above audio/opus if your latency budget is too low for retransmissions to work
 			"audio/mp4a-latm",
 			"audio/G722",
 			"audio/PCMU",
