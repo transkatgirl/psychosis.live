@@ -187,7 +187,8 @@ function generateURL(role: Role, id: string, pass: string): string {
 		//url.searchParams.set("jitterBufferTarget", String(1300)); // chosen based on https://ieeexplore.ieee.org/document/6962149
 		// update: high values of jitterBufferTarget can cause problems with congestion control, as GCC doesn't adapt fast enough
 
-		url.searchParams.set("jitterBufferTarget", String(800)); // buffer must be at least 1.5x RTT (or 2x RTT depending on receiver implementation) for retransmissions to work; see: https://www.rtcbits.com/2017/03/retransmissions-in-webrtc.html
+		url.searchParams.set("jitterBufferTarget", String(800)); // buffer must be at least 1.5x RTT (may require 2x RTT depending on receiver implementation) for retransmissions to work; see: https://www.rtcbits.com/2017/03/retransmissions-in-webrtc.html
+		// 500ms is the highest average RTT you'll likely encouter on non-congested networks (rural areas w/ old towers); see https://hpbn.co/mobile-networks/#cellular-performance and https://en.wikipedia.org/wiki/3G#Phase-out
 	}
 	url.searchParams.set(
 		"codecPreferences",
