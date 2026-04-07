@@ -803,7 +803,6 @@ async function createTrackUI(track: MediaStreamTrack, stream: MediaStream) {
 	const trackUi = document.createElement("div");
 
 	const trackSettings = track.getSettings();
-	//const trackConstraints = track.getConstraints();
 
 	const trackSelect = document.createElement("select");
 	const devices = await navigator.mediaDevices.enumerateDevices();
@@ -822,7 +821,7 @@ async function createTrackUI(track: MediaStreamTrack, stream: MediaStream) {
 			trackSelect.append(deviceOption);
 		}
 	}
-	trackSelect.addEventListener("change", async (event) => {
+	trackSelect.onchange = async (event) => {
 		const trackConstraints = track.getConstraints();
 		trackConstraints.deviceId = {
 			exact: (event.target as HTMLSelectElement).value,
@@ -860,17 +859,42 @@ async function createTrackUI(track: MediaStreamTrack, stream: MediaStream) {
 			); // ugly hack... but it works
 			trackUi.remove();
 		}
-	});
+	};
 	trackUi.appendChild(trackSelect);
 
 	const enableCheckbox = document.createElement("input");
 	enableCheckbox.type = "checkbox";
 	enableCheckbox.checked = track.enabled;
-	enableCheckbox.addEventListener("change", (event) => {
+	enableCheckbox.onchange = (event) => {
 		track.enabled = (event.target as HTMLInputElement).checked;
-	});
+	};
 	trackUi.appendChild(enableCheckbox);
 	trackUi.appendChild(document.createElement("br"));
+
+	if (track.kind == "video" && trackSettings.zoom) {
+		const trackCapabilities = track.getCapabilities();
+
+		if ("zoom" in trackCapabilities) {
+			const zoomSlider = document.createElement("input");
+			zoomSlider.type = "range";
+			// @ts-ignore
+			zoomSlider.min = trackCapabilities.zoom.min;
+			// @ts-ignore
+			zoomSlider.max = trackCapabilities.zoom.max;
+			// @ts-ignore
+			zoomSlider.step = trackCapabilities.zoom.step;
+			// @ts-ignore
+			zoomSlider.max = trackCapabilities.zoom.max;
+			zoomSlider.value = String(trackSettings.zoom);
+			zoomSlider.oninput = async (event) => {
+				const constraints = track.getConstraints();
+				// @ts-ignore
+				constraints.zoom = zoomSlider.value;
+				await track.applyConstraints(constraints);
+			};
+			trackUi.appendChild(zoomSlider);
+		}
+	}
 
 	return trackUi;
 }
