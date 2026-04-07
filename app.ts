@@ -394,6 +394,8 @@ async function launchSender(credentials: RoomCredentials) {
 				ideal: params.get("facingMode") as string,
 			};
 		}
+		// @ts-ignore
+		videoConstraints.zoom = true;
 	}
 
 	const constraints: MediaStreamConstraints | DisplayMediaStreamOptions = {
@@ -830,7 +832,7 @@ async function createTrackUI(track: MediaStreamTrack, stream: MediaStream) {
 		if (track.kind == "video") {
 			trackConstraints.facingMode = undefined;
 			// @ts-ignore
-			trackConstraints.zoom = undefined;
+			trackConstraints.advanced = undefined;
 			constraints = {
 				video: trackConstraints,
 				audio: false,
@@ -890,10 +892,10 @@ async function createTrackUI(track: MediaStreamTrack, stream: MediaStream) {
 			zoomSlider.value = String(trackSettings.zoom);
 			zoomSlider.oninput = async (event) => {
 				const constraints = track.getConstraints();
-				// @ts-ignore
-				constraints.zoom = {
-					exact: Number((event.target as HTMLInputElement).value),
-				};
+				constraints.advanced = [
+					// @ts-ignore
+					{ zoom: (event.target as HTMLInputElement).value },
+				];
 				await track.applyConstraints(constraints);
 			};
 			trackUi.appendChild(zoomSlider);
