@@ -891,7 +891,9 @@ async function createTrackUI(track: MediaStreamTrack, stream: MediaStream) {
 			zoomSlider.oninput = async (event) => {
 				const constraints = track.getConstraints();
 				// @ts-ignore
-				constraints.zoom = zoomSlider.value;
+				constraints.zoom = {
+					exact: Number((event.target as HTMLInputElement).value),
+				};
 				await track.applyConstraints(constraints);
 			};
 			trackUi.appendChild(zoomSlider);
