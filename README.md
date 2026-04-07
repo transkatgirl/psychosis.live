@@ -30,4 +30,3 @@ bun build --compile --target=browser ./index.html --outdir=dist --minify-whitesp
 
 ## todo
 - [ ] add on-screen RMS+clipping warning volume meter
-- [ ] add support for interactively selecting [https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints#instance_properties_of_image_tracks](image constraints)
