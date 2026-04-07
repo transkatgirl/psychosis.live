@@ -832,6 +832,8 @@ async function createTrackUI(track: MediaStreamTrack, stream: MediaStream) {
 		if (track.kind == "video") {
 			trackConstraints.facingMode = undefined;
 			// @ts-ignore
+			trackConstraints.zoom = undefined;
+			// @ts-ignore
 			trackConstraints.advanced = undefined;
 			constraints = {
 				video: trackConstraints,
@@ -891,12 +893,16 @@ async function createTrackUI(track: MediaStreamTrack, stream: MediaStream) {
 			zoomSlider.max = trackCapabilities.zoom.max;
 			zoomSlider.value = String(trackSettings.zoom);
 			zoomSlider.oninput = async (event) => {
-				const constraints = track.getConstraints();
-				constraints.advanced = [
-					// @ts-ignore
-					{ zoom: (event.target as HTMLInputElement).value },
-				];
-				await track.applyConstraints(constraints);
+				try {
+					const constraints = track.getConstraints();
+					constraints.advanced = [
+						// @ts-ignore
+						{ zoom: (event.target as HTMLInputElement).value },
+					];
+					await track.applyConstraints(constraints);
+				} catch (error) {
+					console.error(error);
+				}
 			};
 			trackUi.appendChild(zoomSlider);
 		}
