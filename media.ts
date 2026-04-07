@@ -191,15 +191,17 @@ export async function adaptiveSettings(
 						audioBitrateCeil
 					);
 				} else {
-					// minimum of 32 kbit/s (chosen based on https://wiki.hydrogenaudio.org/index.php?title=Opus#Indicative_bitrate_and_quality)
+					// minimum of 48 kbit/s (chosen based on https://wiki.hydrogenaudio.org/index.php?title=Opus#Indicative_bitrate_and_quality)
 					audioBitrateLower = Math.min(
-						Math.max(Math.floor(report.targetBitrate / 42000), 2) *
-							16000,
+						Math.max(
+							Math.floor(report.targetBitrate / 64000),
+							1.5
+						) * 32000,
 						audioBitrateCeil
 					);
 					audioBitrateUpper = Math.min(
-						Math.max(Math.ceil(report.targetBitrate / 42000), 2) *
-							16000,
+						Math.max(Math.ceil(report.targetBitrate / 64000), 1.5) *
+							32000,
 						audioBitrateCeil
 					);
 				}
