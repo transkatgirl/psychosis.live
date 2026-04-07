@@ -829,6 +829,8 @@ async function createTrackUI(track: MediaStreamTrack, stream: MediaStream) {
 		let constraints: MediaStreamConstraints = {};
 		if (track.kind == "video") {
 			trackConstraints.facingMode = undefined;
+			// @ts-ignore
+			trackConstraints.zoom = undefined;
 			constraints = {
 				video: trackConstraints,
 				audio: false,
