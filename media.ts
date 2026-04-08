@@ -207,14 +207,16 @@ export async function adaptiveSettings(
 			}
 
 			if (framerateCeil && dynamicVideoFramerate) {
-				if (report.targetBitrate >= 500000) {
+				if (report.targetBitrate >= 1000000) {
 					videoFramerateLower = Math.min(
-						Math.max(Math.floor(report.targetBitrate / 500000), 1) *
-							30,
+						Math.max(
+							Math.floor(report.targetBitrate / 1000000),
+							1
+						) * 30,
 						framerateCeil
 					);
 					videoFramerateUpper = Math.min(
-						Math.max(Math.ceil(report.targetBitrate / 500000), 1) *
+						Math.max(Math.ceil(report.targetBitrate / 1000000), 1) *
 							30,
 						framerateCeil
 					);
@@ -222,14 +224,14 @@ export async function adaptiveSettings(
 					// minimum of 24fps (lowest common framerate where motion reliably appears fluid)
 					videoFramerateLower = Math.min(
 						Math.max(
-							Math.floor(report.targetBitrate / 250000),
+							Math.floor(report.targetBitrate / 500000),
 							1.6
 						) * 15,
 						framerateCeil
 					);
 					videoFramerateUpper = Math.min(
 						Math.max(
-							Math.ceil(report.targetBitrate / 250000),
+							Math.ceil(report.targetBitrate / 500000),
 							1.6
 						) * 15,
 						framerateCeil
