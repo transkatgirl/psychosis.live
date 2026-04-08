@@ -29,7 +29,5 @@ bun build --compile --target=browser ./index.html --outdir=dist --minify-whitesp
 ```
 
 ## todo
-- [ ] adapt minimum adaptiveBitrate value using stream channel count and https://wiki.hydrogenaudio.org/index.php?title=Bitrate#Equivalent_bitrate_estimates_for_multichannel_audio
-- [ ] allow customizing minimum adaptiveBitrate value using query parameters
 - [ ] display information (resolution, framerate, channel count, sample rate) about video/audio tracks in sender UI if showStats is enabled
 - [ ] add on-screen RMS+clipping warning volume meter
