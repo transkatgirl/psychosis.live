@@ -2,7 +2,7 @@
 
 A simple WebRTC-based streaming tool which lets you send end-to-end encrypted video feeds from a browser to OBS. This tool is primarily designed for mobile streaming, and is intended to be very resilient to poor quality connections.
 
-The goal of this app is to let you stream anything from anywhere with an internet connection. However, to keep things practical, the following is essentially required for a bare-minimum *usable* experience:
+The goal of this app is to let you stream anything from anywhere with an internet connection. However, to keep things practical, the following is essentially required for a *usable* experience (assuming default settings & mono audio):
 - Sender:
 	- Download speed > 50 kbit/s
 		- Download speed > 100 kbit/s recommended
