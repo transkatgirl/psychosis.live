@@ -253,27 +253,21 @@ export async function adaptiveSettings(
 						videoFramerateLower != 0 &&
 						videoFramerateUpper != Infinity
 					) {
-						if (
-							encoding.maxFramerate > videoFramerateUpper &&
-							encoding.maxFramerate != videoFramerateLower
-						) {
-							DEV: console.log(
-								"set video maxFramerate",
-								videoFramerateLower
-							);
-							encoding.maxFramerate = videoFramerateLower;
-							changed = true;
-						}
-
-						if (
-							encoding.maxFramerate < videoFramerateLower &&
-							encoding.maxFramerate != videoFramerateUpper
-						) {
+						if (encoding.maxFramerate > videoFramerateUpper) {
 							DEV: console.log(
 								"set video maxFramerate",
 								videoFramerateUpper
 							);
 							encoding.maxFramerate = videoFramerateUpper;
+							changed = true;
+						}
+
+						if (encoding.maxFramerate < videoFramerateLower) {
+							DEV: console.log(
+								"set video maxFramerate",
+								videoFramerateLower
+							);
+							encoding.maxFramerate = videoFramerateLower;
 							changed = true;
 						}
 					}
@@ -296,27 +290,21 @@ export async function adaptiveSettings(
 						audioBitrateLower != 0 &&
 						audioBitrateUpper != Infinity
 					) {
-						if (
-							encoding.maxBitrate > audioBitrateUpper &&
-							encoding.maxBitrate != audioBitrateLower
-						) {
-							DEV: console.log(
-								"set audio maxBitrate",
-								audioBitrateLower / 1000
-							);
-							encoding.maxBitrate = audioBitrateLower;
-							changed = true;
-						}
-
-						if (
-							encoding.maxBitrate < audioBitrateLower &&
-							encoding.maxBitrate != audioBitrateUpper
-						) {
+						if (encoding.maxBitrate > audioBitrateUpper) {
 							DEV: console.log(
 								"set audio maxBitrate",
 								audioBitrateUpper / 1000
 							);
 							encoding.maxBitrate = audioBitrateUpper;
+							changed = true;
+						}
+
+						if (encoding.maxBitrate < audioBitrateLower) {
+							DEV: console.log(
+								"set audio maxBitrate",
+								audioBitrateLower / 1000
+							);
+							encoding.maxBitrate = audioBitrateLower;
 							changed = true;
 						}
 					}

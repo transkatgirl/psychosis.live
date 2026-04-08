@@ -546,7 +546,6 @@ async function launchSender(credentials: RoomCredentials) {
 					const audioChannelCount = stream
 						.getAudioTracks()[0]
 						?.getSettings()?.channelCount;
-					console.log(audioChannelCount);
 					if (audioChannelCount == 1) {
 						audioBitrateFloorAdj = 32000;
 					} else if (audioChannelCount == 2 || !audioChannelCount) {
