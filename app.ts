@@ -532,6 +532,7 @@ async function launchSender(credentials: RoomCredentials) {
 						params.get("displayMedia") !== "true",
 					params.get("dynamicVideoFramerate") === "true" &&
 						params.get("displayMedia") !== "true",
+					48000,
 					audioBitrateCeil,
 					framerateCeil
 				);

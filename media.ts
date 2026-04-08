@@ -162,6 +162,7 @@ export async function adaptiveSettings(
 	pc: RTCPeerConnection,
 	dynamicAudioBitrate: boolean,
 	dynamicVideoFramerate: boolean,
+	audioBitrateFloor?: number,
 	audioBitrateCeil?: number,
 	framerateCeil?: number
 ) {
@@ -178,33 +179,31 @@ export async function adaptiveSettings(
 			report.kind == "video" &&
 			report.targetBitrate
 		) {
-			if (audioBitrateCeil && dynamicAudioBitrate) {
+			if (audioBitrateFloor && audioBitrateCeil && dynamicAudioBitrate) {
 				if (report.targetBitrate >= 128000) {
-					audioBitrateLower = Math.min(
+					audioBitrateLower =
 						Math.max(Math.floor(report.targetBitrate / 128000), 2) *
-							32000,
-						audioBitrateCeil
-					);
-					audioBitrateUpper = Math.min(
+						32000;
+					audioBitrateUpper =
 						Math.max(Math.ceil(report.targetBitrate / 128000), 2) *
-							32000,
-						audioBitrateCeil
-					);
+						32000;
 				} else {
-					// minimum of 48 kbit/s (chosen based on https://wiki.hydrogenaudio.org/index.php?title=Opus#Indicative_bitrate_and_quality)
-					audioBitrateLower = Math.min(
-						Math.max(
-							Math.floor(report.targetBitrate / 64000),
-							1.5
-						) * 32000,
-						audioBitrateCeil
-					);
-					audioBitrateUpper = Math.min(
-						Math.max(Math.ceil(report.targetBitrate / 64000), 1.5) *
-							32000,
-						audioBitrateCeil
-					);
+					// minimum of 32 kbit/s (chosen based on https://wiki.hydrogenaudio.org/index.php?title=Opus#Indicative_bitrate_and_quality)
+					audioBitrateLower =
+						Math.max(Math.floor(report.targetBitrate / 64000), 1) *
+						32000;
+					audioBitrateUpper =
+						Math.max(Math.ceil(report.targetBitrate / 64000), 1) *
+						32000;
 				}
+				audioBitrateLower = Math.min(
+					Math.max(audioBitrateLower, audioBitrateFloor),
+					audioBitrateCeil
+				);
+				audioBitrateUpper = Math.min(
+					Math.max(audioBitrateUpper, audioBitrateFloor),
+					audioBitrateCeil
+				);
 			}
 
 			if (framerateCeil && dynamicVideoFramerate) {
