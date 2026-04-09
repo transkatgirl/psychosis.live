@@ -10,7 +10,7 @@ The goal of this app is to let you stream anything from anywhere with an interne
 		- Upload speed > 300 kbit/s recommended
 - Receiver:
 	- Download speed > 150 kbit/s
-		- Download speed > 300 kbit/s recommended
+		- Download speed > 400 kbit/s recommended
 	- Upload speed > 50 kbit/s
 		- Upload speed > 100 kbit/s recommended
 - Packet loss < 10%
