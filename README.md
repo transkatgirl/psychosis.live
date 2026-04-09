@@ -15,7 +15,7 @@ The goal of this app is to let you stream anything from anywhere with an interne
 		- Upload speed > 100 kbit/s recommended
 - Packet loss < 10%
 	- Packet loss < 2% recommended
-	- Packet loss of 10% - 20% *may* be usable if there is high enough bandwidth and low enough latency
+	- Packet loss of 10% - 25% *may* be usable if there is high enough bandwidth and low enough latency
 	- If packet loss is bursty rather than constant, resiliency can be improved by increasing the `jitterBufferTarget` at the expense of worse adaptation to changes in network conditions
 - Round-trip time < 400ms (if packet loss > 0%) between sender and receiver
 	- Latencies of up to 2500ms can be supported by increasing the `jitterBufferTarget` at the expense of worse adaptation to changes in network conditions
