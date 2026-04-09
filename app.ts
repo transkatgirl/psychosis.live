@@ -482,10 +482,10 @@ async function launchSender(credentials: RoomCredentials) {
 		document.body.appendChild(settings);
 	}
 
-	await inputOverlay(settings, stream);
+	await inputOverlay(settings, stream, constraints);
 
 	navigator.mediaDevices.addEventListener("devicechange", async () => {
-		await inputOverlay(settings, stream);
+		await inputOverlay(settings, stream, constraints);
 	});
 
 	const addTrack = async (
@@ -595,7 +595,7 @@ async function launchSender(credentials: RoomCredentials) {
 			addTrack(peer.pc, event.track, stream);
 		}
 
-		await inputOverlay(settings, stream);
+		await inputOverlay(settings, stream, constraints);
 	};
 	stream.onremovetrack = async (event) => {
 		const room = (globalThis as any).room as Room;
@@ -610,7 +610,7 @@ async function launchSender(credentials: RoomCredentials) {
 			}
 		}
 
-		await inputOverlay(settings, stream);
+		await inputOverlay(settings, stream, constraints);
 	};
 }
 
@@ -822,18 +822,37 @@ function updateGalleryStyles(container: HTMLElement) {
 	}
 }
 
-async function inputOverlay(overlay: HTMLDivElement, stream: MediaStream) {
+async function inputOverlay(
+	overlay: HTMLDivElement,
+	stream: MediaStream,
+	constraints: MediaStreamConstraints
+) {
 	const fragment = new DocumentFragment();
 
 	const tracks = stream.getTracks();
 	tracks.sort((a, b) => (b.kind > a.kind ? 1 : a.kind > b.kind ? -1 : 0));
 	for (const track of tracks) {
-		fragment.appendChild(await createTrackUI(track, stream));
+		if (track.kind == "video" && typeof constraints.video != "boolean") {
+			fragment.appendChild(
+				await createTrackUI(track, stream, constraints.video)
+			);
+		} else if (
+			track.kind == "audio" &&
+			typeof constraints.audio != "boolean"
+		) {
+			fragment.appendChild(
+				await createTrackUI(track, stream, constraints.audio)
+			);
+		}
 	}
 	overlay.replaceChildren(fragment);
 }
 
-async function createTrackUI(track: MediaStreamTrack, stream: MediaStream) {
+async function createTrackUI(
+	track: MediaStreamTrack,
+	stream: MediaStream,
+	constraints?: MediaTrackConstraints
+) {
 	const trackUi = document.createElement("div");
 
 	const trackSettings = track.getSettings();
@@ -856,24 +875,25 @@ async function createTrackUI(track: MediaStreamTrack, stream: MediaStream) {
 		}
 	}
 	trackSelect.onchange = async (event) => {
-		const trackConstraints = track.getConstraints();
+		const trackConstraints = structuredClone(
+			constraints ? constraints : {}
+		);
 		trackConstraints.deviceId = {
 			exact: (event.target as HTMLSelectElement).value,
 		};
-		let constraints: MediaStreamConstraints = {};
+		let streamConstraints: MediaStreamConstraints = {};
 		if (track.kind == "video") {
 			trackConstraints.facingMode = undefined;
 			// @ts-ignore
 			trackConstraints.zoom = undefined;
 			// @ts-ignore
 			trackConstraints.advanced = undefined;
-			constraints = {
+			streamConstraints = {
 				video: trackConstraints,
 				audio: false,
 			};
-			constraints.video;
 		} else if (track.kind == "audio") {
-			constraints = {
+			streamConstraints = {
 				video: false,
 				audio: trackConstraints,
 			};
@@ -882,7 +902,7 @@ async function createTrackUI(track: MediaStreamTrack, stream: MediaStream) {
 		}
 
 		const temporaryStream = await navigator.mediaDevices.getUserMedia(
-			constraints
+			streamConstraints
 		);
 		const newTrack = temporaryStream.getTracks()[0];
 		if (newTrack) {
