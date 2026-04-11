@@ -490,12 +490,12 @@ async function launchSender(credentials: RoomCredentials) {
 	document.body.appendChild(overlay);
 
 	overlay.ondblclick = async (event) => {
+		event.preventDefault();
 		if (document.fullscreenElement) {
 			await document.exitFullscreen();
 		} else {
 			await document.body.requestFullscreen();
 		}
-		event.preventDefault();
 	};
 
 	const settings = document.createElement("div");

@@ -55,6 +55,9 @@ video {
 	color: white;
 	font: 1em monospace;
 	background-color: rgba(0, 0, 0, 0.5);
+	user-select: none;
+	-webkit-user-select: none;
+	-moz-user-select: none;
 }
 
 .settings-overlay {
