@@ -68,7 +68,7 @@ function helperMenu() {
 	roomInput.type = "text";
 	roomInput.required = true;
 	roomInput.size = 16;
-	roomInput.value = generateRandom(64);
+	roomInput.value = generateRandom(8);
 
 	const passwordLabel = document.createElement("label");
 	passwordLabel.htmlFor = "pass";
@@ -77,8 +77,8 @@ function helperMenu() {
 	passwordInput.id = "pass";
 	passwordInput.type = "text";
 	passwordInput.required = true;
-	passwordInput.size = 64;
-	passwordInput.value = generateRandom(256);
+	passwordInput.size = 32;
+	passwordInput.value = generateRandom(16);
 
 	document.body.appendChild(roomLabel);
 	document.body.appendChild(roomInput);
@@ -158,8 +158,8 @@ function helperMenu() {
 	);
 }
 
-function generateRandom(bits: number) {
-	const data = new Uint8Array(bits / 8);
+function generateRandom(bytes: number) {
+	const data = new Uint8Array(bytes);
 	self.crypto.getRandomValues(data);
 	return bs58.encode(data);
 }
