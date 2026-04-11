@@ -402,6 +402,11 @@ async function launchSender(credentials: RoomCredentials) {
 				ideal: params.get("facingMode") as string,
 			};
 		}
+		if (params.has("deviceId")) {
+			audioConstraints.deviceId = {
+				exact: params.get("deviceId") as string,
+			};
+		}
 		// @ts-ignore
 		videoConstraints.zoom = true;
 	}
