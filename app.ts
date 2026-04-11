@@ -907,8 +907,6 @@ async function createTrackUI(
 		if (track.kind == "video") {
 			trackConstraints.facingMode = undefined;
 			// @ts-ignore
-			trackConstraints.zoom = undefined;
-			// @ts-ignore
 			trackConstraints.advanced = undefined;
 			streamConstraints = {
 				video: trackConstraints,
@@ -963,8 +961,6 @@ async function createTrackUI(
 			zoomSlider.max = trackCapabilities.zoom.max;
 			// @ts-ignore
 			zoomSlider.step = trackCapabilities.zoom.step;
-			// @ts-ignore
-			zoomSlider.max = trackCapabilities.zoom.max;
 			zoomSlider.value = String(trackSettings.zoom);
 
 			const trackConstraints = track.getConstraints();
