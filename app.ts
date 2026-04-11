@@ -415,8 +415,7 @@ async function launchSender(credentials: RoomCredentials) {
 				exact: params.get("deviceId") as string,
 			};
 		}
-		// @ts-ignore
-		videoConstraints.zoom = true;
+		//videoConstraints.zoom = true;
 	}
 
 	let audioBitrateFloor: number | undefined;
