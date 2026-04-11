@@ -535,7 +535,7 @@ async function launchSender(credentials: RoomCredentials) {
 			iceServers,
 		},
 		(peerId, peer) => {
-			if (BigInt(peerId) % 2n == 0n) {
+			if (peer.pc && BigInt(peerId) % 2n == 0n) {
 				stream.getTracks().forEach((track) => {
 					if (!peer.pc) return;
 
@@ -612,8 +612,6 @@ async function launchSender(credentials: RoomCredentials) {
 	};
 	stream.onremovetrack = async (event) => {
 		const room = (globalThis as any).room as Room;
-
-		event.track.stop();
 
 		for (const [peerId, peer] of Object.entries(room.peers)) {
 			if (!peer.pc || BigInt(peerId) % 2n != 0n) continue;
