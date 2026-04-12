@@ -458,6 +458,20 @@ async function launchSender(credentials: RoomCredentials) {
 
 		stream = await navigator.mediaDevices.getDisplayMedia(constraints);
 	} else {
+		if (enableVideo) {
+			// Weird hack: Request zoom permissions *before* applying any constraints
+			await navigator.mediaDevices
+				.getUserMedia({
+					audio: enableAudio,
+					// @ts-ignore
+					video: { zoom: true },
+				})
+				.then((stream) => {
+					stream.getTracks().forEach((track) => {
+						track.stop();
+					});
+				});
+		}
 		stream = await navigator.mediaDevices.getUserMedia(constraints);
 	}
 
