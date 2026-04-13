@@ -1036,8 +1036,16 @@ async function createTrackUI(
 		);
 		const newTrack = temporaryStream.getTracks()[0];
 		if (newTrack) {
-			trackUi.remove();
-			replaceTrack(track, newTrack);
+			if (
+				newTrack.getSettings().deviceId ===
+				trackConstraints.deviceId.exact
+			) {
+				trackUi.remove();
+				replaceTrack(track, newTrack);
+			} else {
+				newTrack.stop();
+				console.error("Device IDs don't match!");
+			}
 		}
 	};
 	trackUi.appendChild(trackSelect);
