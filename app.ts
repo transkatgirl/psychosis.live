@@ -558,12 +558,6 @@ async function launchSender(credentials: RoomCredentials) {
 		document.body.appendChild(settings);
 	}
 
-	await inputOverlay(settings, stream, constraints);
-
-	navigator.mediaDevices.addEventListener("devicechange", async () => {
-		await inputOverlay(settings, stream, constraints);
-	});
-
 	const addTrack = async (
 		pc: RTCPeerConnection,
 		track: MediaStreamTrack,
@@ -663,6 +657,40 @@ async function launchSender(credentials: RoomCredentials) {
 			return message;
 		}
 	);
+	const replaceTrack = async (
+		oldTrack: MediaStreamTrack,
+		newTrack: MediaStreamTrack
+	) => {
+		const room = (globalThis as any).room as Room;
+
+		for (const [peerId, peer] of Object.entries(room.peers)) {
+			if (!peer.pc || BigInt(peerId) % 2n != 0n) continue;
+
+			for (const transceiver of peer.pc.getTransceivers()) {
+				if (transceiver.sender.track?.id == oldTrack.id) {
+					transceiver.stop();
+				}
+			}
+		}
+
+		oldTrack.stop();
+		stream.removeTrack(oldTrack);
+		stream.addTrack(newTrack);
+
+		for (const [peerId, peer] of Object.entries(room.peers)) {
+			if (!peer.pc || BigInt(peerId) % 2n != 0n) continue;
+
+			for (const transceiver of peer.pc.getTransceivers()) {
+				if (transceiver.sender.track?.id == oldTrack.id) {
+					transceiver.stop();
+				}
+			}
+
+			addTrack(peer.pc, newTrack, stream);
+		}
+
+		await inputOverlay(settings, stream, constraints, replaceTrack);
+	};
 	stream.onaddtrack = async (event) => {
 		const room = (globalThis as any).room as Room;
 
@@ -672,7 +700,7 @@ async function launchSender(credentials: RoomCredentials) {
 			addTrack(peer.pc, event.track, stream);
 		}
 
-		await inputOverlay(settings, stream, constraints);
+		await inputOverlay(settings, stream, constraints, replaceTrack);
 	};
 	stream.onremovetrack = async (event) => {
 		const room = (globalThis as any).room as Room;
@@ -687,8 +715,13 @@ async function launchSender(credentials: RoomCredentials) {
 			}
 		}
 
-		await inputOverlay(settings, stream, constraints);
+		await inputOverlay(settings, stream, constraints, replaceTrack);
 	};
+	navigator.mediaDevices.addEventListener("devicechange", async () => {
+		await inputOverlay(settings, stream, constraints, replaceTrack);
+	});
+
+	await inputOverlay(settings, stream, constraints, replaceTrack);
 }
 
 async function launchReceiver(credentials: RoomCredentials) {
@@ -906,7 +939,11 @@ function updateGalleryStyles(container: HTMLElement) {
 async function inputOverlay(
 	overlay: HTMLDivElement,
 	stream: MediaStream,
-	constraints: MediaStreamConstraints
+	constraints: MediaStreamConstraints,
+	replaceTrack: (
+		oldTrack: MediaStreamTrack,
+		newTrack: MediaStreamTrack
+	) => Promise<void>
 ) {
 	const fragment = new DocumentFragment();
 
@@ -915,14 +952,24 @@ async function inputOverlay(
 	for (const track of tracks) {
 		if (track.kind == "video" && typeof constraints.video != "boolean") {
 			fragment.appendChild(
-				await createTrackUI(track, stream, constraints.video)
+				await createTrackUI(
+					track,
+					stream,
+					replaceTrack,
+					constraints.video
+				)
 			);
 		} else if (
 			track.kind == "audio" &&
 			typeof constraints.audio != "boolean"
 		) {
 			fragment.appendChild(
-				await createTrackUI(track, stream, constraints.audio)
+				await createTrackUI(
+					track,
+					stream,
+					replaceTrack,
+					constraints.audio
+				)
 			);
 		}
 	}
@@ -932,6 +979,10 @@ async function inputOverlay(
 async function createTrackUI(
 	track: MediaStreamTrack,
 	stream: MediaStream,
+	replaceTrack: (
+		oldTrack: MediaStreamTrack,
+		newTrack: MediaStreamTrack
+	) => Promise<void>,
 	constraints?: MediaTrackConstraints
 ) {
 	const trackUi = document.createElement("div");
@@ -985,16 +1036,8 @@ async function createTrackUI(
 		);
 		const newTrack = temporaryStream.getTracks()[0];
 		if (newTrack) {
-			track.stop();
-			stream.removeTrack(track);
-			stream.dispatchEvent(
-				new MediaStreamTrackEvent("removetrack", { track })
-			); // ugly hack... but it works
-			stream.addTrack(newTrack);
-			stream.dispatchEvent(
-				new MediaStreamTrackEvent("addtrack", { track: newTrack })
-			); // ugly hack... but it works
 			trackUi.remove();
+			replaceTrack(track, newTrack);
 		}
 	};
 	trackUi.appendChild(trackSelect);
