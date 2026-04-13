@@ -10,8 +10,8 @@ import {
 	adaptiveSettings,
 	buildSenderEncoding,
 	calculateReasonableAudioBitrateKbps,
+	calculateReasonableMinimumAudioBitrateKbps,
 	calculateReasonableVideoBitrateKbps,
-	convertAudioBitrate,
 	mungeSDP,
 	setCodecPreferences,
 	setReceiverSettings,
@@ -628,14 +628,14 @@ async function launchSender(credentials: RoomCredentials) {
 					const audioChannelCount = stream
 						.getAudioTracks()[0]
 						?.getSettings()?.channelCount;
-					if (audioChannelCount == 1) {
-						audioBitrateFloorAdj = 32000;
-					} else if (audioChannelCount == 2 || !audioChannelCount) {
-						// minimum of 48 kbit/s (chosen based on https://wiki.hydrogenaudio.org/index.php?title=Opus#Indicative_bitrate_and_quality)
-						audioBitrateFloorAdj = 48000;
+					if (audioChannelCount && audioChannelCount > 0) {
+						audioBitrateFloorAdj =
+							calculateReasonableMinimumAudioBitrateKbps(
+								channelCount
+							) * 1000;
 					} else {
 						audioBitrateFloorAdj =
-							convertAudioBitrate(48, 2, audioChannelCount) *
+							calculateReasonableMinimumAudioBitrateKbps(2) *
 							1000;
 					}
 				}
