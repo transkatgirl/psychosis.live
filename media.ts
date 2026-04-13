@@ -7,15 +7,16 @@ export function convertAudioBitrate(
 ) {
 	// Formula from https://wiki.hydrogenaudio.org/index.php?title=Bitrate#Equivalent_bitrate_estimates_for_multichannel_audio
 	return Math.round(
-		((newChannelCount ^ 0.75) / (originalChannelCount ^ 0.75)) * bitrate
+		(Math.pow(newChannelCount, 0.75) /
+			Math.pow(originalChannelCount, 0.75)) *
+			bitrate
 	);
 }
 
 export function calculateReasonableAudioBitrateKbps(channels: number) {
 	return Math.min(
-		// Formula from https://wiki.hydrogenaudio.org/index.php?title=Bitrate#Equivalent_bitrate_estimates_for_multichannel_audio
 		// 256 kbit/s stereo is a bit high (see: https://wiki.hydrogenaudio.org/index.php?title=Opus#Music_encoding_quality), but useful to mitigate generation loss
-		Math.round(((channels ^ 0.75) / (2 ^ 0.75)) * 16) * 16,
+		convertAudioBitrate(16, 2, channels) * 16,
 		// Opus supports a maximum bitrate of 510 kbit/s
 		510
 	);
