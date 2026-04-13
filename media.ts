@@ -1,5 +1,41 @@
 import * as sdpTransform from "sdp-transform";
 
+export function convertAudioBitrate(
+	bitrate: number,
+	originalChannelCount: number,
+	newChannelCount: number
+) {
+	// Formula from https://wiki.hydrogenaudio.org/index.php?title=Bitrate#Equivalent_bitrate_estimates_for_multichannel_audio
+	return Math.round(
+		((newChannelCount ^ 0.75) / (originalChannelCount ^ 0.75)) * bitrate
+	);
+}
+
+export function calculateReasonableAudioBitrateKbps(channels: number) {
+	return Math.min(
+		// Formula from https://wiki.hydrogenaudio.org/index.php?title=Bitrate#Equivalent_bitrate_estimates_for_multichannel_audio
+		// 256 kbit/s stereo is a bit high (see: https://wiki.hydrogenaudio.org/index.php?title=Opus#Music_encoding_quality), but useful to mitigate generation loss
+		Math.round(((channels ^ 0.75) / (2 ^ 0.75)) * 16) * 16,
+		// Opus supports a maximum bitrate of 510 kbit/s
+		510
+	);
+}
+
+export function calculateReasonableVideoBitrateKbps(
+	width: number,
+	height: number,
+	framerate: number
+) {
+	// Based loosely on https://support.google.com/youtube/answer/2853702
+
+	let bitrate = Math.max(
+		Math.round((height * width * 4.8) / 100000) * 100,
+		4000
+	);
+
+	return Math.round(bitrate * Math.max(1 + (framerate - 30) * (0.5 / 30), 1));
+}
+
 export function mungeSDP(sdp: string): string {
 	const parsed = sdpTransform.parse(sdp);
 

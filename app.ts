@@ -9,6 +9,9 @@ import { selfId, setSelfId } from "./room/core";
 import {
 	adaptiveSettings,
 	buildSenderEncoding,
+	calculateReasonableAudioBitrateKbps,
+	calculateReasonableVideoBitrateKbps,
+	convertAudioBitrate,
 	mungeSDP,
 	setCodecPreferences,
 	setReceiverSettings,
@@ -380,16 +383,9 @@ async function launchSender(credentials: RoomCredentials) {
 
 	if (maxAudioBitrate && maxAudioBitrate < 0) {
 		if (channelCount && channelCount > 0) {
-			maxAudioBitrate = Math.min(
-				// Formula from https://wiki.hydrogenaudio.org/index.php?title=Bitrate#Equivalent_bitrate_estimates_for_multichannel_audio
-				// 256 kbit/s stereo is a bit high (see: https://wiki.hydrogenaudio.org/index.php?title=Opus#Music_encoding_quality), but useful to mitigate generation loss
-				Math.round(((channelCount ^ 0.75) / (2 ^ 0.75)) * 16) * 16,
-				// Opus supports a maximum bitrate of 510 kbit/s
-				510
-			);
+			maxAudioBitrate = calculateReasonableAudioBitrateKbps(channelCount);
 		} else {
-			// 256 kbit/s stereo is a bit high (see: https://wiki.hydrogenaudio.org/index.php?title=Opus#Music_encoding_quality), but useful to mitigate generation loss
-			maxAudioBitrate = 256;
+			maxAudioBitrate = calculateReasonableAudioBitrateKbps(2);
 		}
 
 		audioBitrateCeil = maxAudioBitrate * 1000;
@@ -397,20 +393,33 @@ async function launchSender(credentials: RoomCredentials) {
 
 	if (maxVideoBitrate && maxVideoBitrate < 0) {
 		if (height && width && height > 0 && width > 0) {
-			// Based loosely on https://support.google.com/youtube/answer/2853702
-			maxVideoBitrate = Math.max(
-				Math.round((height * width * 4.8) / 100000) * 100,
-				4000
-			);
+			if (frameRate && frameRate > 0) {
+				maxVideoBitrate = calculateReasonableVideoBitrateKbps(
+					width,
+					height,
+					frameRate
+				);
+			} else {
+				maxVideoBitrate = calculateReasonableVideoBitrateKbps(
+					width,
+					height,
+					30
+				);
+			}
 		} else {
-			// Chosen using https://support.google.com/youtube/answer/2853702 assuming 1080p resolution
-			maxVideoBitrate = 10000;
-		}
-
-		if (frameRate && frameRate > 0) {
-			maxVideoBitrate = Math.round(
-				maxVideoBitrate * Math.max(frameRate / 40, 1)
-			);
+			if (frameRate && frameRate > 0) {
+				maxVideoBitrate = calculateReasonableVideoBitrateKbps(
+					1920,
+					1080,
+					frameRate
+				);
+			} else {
+				maxVideoBitrate = calculateReasonableVideoBitrateKbps(
+					1920,
+					1080,
+					30
+				);
+			}
 		}
 	}
 
@@ -625,9 +634,9 @@ async function launchSender(credentials: RoomCredentials) {
 						// minimum of 48 kbit/s (chosen based on https://wiki.hydrogenaudio.org/index.php?title=Opus#Indicative_bitrate_and_quality)
 						audioBitrateFloorAdj = 48000;
 					} else {
-						// Formula from https://wiki.hydrogenaudio.org/index.php?title=Bitrate#Equivalent_bitrate_estimates_for_multichannel_audio
 						audioBitrateFloorAdj =
-							((audioChannelCount ^ 0.75) / (2 ^ 0.75)) * 48000;
+							convertAudioBitrate(48, 2, audioChannelCount) *
+							1000;
 					}
 				}
 
