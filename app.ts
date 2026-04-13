@@ -61,7 +61,7 @@ function helperMenu() {
 	document.title = "psychosis.live";
 
 	document.body.innerHTML =
-		'<h1>psychosis.live</h1><p>This tool allows you to stream <em>end-to-end encrypted</em> video from your smartphone into OBS over practically any internet connection, allowing you to stream anything from almost anywhere.</p><p>Unlike similar tools, such as <a href="https://vdo.ninja">VDO.Ninja</a>, psychosis.live focuses on <em>both</em> preserving watchability over poor connections and delivering the highest quality possible over good connections.</p><p>It is strongly recommended that you <b>use Google Chrome on both sides of the connection</b> for the best possible experience, as WebRTC implementations vary significantly between browsers.</p>';
+		'<h1>psychosis.live</h1><p>This tool allows you to stream <em>end-to-end encrypted</em> video from your browser into OBS over practically any internet connection, allowing you to stream anything from almost anywhere.</p><p>Unlike similar tools, such as <a href="https://vdo.ninja">VDO.Ninja</a>, psychosis.live focuses on <em>both</em> preserving watchability over poor connections and delivering the highest quality possible over good connections.</p><p>It is strongly recommended that you <b>use Google Chrome on both sides of the connection</b> for the best possible experience, as WebRTC implementations vary significantly between browsers.</p>';
 
 	const roomLabel = document.createElement("label");
 	roomLabel.htmlFor = "room";
@@ -95,7 +95,7 @@ function helperMenu() {
 	);
 
 	const senderLabel = document.createElement("label");
-	senderLabel.innerText = "Sender (your smartphone): ";
+	senderLabel.innerText = "Sender: ";
 	senderLabel.htmlFor = "sender";
 	const senderText = document.createElement("pre");
 	senderText.id = "sender";
