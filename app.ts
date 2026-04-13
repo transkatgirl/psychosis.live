@@ -793,8 +793,11 @@ async function launchReceiver(credentials: RoomCredentials) {
 
 				if (stream) {
 					video.srcObject = stream;
-					/*stream.onremovetrack = () => {
-						let video = peerVideos[peerId];
+					stream.onaddtrack = () => {
+						video.srcObject = stream;
+					};
+					stream.onremovetrack = () => {
+						/*let video = peerVideos[peerId];
 						if (
 							video &&
 							(video.srcObject as MediaStream).getTracks()
@@ -804,8 +807,9 @@ async function launchReceiver(credentials: RoomCredentials) {
 							videoContainer.removeChild(video);
 							delete peerVideos[peerId];
 							updateGalleryStyles(videoContainer);
-						}
-					};*/
+						}*/
+						video.srcObject = stream;
+					};
 				}
 			};
 		},
