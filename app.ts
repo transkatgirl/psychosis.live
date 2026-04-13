@@ -5,7 +5,7 @@ import {
 	Room,
 	type RoomCredentials,
 } from "./room/webrtc";
-import { selfId, setSelfId } from "./room/core";
+import { generateRandomString, selfId, setSelfId } from "./room/core";
 import {
 	adaptiveSettings,
 	buildSenderEncoding,
@@ -71,7 +71,7 @@ function helperMenu() {
 	roomInput.type = "text";
 	roomInput.required = true;
 	roomInput.size = 16;
-	roomInput.value = generateRandom(8);
+	roomInput.value = generateRandomString(8);
 
 	const passwordLabel = document.createElement("label");
 	passwordLabel.htmlFor = "pass";
@@ -81,7 +81,7 @@ function helperMenu() {
 	passwordInput.type = "text";
 	passwordInput.required = true;
 	passwordInput.size = 32;
-	passwordInput.value = generateRandom(16);
+	passwordInput.value = generateRandomString(16);
 
 	document.body.appendChild(roomLabel);
 	document.body.appendChild(roomInput);
@@ -169,12 +169,6 @@ function helperMenu() {
 			parametersHTML +
 			'</details><p>Made by <a href="https://x.com/transkatgirl">transkatgirl</a>.</p>'
 	);
-}
-
-function generateRandom(bytes: number) {
-	const data = new Uint8Array(bytes);
-	self.crypto.getRandomValues(data);
-	return bs58.encode(data);
 }
 
 function generateURL(role: Role, id: string, pass: string): string {

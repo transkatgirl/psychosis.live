@@ -120,6 +120,10 @@ function generateRandom(length: number) {
 	return data;
 }
 
+export function generateRandomString(randomBytes: number) {
+	return bs58.encode(generateRandom(randomBytes));
+}
+
 async function compress(bytes: ArrayBuffer): Promise<ArrayBuffer> {
 	const compressedStream = (
 		new Response(bytes).body as ReadableStream<Uint8Array<ArrayBuffer>>
