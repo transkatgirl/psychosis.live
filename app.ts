@@ -332,6 +332,8 @@ async function launchSender(credentials: RoomCredentials) {
 
 	if (params.get("echoCancellation") === "true") {
 		echoCancellation = true;
+	} else if (params.get("echoCancellation") === "false") {
+		echoCancellation = false;
 	} else if (params.has("echoCancellation")) {
 		echoCancellation = params.get("echoCancellation") as string;
 	}
