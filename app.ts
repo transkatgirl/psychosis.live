@@ -673,18 +673,12 @@ async function launchSender(credentials: RoomCredentials) {
 			}
 		}
 
-		oldTrack.stop();
 		stream.removeTrack(oldTrack);
+		oldTrack.stop();
 		stream.addTrack(newTrack);
 
 		for (const [peerId, peer] of Object.entries(room.peers)) {
 			if (!peer.pc || BigInt(peerId) % 2n != 0n) continue;
-
-			for (const transceiver of peer.pc.getTransceivers()) {
-				if (transceiver.sender.track?.id == oldTrack.id) {
-					transceiver.stop();
-				}
-			}
 
 			addTrack(peer.pc, newTrack, stream);
 		}
