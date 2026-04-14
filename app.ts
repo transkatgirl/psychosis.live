@@ -972,6 +972,8 @@ async function inputOverlay(
 	overlay.replaceChildren(fragment);
 }
 
+let isReplacingDevice = false;
+
 async function createTrackUI(
 	track: MediaStreamTrack,
 	stream: MediaStream,
@@ -1015,60 +1017,65 @@ async function createTrackUI(
 			trackSelect.append(deviceOption);
 		}
 	}
-	trackSelect.onchange = async (event) => {
-		const trackConstraints = structuredClone(
-			constraints ? constraints : {}
-		);
-		trackConstraints.deviceId = {
-			exact: (event.target as HTMLSelectElement).value,
-		};
-		if (
-			!trackConstraints.deviceId.exact ||
-			trackConstraints.deviceId.exact.length == 0
-		) {
-			if (trackSettings.deviceId) {
-				(event.target as HTMLSelectElement).value =
-					trackSettings.deviceId;
+	const replaceDevice = async (deviceId?: string) => {
+		if (isReplacingDevice) return;
+		isReplacingDevice = true;
+
+		try {
+			const trackConstraints = structuredClone(
+				constraints ? constraints : {}
+			);
+			if (deviceId && deviceId.length > 0) {
+				trackConstraints.deviceId = {
+					exact: deviceId,
+				};
+			} else {
+				deviceId = undefined;
 			}
-			return;
-		}
-		let streamConstraints: MediaStreamConstraints = {};
-		if (track.kind == "video") {
-			trackConstraints.facingMode = undefined;
-			// @ts-ignore
-			trackConstraints.advanced = undefined;
-			streamConstraints = {
-				video: trackConstraints,
-				audio: false,
-			};
-		} else if (track.kind == "audio") {
-			streamConstraints = {
-				video: false,
-				audio: trackConstraints,
-			};
-		} else {
-			return;
+			let streamConstraints: MediaStreamConstraints = {};
+			if (track.kind == "video") {
+				trackConstraints.facingMode = undefined;
+				// @ts-ignore
+				trackConstraints.advanced = undefined;
+				streamConstraints = {
+					video: trackConstraints,
+					audio: false,
+				};
+			} else if (track.kind == "audio") {
+				streamConstraints = {
+					video: false,
+					audio: trackConstraints,
+				};
+			} else {
+				return;
+			}
+
+			const temporaryStream = await navigator.mediaDevices.getUserMedia(
+				streamConstraints
+			);
+			const newTrack = temporaryStream.getTracks()[0];
+			if (newTrack) {
+				if (!deviceId || newTrack.getSettings().deviceId === deviceId) {
+					trackUi.remove();
+					await replaceTrack(track, newTrack);
+				} else {
+					newTrack.stop();
+					console.error("Device IDs don't match!");
+				}
+			}
+		} catch (error) {
+			console.error(error);
 		}
 
-		const temporaryStream = await navigator.mediaDevices.getUserMedia(
-			streamConstraints
-		);
-		const newTrack = temporaryStream.getTracks()[0];
-		if (newTrack) {
-			if (
-				newTrack.getSettings().deviceId ===
-				trackConstraints.deviceId.exact
-			) {
-				trackUi.remove();
-				replaceTrack(track, newTrack);
-			} else {
-				newTrack.stop();
-				console.error("Device IDs don't match!");
-			}
-		}
+		isReplacingDevice = false;
+	};
+	trackSelect.onchange = async (event) => {
+		await replaceDevice((event.target as HTMLSelectElement).value);
 	};
 	if (hasDevice) {
 		placeholderOption.remove();
+	} else if (devices.length > 0) {
+		replaceDevice();
 	}
 	trackUi.appendChild(trackSelect);
 
