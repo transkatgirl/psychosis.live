@@ -52,6 +52,14 @@ export class Room {
 			peerId: string,
 			message: WebRTCMessage
 		) => WebRTCMessage = (_, m) => m,
+		mungeOffer: (
+			peerId: string,
+			message: RTCSessionDescriptionInit
+		) => RTCSessionDescriptionInit = (_, m) => m,
+		mungeAnswer: (
+			peerId: string,
+			message: RTCSessionDescriptionInit
+		) => RTCSessionDescriptionInit = (_, m) => m,
 		interval: number = 1_500,
 		timeout: number = 15_000
 	) {
@@ -100,7 +108,9 @@ export class Room {
 									await sendResponse({});
 								}
 							},
-							timeout
+							timeout,
+							(m) => mungeOffer(peerId, m),
+							(m) => mungeAnswer(peerId, m)
 						);
 						configurePeer(peerId, this.peers[peerId]);
 					}
@@ -180,17 +190,27 @@ export class Peer {
 	ignoreOffer = false;
 	isSettingRemoteAnswerPending = false;
 	beforeClose: (pc: Peer) => void;
+	mungeAnswer: (
+		message: RTCSessionDescriptionInit
+	) => RTCSessionDescriptionInit;
 	timeoutId: number | undefined;
 	public constructor(
 		configuration: RTCConfiguration,
 		polite: boolean,
 		sendMessage: (message: WebRTCMessage) => Promise<void>,
 		beforeClose: (pc: Peer) => void,
-		timeout: number = 15_000
+		timeout: number = 15_000,
+		mungeOffer: (
+			message: RTCSessionDescriptionInit
+		) => RTCSessionDescriptionInit = (m) => m,
+		mungeAnswer: (
+			message: RTCSessionDescriptionInit
+		) => RTCSessionDescriptionInit = (m) => m
 	) {
 		this.pc = new RTCPeerConnection(configuration);
 		this.polite = polite;
 		this.beforeClose = beforeClose;
+		this.mungeAnswer = mungeAnswer;
 		this.pc.onicecandidate = async ({ candidate }) => {
 			if (!this.pc || !candidate?.candidate) return;
 
@@ -251,7 +271,8 @@ export class Peer {
 
 			try {
 				this.makingOffer = true;
-				await this.pc.setLocalDescription();
+				const offer = await this.pc.createOffer();
+				await this.pc.setLocalDescription(mungeOffer(offer));
 				await sendMessage({
 					desc: this.pc.localDescription?.toJSON(),
 				});
@@ -287,7 +308,8 @@ export class Peer {
 			this.isSettingRemoteAnswerPending = false;
 
 			if (message.desc.type === "offer") {
-				await this.pc.setLocalDescription();
+				const answer = await this.pc.createAnswer();
+				await this.pc.setLocalDescription(this.mungeAnswer(answer));
 				await sendMessage({
 					desc: this.pc.localDescription?.toJSON(),
 				});
