@@ -46,7 +46,7 @@ export function calculateReasonableVideoBitrateKbps(
 	return Math.round(bitrate * Math.max(1 + (framerate - 30) * (0.5 / 30), 1));
 }
 
-export function mungeSDP(sdp: string): string {
+export function mungeSDP(sdp: string, stereo: boolean): string {
 	const parsed = sdpTransform.parse(sdp);
 
 	// UGLY HACK for enabling audio RTX
@@ -83,7 +83,11 @@ export function mungeSDP(sdp: string): string {
 					DEV: console.log(
 						"force updating opus parameters using SDP munging"
 					);
-					entry.config = "stereo=1;useinbandfec=1";
+					if (stereo) {
+						entry.config = "stereo=1;useinbandfec=1";
+					} else {
+						entry.config = "useinbandfec=1";
+					}
 				}
 			}
 
