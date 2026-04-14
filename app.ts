@@ -341,6 +341,8 @@ async function launchSender(credentials: RoomCredentials) {
 		autoGainControl: params.get("autoGainControl") === "true",
 		echoCancellation,
 		noiseSuppression: params.get("noiseSuppression") === "true",
+		// @ts-ignore
+		voiceIsolation: params.get("voiceIsolation") === "true",
 		sampleRate: { ideal: 48000 }, // Avoid resampling (Opus uses 48kHz sample rate)
 		//sampleSize: { min: 16, ideal: 24 }, // Require audio to be at least 16-bit (disabled because this probably disables audio devices that use floating point for samples?)
 	};
