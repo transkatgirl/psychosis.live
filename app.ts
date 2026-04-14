@@ -499,6 +499,23 @@ async function launchSender(credentials: RoomCredentials) {
 		// @ts-ignore
 		//constraints.windowAudio = "window";
 
+		const button = document.createElement("button");
+		button.innerText =
+			"Click to start (user interaction is required by getDisplayMedia)";
+		document.body.appendChild(button);
+
+		await new Promise((resolve, reject) => {
+			button.addEventListener(
+				"click",
+				function (e) {
+					resolve(undefined);
+				},
+				{ once: true }
+			);
+		});
+
+		button.remove();
+
 		stream = await navigator.mediaDevices.getDisplayMedia(constraints);
 	} else {
 		if (enableVideo) {
