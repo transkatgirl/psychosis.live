@@ -685,7 +685,9 @@ async function launchSender(credentials: RoomCredentials) {
 			addTrack(peer.pc, newTrack, stream);
 		}
 
-		await inputOverlay(settings, stream, constraints, replaceTrack);
+		if (params.get("displayMedia") !== "true") {
+			await inputOverlay(settings, stream, constraints, replaceTrack);
+		}
 	};
 	stream.onaddtrack = async (event) => {
 		const room = (globalThis as any).room as Room;
@@ -696,7 +698,9 @@ async function launchSender(credentials: RoomCredentials) {
 			addTrack(peer.pc, event.track, stream);
 		}
 
-		await inputOverlay(settings, stream, constraints, replaceTrack);
+		if (params.get("displayMedia") !== "true") {
+			await inputOverlay(settings, stream, constraints, replaceTrack);
+		}
 	};
 	stream.onremovetrack = async (event) => {
 		const room = (globalThis as any).room as Room;
@@ -711,13 +715,19 @@ async function launchSender(credentials: RoomCredentials) {
 			}
 		}
 
-		await inputOverlay(settings, stream, constraints, replaceTrack);
+		if (params.get("displayMedia") !== "true") {
+			await inputOverlay(settings, stream, constraints, replaceTrack);
+		}
 	};
 	navigator.mediaDevices.addEventListener("devicechange", async () => {
-		await inputOverlay(settings, stream, constraints, replaceTrack);
+		if (params.get("displayMedia") !== "true") {
+			await inputOverlay(settings, stream, constraints, replaceTrack);
+		}
 	});
 
-	await inputOverlay(settings, stream, constraints, replaceTrack);
+	if (params.get("displayMedia") !== "true") {
+		await inputOverlay(settings, stream, constraints, replaceTrack);
+	}
 }
 
 async function launchReceiver(credentials: RoomCredentials) {
