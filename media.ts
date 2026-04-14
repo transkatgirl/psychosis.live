@@ -76,6 +76,15 @@ export function mungeSDP(sdp: string): string {
 				}
 			}
 
+			for (const entry of media.fmtp) {
+				if (entry.payload == opus) {
+					DEV: console.log(
+						"force updating opus parameters using SDP munging"
+					);
+					entry.config = "stereo=1;useinbandfec=1";
+				}
+			}
+
 			if (opus && !hasRTX && media.payloads) {
 				let payloads = sdpTransform.parsePayloads(media.payloads);
 				payloads.splice(payloads.indexOf(opus) + 1, 0, 112);
@@ -200,7 +209,13 @@ function sortCodecs(codecs: RTCRtpCodec[], preferredOrder: string[]) {
 		const indexB = preferredOrder.indexOf(b.mimeType);
 		const orderA = indexA >= 0 ? indexA : Number.MAX_VALUE;
 		const orderB = indexB >= 0 ? indexB : Number.MAX_VALUE;
-		return orderA - orderB;
+		if (orderA - orderB == 0) {
+			return (
+				(b.channels ? b.channels : 0) - (a.channels ? a.channels : 0)
+			);
+		} else {
+			return orderA - orderB;
+		}
 	});
 }
 
