@@ -31,7 +31,8 @@ input[type="text"] {
 	font-family: monospace;
 }
 
-input[type="text"]:invalid {
+input[type="text"]:invalid,
+select:has(option[value=""]:checked) {
 	background-color: lightpink;
 }
 
