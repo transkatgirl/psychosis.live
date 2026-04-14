@@ -981,12 +981,20 @@ async function createTrackUI(
 	) => Promise<void>,
 	constraints?: MediaTrackConstraints
 ) {
+	let hasDevice = false;
+
 	const trackUi = document.createElement("div");
 
 	const trackSettings = track.getSettings();
 
 	const trackSelect = document.createElement("select");
 	const devices = await navigator.mediaDevices.enumerateDevices();
+
+	const placeholderOption = document.createElement("option");
+	placeholderOption.value = "";
+
+	trackSelect.appendChild(placeholderOption);
+
 	devices.sort((a, b) =>
 		a.groupId > b.groupId ? 1 : b.groupId > a.groupId ? -1 : 0
 	);
@@ -1000,6 +1008,9 @@ async function createTrackUI(
 			deviceOption.selected = trackSettings.deviceId === device.deviceId;
 			deviceOption.innerText = device.label;
 			trackSelect.append(deviceOption);
+			if (trackSettings.deviceId === device.deviceId) {
+				hasDevice = true;
+			}
 		}
 	}
 	trackSelect.onchange = async (event) => {
@@ -1009,6 +1020,16 @@ async function createTrackUI(
 		trackConstraints.deviceId = {
 			exact: (event.target as HTMLSelectElement).value,
 		};
+		if (
+			!trackConstraints.deviceId.exact ||
+			trackConstraints.deviceId.exact.length == 0
+		) {
+			if (trackSettings.deviceId) {
+				(event.target as HTMLSelectElement).value =
+					trackSettings.deviceId;
+			}
+			return;
+		}
 		let streamConstraints: MediaStreamConstraints = {};
 		if (track.kind == "video") {
 			trackConstraints.facingMode = undefined;
@@ -1044,6 +1065,9 @@ async function createTrackUI(
 			}
 		}
 	};
+	if (hasDevice) {
+		placeholderOption.remove();
+	}
 	trackUi.appendChild(trackSelect);
 
 	const enableCheckbox = document.createElement("input");
