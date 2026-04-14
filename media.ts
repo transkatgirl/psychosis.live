@@ -78,6 +78,8 @@ export function mungeSDP(sdp: string): string {
 
 			for (const entry of media.fmtp) {
 				if (entry.payload == opus) {
+					// make sure DTX and other unwanted params are disabled; make sure FEC is enabled
+
 					DEV: console.log(
 						"force updating opus parameters using SDP munging"
 					);
@@ -117,6 +119,39 @@ export function mungeSDP(sdp: string): string {
 				});
 				media.fmtp.sort(payloadOrdering);
 				media.payloads.replace("111 ", "111 112 ");*/
+			}
+		}
+	}
+
+	return sdpTransform.write(parsed);
+}
+
+export function mungeSDPOfferAnswer(sdp: string): string {
+	const parsed = sdpTransform.parse(sdp);
+
+	// UGLY HACK for enabling stereo audio
+
+	for (const media of parsed.media) {
+		if (media.type == "audio") {
+			let opus: number | undefined;
+
+			for (const entry of media.rtp) {
+				if (entry.codec == "opus") {
+					opus = entry.payload;
+				}
+			}
+
+			for (const entry of media.fmtp) {
+				if (entry.payload == opus && !entry.config.includes("stereo")) {
+					DEV: console.log(
+						"force enabling stereo audio using SDP munging"
+					);
+					if (entry.config.length == 0) {
+						entry.config = "stereo=1";
+					} else {
+						entry.config = entry.config + ";stereo=1";
+					}
+				}
 			}
 		}
 	}

@@ -13,6 +13,7 @@ import {
 	calculateReasonableMinimumAudioBitrateKbps,
 	calculateReasonableVideoBitrateKbps,
 	mungeSDP,
+	mungeSDPOfferAnswer,
 	setCodecPreferences,
 	setReceiverSettings,
 	setSenderSettings,
@@ -893,6 +894,20 @@ async function launchReceiver(credentials: RoomCredentials) {
 			if (params.get("stats") === "true") {
 				await statsOverlay(overlay, peers);
 			}
+		},
+		(_, message) => message,
+		(_, message) => message,
+		(_, message) => {
+			if (message.sdp) {
+				message.sdp = mungeSDPOfferAnswer(message.sdp);
+			}
+			return message;
+		},
+		(_, message) => {
+			if (message.sdp) {
+				message.sdp = mungeSDPOfferAnswer(message.sdp);
+			}
+			return message;
 		}
 	);
 
