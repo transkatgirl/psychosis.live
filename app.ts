@@ -675,8 +675,8 @@ async function launchSender(credentials: RoomCredentials) {
 			}
 		}
 
-		stream.removeTrack(oldTrack);
 		oldTrack.stop();
+		stream.removeTrack(oldTrack);
 		stream.addTrack(newTrack);
 
 		for (const [peerId, peer] of Object.entries(room.peers)) {
@@ -992,7 +992,6 @@ async function createTrackUI(
 
 	const placeholderOption = document.createElement("option");
 	placeholderOption.value = "";
-
 	trackSelect.appendChild(placeholderOption);
 
 	devices.sort((a, b) =>
@@ -1005,12 +1004,15 @@ async function createTrackUI(
 		) {
 			const deviceOption = document.createElement("option");
 			deviceOption.value = device.deviceId;
-			deviceOption.selected = trackSettings.deviceId === device.deviceId;
+			if (track.readyState !== "ended") {
+				deviceOption.selected =
+					trackSettings.deviceId === device.deviceId;
+				if (trackSettings.deviceId === device.deviceId) {
+					hasDevice = true;
+				}
+			}
 			deviceOption.innerText = device.label;
 			trackSelect.append(deviceOption);
-			if (trackSettings.deviceId === device.deviceId) {
-				hasDevice = true;
-			}
 		}
 	}
 	trackSelect.onchange = async (event) => {
