@@ -84,22 +84,30 @@ export function mungeSDP(sdp: string, stereo: boolean): string {
 						"updating opus parameters using SDP munging"
 					);
 
-					if (stereo && !entry.config.includes("stereo")) {
-						if (entry.config.length > 0) {
-							entry.config = entry.config + ";stereo=1";
-						} else {
-							entry.config = "stereo=1";
+					const params = sdpTransform.parseParams(entry.config);
+
+					if (stereo) {
+						if (!("stereo" in params)) {
+							params["stereo"] = 1;
 						}
+					} else {
+						delete params["stereo"];
 					}
 
-					entry.config = entry.config.replace(";usedtx=1", "");
-					entry.config = entry.config.replace("usedtx=1;", "");
+					delete params["usedtx"];
 
-					if (!entry.config.includes("useinbandfec=1")) {
-						if (entry.config.length > 0) {
-							entry.config = entry.config + ";useinbandfec=1";
+					if (!("useinbandfec" in params)) {
+						params["useinbandfec"] = 1;
+					}
+
+					entry.config = "";
+
+					for (const [key, value] of Object.entries(params)) {
+						if (entry.config.length == 0) {
+							entry.config = key + "=" + value;
 						} else {
-							entry.config = "useinbandfec=1";
+							entry.config =
+								entry.config + ";" + key + "=" + value;
 						}
 					}
 				}
