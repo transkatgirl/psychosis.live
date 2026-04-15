@@ -80,7 +80,9 @@ export function mungeSDP(sdp: string, stereo: boolean): string {
 				if (entry.payload == opus) {
 					// make sure DTX is disabled; make sure FEC is enabled
 
-					DEV: console.log("force opus parameters using SDP munging");
+					DEV: console.log(
+						"updating opus parameters using SDP munging"
+					);
 
 					if (stereo && !entry.config.includes("stereo")) {
 						if (entry.config.length > 0) {
