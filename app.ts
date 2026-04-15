@@ -690,6 +690,8 @@ async function launchSender(credentials: RoomCredentials) {
 	) => {
 		const room = (globalThis as any).room as Room;
 
+		oldTrack.stop();
+
 		for (const [peerId, peer] of Object.entries(room.peers)) {
 			if (!peer.pc || BigInt(peerId) % 2n != 0n) continue;
 
@@ -700,7 +702,6 @@ async function launchSender(credentials: RoomCredentials) {
 			}
 		}
 
-		oldTrack.stop();
 		stream.removeTrack(oldTrack);
 		stream.addTrack(newTrack);
 
@@ -857,23 +858,6 @@ async function launchReceiver(credentials: RoomCredentials) {
 
 				if (stream) {
 					video.srcObject = stream;
-					stream.onaddtrack = () => {
-						video.srcObject = stream;
-					};
-					stream.onremovetrack = () => {
-						/*let video = peerVideos[peerId];
-						if (
-							video &&
-							(video.srcObject as MediaStream).getTracks()
-								.length == 0
-						) {
-							video.srcObject = null;
-							videoContainer.removeChild(video);
-							delete peerVideos[peerId];
-							updateGalleryStyles(videoContainer);
-						}*/
-						video.srcObject = stream;
-					};
 				}
 			};
 		},
@@ -885,7 +869,6 @@ async function launchReceiver(credentials: RoomCredentials) {
 			let video = peerVideos[peerId];
 			if (video) {
 				if (video.srcObject) {
-					(video.srcObject as MediaStream).onremovetrack = null;
 					(video.srcObject as MediaStream)
 						.getTracks()
 						.forEach((track) => track.stop());
