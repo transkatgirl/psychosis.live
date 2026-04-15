@@ -626,12 +626,6 @@ async function launchSender(credentials: RoomCredentials) {
 			for (const [peerId, peer] of Object.entries(peers)) {
 				if (!peer.pc) continue;
 
-				if (peer.pc.getTransceivers().length > 4) {
-					// ugly hack to prevent tracks from breaking when rapidly switching between inputs
-					peer.close();
-					continue;
-				}
-
 				const dynamicAudioBitrate =
 					params.get("dynamicAudioBitrate") === "true" &&
 					params.get("displayMedia") !== "true";
@@ -702,8 +696,6 @@ async function launchSender(credentials: RoomCredentials) {
 
 		let promises = [];
 
-		let peers: Record<string, Peer> = {};
-
 		for (const [peerId, peer] of Object.entries(room.peers)) {
 			if (!peer.pc || BigInt(peerId) % 2n != 0n) continue;
 
@@ -715,67 +707,14 @@ async function launchSender(credentials: RoomCredentials) {
 								"replaceTrack failed, using fallback method for " +
 									peerId
 							);
-							peers[peerId] = peer;
+							peer.close();
 						})
 					);
 				}
 			}
 		}
 
-		try {
-			await Promise.allSettled(promises);
-		} catch (_error) {}
-
-		if (Object.entries(peers).length > 0) {
-			promises = [];
-
-			for (const [peerId, peer] of Object.entries(peers)) {
-				if (!peer.pc || BigInt(peerId) % 2n != 0n) continue;
-
-				for (const transceiver of peer.pc.getTransceivers()) {
-					if (
-						transceiver.direction == "stopped" ||
-						transceiver.direction == "inactive" ||
-						transceiver.sender.track === null
-					)
-						continue;
-
-					promises.push(
-						transceiver.sender.replaceTrack(null).then(() => {
-							if (
-								transceiver.direction != "stopped" &&
-								transceiver.direction != "inactive"
-							) {
-								transceiver.direction = "inactive";
-							}
-						})
-					);
-				}
-			}
-
-			await Promise.allSettled(promises);
-			promises = [];
-
-			for (const [peerId, peer] of Object.entries(peers)) {
-				if (!peer.pc || BigInt(peerId) % 2n != 0n) continue;
-
-				for (const track of stream.getTracks()) {
-					promises.push(addTrack(peer.pc, track, stream));
-				}
-			}
-
-			await Promise.allSettled(promises);
-
-			for (const [peerId, peer] of Object.entries(peers)) {
-				if (!peer.pc || BigInt(peerId) % 2n != 0n) continue;
-
-				for (const transceiver of peer.pc.getTransceivers()) {
-					if (transceiver.direction == "inactive") {
-						transceiver.stop();
-					}
-				}
-			}
-		}
+		await Promise.allSettled(promises);
 
 		if (params.get("displayMedia") !== "true") {
 			await inputOverlay(settings, stream, constraints, replaceTrack);
