@@ -78,15 +78,27 @@ export function mungeSDP(sdp: string, stereo: boolean): string {
 
 			for (const entry of media.fmtp) {
 				if (entry.payload == opus) {
-					// make sure DTX and other unwanted params are disabled; make sure FEC is enabled
+					// make sure DTX is disabled; make sure FEC is enabled
 
-					DEV: console.log(
-						"force updating opus parameters using SDP munging"
-					);
-					if (stereo) {
-						entry.config = "minptime=20;stereo=1;useinbandfec=1";
-					} else {
-						entry.config = "minptime=20;useinbandfec=1";
+					DEV: console.log("force opus parameters using SDP munging");
+
+					if (stereo && !entry.config.includes("stereo")) {
+						if (entry.config.length > 0) {
+							entry.config = entry.config + ";stereo=1";
+						} else {
+							entry.config = "stereo=1";
+						}
+					}
+
+					entry.config = entry.config.replace(";usedtx=1", "");
+					entry.config = entry.config.replace("usedtx=1;", "");
+
+					if (!entry.config.includes("useinbandfec=1")) {
+						if (entry.config.length > 0) {
+							entry.config = entry.config + ";useinbandfec=1";
+						} else {
+							entry.config = "useinbandfec=1";
+						}
 					}
 				}
 			}
