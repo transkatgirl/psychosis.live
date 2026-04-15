@@ -626,6 +626,12 @@ async function launchSender(credentials: RoomCredentials) {
 			for (const [peerId, peer] of Object.entries(peers)) {
 				if (!peer.pc) continue;
 
+				if (peer.pc.getTransceivers().length > 4) {
+					// ugly hack to prevent tracks from breaking when rapidly switching between inputs
+					peer.close();
+					continue;
+				}
+
 				const dynamicAudioBitrate =
 					params.get("dynamicAudioBitrate") === "true" &&
 					params.get("displayMedia") !== "true";
@@ -691,47 +697,82 @@ async function launchSender(credentials: RoomCredentials) {
 		const room = (globalThis as any).room as Room;
 
 		oldTrack.stop();
-
-		let promises = [];
-
-		for (const [peerId, peer] of Object.entries(room.peers)) {
-			if (!peer.pc || BigInt(peerId) % 2n != 0n) continue;
-
-			for (const transceiver of peer.pc.getTransceivers()) {
-				if (transceiver.direction == "stopped") continue;
-
-				promises.push(
-					transceiver.sender.replaceTrack(null).then(() => {
-						if (transceiver.direction != "stopped") {
-							transceiver.direction = "inactive";
-						}
-					})
-				);
-			}
-		}
-
-		await Promise.all(promises);
-		promises = [];
-
 		stream.removeTrack(oldTrack);
 		stream.addTrack(newTrack);
 
-		for (const [peerId, peer] of Object.entries(room.peers)) {
-			if (!peer.pc || BigInt(peerId) % 2n != 0n) continue;
+		let promises = [];
 
-			for (const track of stream.getTracks()) {
-				promises.push(addTrack(peer.pc, track, stream));
-			}
-		}
-
-		await Promise.all(promises);
+		let peers: Record<string, Peer> = {};
 
 		for (const [peerId, peer] of Object.entries(room.peers)) {
 			if (!peer.pc || BigInt(peerId) % 2n != 0n) continue;
 
 			for (const transceiver of peer.pc.getTransceivers()) {
-				if (transceiver.direction == "inactive") {
-					transceiver.stop();
+				if (transceiver.sender.track?.id == oldTrack.id) {
+					promises.push(
+						transceiver.sender.replaceTrack(newTrack).catch(() => {
+							console.log(
+								"replaceTrack failed, using fallback method for " +
+									peerId
+							);
+							peers[peerId] = peer;
+						})
+					);
+				}
+			}
+		}
+
+		try {
+			await Promise.all(promises);
+		} catch (_error) {}
+
+		if (Object.entries(peers).length > 0) {
+			promises = [];
+
+			for (const [peerId, peer] of Object.entries(peers)) {
+				if (!peer.pc || BigInt(peerId) % 2n != 0n) continue;
+
+				for (const transceiver of peer.pc.getTransceivers()) {
+					if (
+						transceiver.direction == "stopped" ||
+						transceiver.direction == "inactive" ||
+						transceiver.sender.track === null
+					)
+						continue;
+
+					promises.push(
+						transceiver.sender.replaceTrack(null).then(() => {
+							if (
+								transceiver.direction != "stopped" &&
+								transceiver.direction != "inactive"
+							) {
+								transceiver.direction = "inactive";
+							}
+						})
+					);
+				}
+			}
+
+			await Promise.all(promises);
+			promises = [];
+
+			for (const [peerId, peer] of Object.entries(peers)) {
+				if (!peer.pc || BigInt(peerId) % 2n != 0n) continue;
+
+				for (const track of stream.getTracks()) {
+					promises.push(addTrack(peer.pc, track, stream));
+				}
+			}
+
+			await Promise.all(promises);
+
+			for (const [peerId, peer] of Object.entries(peers)) {
+				if (!peer.pc || BigInt(peerId) % 2n != 0n) continue;
+
+				for (const transceiver of peer.pc.getTransceivers()) {
+					if (transceiver.direction == "inactive") {
+						transceiver.stop();
+					}
 				}
 			}
 		}
