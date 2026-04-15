@@ -708,6 +708,8 @@ async function launchSender(credentials: RoomCredentials) {
 								"replaceTrack failed, using fallback method for " +
 									peerId
 							);
+							// replaceTrack() *almost* always works. in the rare cases it doesn't, restarting the connection is by far the most reliable way to handle switching tracks, even if it is quite slow.
+							// trust me, i've tried pretty much everything when it comes to good fallbacks for replacing tracks, and i just couldn't come up of anything that would work reliably across browsers. there are always weird edge cases and irrecoverable failure modes you would run into once in a rare while, and although i got close to cross-browser reliability through "restart the connection if anything looks funny", it was becoming such a tangled mess that i didn't feel comfortable trusting it.
 							peer.close();
 						})
 					);
