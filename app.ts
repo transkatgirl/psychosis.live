@@ -584,7 +584,7 @@ async function launchSender(credentials: RoomCredentials) {
 		track: MediaStreamTrack,
 		stream: MediaStream
 	) => {
-		let transceiver = pc.addTransceiver(track, {
+		const transceiver = pc.addTransceiver(track, {
 			sendEncodings: [
 				buildSenderEncoding(
 					track.kind,
@@ -692,15 +692,26 @@ async function launchSender(credentials: RoomCredentials) {
 
 		oldTrack.stop();
 
+		let promises = [];
+
 		for (const [peerId, peer] of Object.entries(room.peers)) {
 			if (!peer.pc || BigInt(peerId) % 2n != 0n) continue;
 
 			for (const transceiver of peer.pc.getTransceivers()) {
-				if (transceiver.sender.track?.id == oldTrack.id) {
-					transceiver.stop();
-				}
+				if (transceiver.direction == "stopped") continue;
+
+				promises.push(
+					transceiver.sender.replaceTrack(null).then(() => {
+						if (transceiver.direction != "stopped") {
+							transceiver.direction = "inactive";
+						}
+					})
+				);
 			}
 		}
+
+		await Promise.all(promises);
+		promises = [];
 
 		stream.removeTrack(oldTrack);
 		stream.addTrack(newTrack);
@@ -708,7 +719,21 @@ async function launchSender(credentials: RoomCredentials) {
 		for (const [peerId, peer] of Object.entries(room.peers)) {
 			if (!peer.pc || BigInt(peerId) % 2n != 0n) continue;
 
-			addTrack(peer.pc, newTrack, stream);
+			for (const track of stream.getTracks()) {
+				promises.push(addTrack(peer.pc, track, stream));
+			}
+		}
+
+		await Promise.all(promises);
+
+		for (const [peerId, peer] of Object.entries(room.peers)) {
+			if (!peer.pc || BigInt(peerId) % 2n != 0n) continue;
+
+			for (const transceiver of peer.pc.getTransceivers()) {
+				if (transceiver.direction == "inactive") {
+					transceiver.stop();
+				}
+			}
 		}
 
 		if (params.get("displayMedia") !== "true") {
