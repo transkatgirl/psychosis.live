@@ -165,7 +165,7 @@ function helperMenu() {
 			knownIssuesHTML +
 			"</details></br><details><summary>URL parameters</summary>" +
 			parametersHTML +
-			'</details><p>Made by <a href="https://x.com/transkatgirl">transkatgirl</a>.</p>'
+			'</details><p>Made by <a href="https://github.com/transkatgirl">transkatgirl</a> and <a href="https://github.com/transkatgirl/psychosis.live">released into the public domain</a>.</p>'
 	);
 }
 
