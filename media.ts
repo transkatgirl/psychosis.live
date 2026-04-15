@@ -84,9 +84,9 @@ export function mungeSDP(sdp: string, stereo: boolean): string {
 						"force updating opus parameters using SDP munging"
 					);
 					if (stereo) {
-						entry.config = "stereo=1;useinbandfec=1";
+						entry.config = "minptime=20;stereo=1;useinbandfec=1";
 					} else {
-						entry.config = "useinbandfec=1";
+						entry.config = "minptime=20;useinbandfec=1";
 					}
 				}
 			}
