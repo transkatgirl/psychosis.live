@@ -723,7 +723,7 @@ async function launchSender(credentials: RoomCredentials) {
 		}
 
 		try {
-			await Promise.all(promises);
+			await Promise.allSettled(promises);
 		} catch (_error) {}
 
 		if (Object.entries(peers).length > 0) {
@@ -753,7 +753,7 @@ async function launchSender(credentials: RoomCredentials) {
 				}
 			}
 
-			await Promise.all(promises);
+			await Promise.allSettled(promises);
 			promises = [];
 
 			for (const [peerId, peer] of Object.entries(peers)) {
@@ -764,7 +764,7 @@ async function launchSender(credentials: RoomCredentials) {
 				}
 			}
 
-			await Promise.all(promises);
+			await Promise.allSettled(promises);
 
 			for (const [peerId, peer] of Object.entries(peers)) {
 				if (!peer.pc || BigInt(peerId) % 2n != 0n) continue;
