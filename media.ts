@@ -78,7 +78,7 @@ export function mungeSDP(sdp: string, stereo: boolean): string {
 
 			for (const entry of media.fmtp) {
 				if (entry.payload == opus) {
-					// make sure DTX is disabled; make sure FEC is enabled
+					// make sure DTX & CBR is disabled; make sure FEC is enabled
 
 					DEV: console.log(
 						"updating opus parameters using SDP munging"
@@ -95,6 +95,7 @@ export function mungeSDP(sdp: string, stereo: boolean): string {
 					}
 
 					delete params["usedtx"];
+					delete params["cbr"];
 
 					if (!("useinbandfec" in params)) {
 						params["useinbandfec"] = 1;
