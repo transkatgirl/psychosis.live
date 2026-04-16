@@ -181,7 +181,6 @@ function generateURL(role: Role, id: string, pass: string): string {
 		url.searchParams.set("height", String(1080));
 		url.searchParams.set("frameRate", String(60));
 		url.searchParams.set("channelCount", String(1));
-		url.searchParams.set("autoGainControl", "true");
 		url.searchParams.set("audioContentHint", "music"); // disables most audio processing
 		url.searchParams.set("videoContentHint", "motion");
 		url.searchParams.set("maxAudioBitrate", "-1");
@@ -604,6 +603,7 @@ async function launchSender(credentials: RoomCredentials) {
 		await setSenderSettings(transceiver.sender, degradationPreference);
 	};
 
+	const displayedTracks: Set<string> = new Set();
 	(globalThis as any).stream = stream;
 	(globalThis as any).room = new Room(
 		mqttEndpoint,
@@ -665,6 +665,32 @@ async function launchSender(credentials: RoomCredentials) {
 			if (params.get("stats") === "true") {
 				await statsOverlay(overlay, peers);
 			}
+
+			if (
+				params.get("displayMedia") !== "true" &&
+				displayedTracks.size > 0
+			) {
+				let shouldUpdate = false;
+
+				for (const track of stream.getTracks()) {
+					if (!displayedTracks.has(track.id)) {
+						shouldUpdate = true;
+					}
+				}
+
+				if (shouldUpdate) {
+					// just in case; this typically shouldn't happen
+
+					console.log("UI state is invalid; updating inputOverlay");
+					await inputOverlay(
+						settings,
+						stream,
+						constraints,
+						replaceTrack,
+						displayedTracks
+					);
+				}
+			}
 		},
 		(_, message) => {
 			if (message.desc?.sdp) {
@@ -689,6 +715,8 @@ async function launchSender(credentials: RoomCredentials) {
 		oldTrack: MediaStreamTrack,
 		newTrack: MediaStreamTrack
 	) => {
+		displayedTracks.clear();
+
 		const room = (globalThis as any).room as Room;
 
 		oldTrack.stop();
@@ -720,10 +748,18 @@ async function launchSender(credentials: RoomCredentials) {
 		await Promise.allSettled(promises);
 
 		if (params.get("displayMedia") !== "true") {
-			await inputOverlay(settings, stream, constraints, replaceTrack);
+			await inputOverlay(
+				settings,
+				stream,
+				constraints,
+				replaceTrack,
+				displayedTracks
+			);
 		}
 	};
 	stream.onaddtrack = async (event) => {
+		displayedTracks.clear();
+
 		const room = (globalThis as any).room as Room;
 
 		for (const [peerId, peer] of Object.entries(room.peers)) {
@@ -733,10 +769,18 @@ async function launchSender(credentials: RoomCredentials) {
 		}
 
 		if (params.get("displayMedia") !== "true") {
-			await inputOverlay(settings, stream, constraints, replaceTrack);
+			await inputOverlay(
+				settings,
+				stream,
+				constraints,
+				replaceTrack,
+				displayedTracks
+			);
 		}
 	};
 	stream.onremovetrack = async (event) => {
+		displayedTracks.clear();
+
 		const room = (globalThis as any).room as Room;
 
 		for (const [peerId, peer] of Object.entries(room.peers)) {
@@ -750,17 +794,35 @@ async function launchSender(credentials: RoomCredentials) {
 		}
 
 		if (params.get("displayMedia") !== "true") {
-			await inputOverlay(settings, stream, constraints, replaceTrack);
+			await inputOverlay(
+				settings,
+				stream,
+				constraints,
+				replaceTrack,
+				displayedTracks
+			);
 		}
 	};
 	navigator.mediaDevices.addEventListener("devicechange", async () => {
 		if (params.get("displayMedia") !== "true") {
-			await inputOverlay(settings, stream, constraints, replaceTrack);
+			await inputOverlay(
+				settings,
+				stream,
+				constraints,
+				replaceTrack,
+				displayedTracks
+			);
 		}
 	});
 
 	if (params.get("displayMedia") !== "true") {
-		await inputOverlay(settings, stream, constraints, replaceTrack);
+		await inputOverlay(
+			settings,
+			stream,
+			constraints,
+			replaceTrack,
+			displayedTracks
+		);
 	}
 }
 
@@ -979,11 +1041,19 @@ async function inputOverlay(
 	replaceTrack: (
 		oldTrack: MediaStreamTrack,
 		newTrack: MediaStreamTrack
-	) => Promise<void>
+	) => Promise<void>,
+	displayedTracks: Set<string>
 ) {
+	displayedTracks.clear();
+
 	const fragment = new DocumentFragment();
 
 	const tracks = stream.getTracks();
+
+	for (const track of tracks) {
+		displayedTracks.add(track.id);
+	}
+
 	tracks.sort((a, b) => (b.kind > a.kind ? 1 : a.kind > b.kind ? -1 : 0));
 	for (const track of tracks) {
 		if (track.kind == "video" && typeof constraints.video != "boolean") {
