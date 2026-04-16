@@ -604,6 +604,53 @@ async function launchSender(credentials: RoomCredentials) {
 	};
 
 	const displayedTracks: Set<string> = new Set();
+	const replaceTrack = async (
+		oldTrack: MediaStreamTrack,
+		newTrack: MediaStreamTrack
+	) => {
+		displayedTracks.clear();
+
+		const room = (globalThis as any).room as Room;
+
+		oldTrack.stop();
+		stream.removeTrack(oldTrack);
+		stream.addTrack(newTrack);
+
+		let promises = [];
+
+		for (const [peerId, peer] of Object.entries(room.peers)) {
+			if (!peer.pc || BigInt(peerId) % 2n != 0n) continue;
+
+			for (const transceiver of peer.pc.getTransceivers()) {
+				if (transceiver.sender.track?.id == oldTrack.id) {
+					promises.push(
+						transceiver.sender.replaceTrack(newTrack).catch(() => {
+							console.log(
+								"replaceTrack failed, using fallback method for " +
+									peerId
+							);
+							// replaceTrack() *almost* always works. in the rare cases it doesn't, restarting the connection is by far the most reliable way to handle switching tracks, even if it is quite slow.
+							// trust me, i've tried pretty much everything when it comes to good fallbacks for replacing tracks, and i just couldn't come up of anything that would work reliably across browsers. there are always weird edge cases and irrecoverable failure modes you would run into once in a rare while, and although i got close to cross-browser reliability through "restart the connection if anything looks funny", it was becoming such a tangled mess that i didn't feel comfortable trusting it.
+							peer.close();
+						})
+					);
+				}
+			}
+		}
+
+		await Promise.allSettled(promises);
+
+		if (params.get("displayMedia") !== "true") {
+			await inputOverlay(
+				settings,
+				stream,
+				constraints,
+				replaceTrack,
+				displayedTracks
+			);
+		}
+	};
+
 	(globalThis as any).stream = stream;
 	(globalThis as any).room = new Room(
 		mqttEndpoint,
@@ -711,52 +758,6 @@ async function launchSender(credentials: RoomCredentials) {
 			return message;
 		}
 	);
-	const replaceTrack = async (
-		oldTrack: MediaStreamTrack,
-		newTrack: MediaStreamTrack
-	) => {
-		displayedTracks.clear();
-
-		const room = (globalThis as any).room as Room;
-
-		oldTrack.stop();
-		stream.removeTrack(oldTrack);
-		stream.addTrack(newTrack);
-
-		let promises = [];
-
-		for (const [peerId, peer] of Object.entries(room.peers)) {
-			if (!peer.pc || BigInt(peerId) % 2n != 0n) continue;
-
-			for (const transceiver of peer.pc.getTransceivers()) {
-				if (transceiver.sender.track?.id == oldTrack.id) {
-					promises.push(
-						transceiver.sender.replaceTrack(newTrack).catch(() => {
-							console.log(
-								"replaceTrack failed, using fallback method for " +
-									peerId
-							);
-							// replaceTrack() *almost* always works. in the rare cases it doesn't, restarting the connection is by far the most reliable way to handle switching tracks, even if it is quite slow.
-							// trust me, i've tried pretty much everything when it comes to good fallbacks for replacing tracks, and i just couldn't come up of anything that would work reliably across browsers. there are always weird edge cases and irrecoverable failure modes you would run into once in a rare while, and although i got close to cross-browser reliability through "restart the connection if anything looks funny", it was becoming such a tangled mess that i didn't feel comfortable trusting it.
-							peer.close();
-						})
-					);
-				}
-			}
-		}
-
-		await Promise.allSettled(promises);
-
-		if (params.get("displayMedia") !== "true") {
-			await inputOverlay(
-				settings,
-				stream,
-				constraints,
-				replaceTrack,
-				displayedTracks
-			);
-		}
-	};
 	stream.onaddtrack = async (event) => {
 		displayedTracks.clear();
 
