@@ -32,3 +32,4 @@ bun build --compile --target=browser ./index.html --outdir=dist --minify-whitesp
 - [ ] add lanczos video upscaling on receiver using `<canvas>` elements
 - [ ] add on-screen RMS+clipping warning volume meter
 - [ ] display information (resolution, framerate, channel count, sample rate) about video/audio tracks in sender UI if showStats is enabled
+- [ ] receiver performance monitoring using [VideoPlaybackQuality](https://developer.mozilla.org/en-US/docs/Web/API/VideoPlaybackQuality)
