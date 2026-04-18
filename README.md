@@ -29,7 +29,7 @@ bun build --compile --target=browser ./index.html --outdir=dist --minify-whitesp
 ```
 
 ## todo
-- [ ] add lanczos video upscaling on receiver using `<canvas>` elements
 - [ ] add on-screen RMS+clipping warning volume meter
 - [ ] display information (resolution, framerate, channel count, sample rate) about video/audio tracks in sender UI if showStats is enabled
 - [ ] receiver performance monitoring using [VideoPlaybackQuality](https://developer.mozilla.org/en-US/docs/Web/API/VideoPlaybackQuality)
+- [ ] override browser scaling algorithms, similar to [meta's upscaler](https://engineering.fb.com/2024/03/20/video-engineering/mobile-rtc-video-av1-hd/)
