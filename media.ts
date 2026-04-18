@@ -440,3 +440,67 @@ export async function adaptiveSettings(
 		}
 	}
 }
+
+/*export function mediaStreamScaler(stream: MediaStream) {
+	// @ts-ignore
+	if (window.MediaStreamTrackProcessor === undefined) {
+		return stream;
+	}
+
+	const processedStream = new MediaStream();
+
+	const buildTracks = () => {
+		for (const track of stream.getTracks()) {
+			if (track.kind == "video") {
+				// @ts-ignore
+				const processor = new MediaStreamTrackProcessor({
+					track,
+					maxBufferSize: 1,
+				});
+				// @ts-ignore
+				const generator = new MediaStreamTrackGenerator({
+					kind: track.kind,
+				});
+
+				const transformer = new TransformStream({
+					async transform(frame, controller) {
+						// TODO
+
+						controller.enqueue(frame);
+					},
+					flush(controller) {
+						controller.terminate();
+					},
+				});
+
+				processor.readable
+					.pipeThrough(transformer)
+					.pipeTo(generator.writable);
+
+				processedStream.addTrack(generator);
+			} else {
+				processedStream.addTrack(track);
+			}
+		}
+	};
+
+	const clearTracks = () => {
+		for (const track of processedStream.getTracks()) {
+			processedStream.removeTrack(track);
+		}
+	};
+
+	buildTracks();
+
+	stream.onaddtrack = async (_) => {
+		clearTracks();
+		buildTracks();
+	};
+	stream.onremovetrack = async (_) => {
+		clearTracks();
+		buildTracks();
+	};
+
+	return processedStream;
+}
+*/
