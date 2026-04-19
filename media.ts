@@ -499,6 +499,7 @@ export class MediaScaler {
 								new VideoFrame(scaler.canvas, {
 									timestamp: frame.timestamp,
 									duration: frame.duration,
+									alpha: "discard",
 								})
 							);
 						},
