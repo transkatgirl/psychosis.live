@@ -447,6 +447,9 @@ export async function adaptiveSettings(
 		return stream;
 	}
 
+	const offscreen = new OffscreenCanvas(256, 256);
+	const scaler = new Scaler(offscreen, "lanczos3");
+
 	const processedStream = new MediaStream();
 
 	const buildTracks = () => {
@@ -464,9 +467,15 @@ export async function adaptiveSettings(
 
 				const transformer = new TransformStream({
 					async transform(frame, controller) {
-						// TODO
+						scaler.process(frame);
+						frame.close();
 
-						controller.enqueue(frame);
+						controller.enqueue(
+							new VideoFrame(offscreen, {
+								timestamp: frame.timestamp,
+								duration: frame.duration,
+							})
+						);
 					},
 					flush(controller) {
 						controller.terminate();
