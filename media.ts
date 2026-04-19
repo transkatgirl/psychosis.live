@@ -466,7 +466,7 @@ export class MediaScaler {
 			scaler = new Scaler(
 				new OffscreenCanvas(Math.round(width), Math.round(height)),
 				"mks2013"
-			); // Reasonably good at scaling most content, but may be outperformed by other scalers for synthetic / displayMedia use cases
+			);
 		} catch (_error) {
 			console.warn(
 				"WebGL initalization failed, falling back to browser scaler"
