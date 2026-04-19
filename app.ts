@@ -12,14 +12,13 @@ import {
 	calculateReasonableAudioBitrateKbps,
 	calculateReasonableMinimumAudioBitrateKbps,
 	calculateReasonableVideoBitrateKbps,
-	mediaStreamScaler,
+	MediaScaler,
 	mungeSDP,
 	mungeSDPOfferAnswer,
 	setCodecPreferences,
 	setReceiverSettings,
 	setSenderSettings,
 } from "./media";
-import type { Scaler } from "./pica-gpu";
 
 const defaultMqttEndpoint = "wss://broker.emqx.io:8084/mqtt";
 const defaultIceServers: RTCIceServer[] = [
@@ -873,7 +872,7 @@ async function launchReceiver(credentials: RoomCredentials) {
 
 	const peerVideos: Record<string, HTMLVideoElement> = {};
 	const peerStreams: Record<string, MediaStream> = {};
-	const peerScalers: Record<string, Scaler> = {};
+	const peerScalers: Record<string, MediaScaler> = {};
 	const videoContainer = document.createElement("div");
 	videoContainer.classList.add("gallery");
 	document.body.appendChild(videoContainer);
@@ -883,9 +882,7 @@ async function launchReceiver(credentials: RoomCredentials) {
 			const scaler = peerScalers[peerId];
 
 			if (scaler) {
-				scaler.canvas.width = video.clientWidth;
-				scaler.canvas.height = video.clientHeight;
-				scaler.clear();
+				scaler.resize(video.clientWidth, video.clientHeight);
 			}
 		}
 	};
@@ -948,16 +945,15 @@ async function launchReceiver(credentials: RoomCredentials) {
 					peerStreams[peerId] = stream;
 
 					if (video.srcObject === null) {
-						const { stream: scaledStream, scaler } =
-							mediaStreamScaler(stream, true);
+						const scaler = new MediaScaler(
+							stream,
+							true,
+							video.clientWidth,
+							video.clientHeight
+						);
 
-						if (scaler) {
-							scaler.canvas.width = video.clientWidth;
-							scaler.canvas.height = video.clientHeight;
-							peerScalers[peerId] = scaler;
-						}
-
-						video.srcObject = scaledStream;
+						peerScalers[peerId] = scaler;
+						video.srcObject = scaler.stream;
 					}
 				}
 			};

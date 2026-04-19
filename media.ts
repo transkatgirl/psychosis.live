@@ -442,96 +442,120 @@ export async function adaptiveSettings(
 	}
 }
 
-export function mediaStreamScaler(
-	stream: MediaStream,
-	preserveAspectRatio: boolean
-) {
-	// @ts-ignore
-	if (window.MediaStreamTrackProcessor === undefined) {
-		console.warn(
-			"MediaStreamTrackProcessor unsupported, falling back to browser scaler"
-		);
-		return {
-			stream,
-			scaler: null,
-		};
-	}
+export class MediaScaler {
+	public stream: MediaStream;
+	scaler: Scaler | undefined;
+	public constructor(
+		stream: MediaStream,
+		preserveAspectRatio: boolean,
+		initialWidth = 1,
+		initialHeight = 1
+	) {
+		// @ts-ignore
+		if (window.MediaStreamTrackProcessor === undefined) {
+			console.warn(
+				"MediaStreamTrackProcessor unsupported, falling back to browser scaler"
+			);
+			this.stream = stream;
+			return;
+		}
 
-	let canvas;
-	let scaler;
+		let scaler;
 
-	try {
-		canvas = new OffscreenCanvas(1, 1);
-		scaler = new Scaler(canvas, "lanczos3");
-	} catch (_error) {
-		console.warn(
-			"WebGL initalization failed, falling back to browser scaler"
-		);
-		return {
-			stream,
-			scaler: null,
-		};
-	}
+		try {
+			scaler = new Scaler(
+				new OffscreenCanvas(
+					Math.round(initialWidth),
+					Math.round(initialHeight)
+				),
+				"lanczos3"
+			); // Reasonably good at scaling most content, but may be outperformed by other scalers for synthetic / displayMedia use cases
+		} catch (_error) {
+			console.warn(
+				"WebGL initalization failed, falling back to browser scaler"
+			);
+			this.stream = stream;
+			return;
+		}
 
-	const processedStream = new MediaStream();
+		const processedStream = new MediaStream();
 
-	const buildTracks = () => {
-		for (const track of stream.getTracks()) {
-			if (track.kind == "video") {
-				// @ts-ignore
-				const processor = new MediaStreamTrackProcessor({
-					track,
-					maxBufferSize: 1,
-				});
-				// @ts-ignore
-				const generator = new MediaStreamTrackGenerator({
-					kind: track.kind,
-				});
+		const buildTracks = () => {
+			for (const track of stream.getTracks()) {
+				if (track.kind == "video") {
+					// @ts-ignore
+					const processor = new MediaStreamTrackProcessor({
+						track,
+						maxBufferSize: 1,
+					});
+					// @ts-ignore
+					const generator = new MediaStreamTrackGenerator({
+						kind: track.kind,
+					});
 
-				const transformer = new TransformStream({
-					async transform(frame, controller) {
-						scaler.process(frame, preserveAspectRatio);
-						frame.close();
+					const transformer = new TransformStream({
+						async transform(frame, controller) {
+							scaler.process(frame, preserveAspectRatio);
+							frame.close();
 
-						controller.enqueue(
-							new VideoFrame(canvas, {
-								timestamp: frame.timestamp,
-								duration: frame.duration,
-							})
-						);
-					},
-					flush(controller) {
-						controller.terminate();
-					},
-				});
+							controller.enqueue(
+								new VideoFrame(scaler.canvas, {
+									timestamp: frame.timestamp,
+									duration: frame.duration,
+								})
+							);
+						},
+						flush(controller) {
+							controller.terminate();
+						},
+					});
 
-				processor.readable
-					.pipeThrough(transformer)
-					.pipeTo(generator.writable);
+					processor.readable
+						.pipeThrough(transformer)
+						.pipeTo(generator.writable);
 
-				processedStream.addTrack(generator);
-			} else {
-				processedStream.addTrack(track);
+					processedStream.addTrack(generator);
+				} else {
+					processedStream.addTrack(track);
+				}
 			}
-		}
-	};
+		};
 
-	const clearTracks = () => {
-		for (const track of processedStream.getTracks()) {
-			processedStream.removeTrack(track);
-		}
-	};
+		const clearTracks = () => {
+			for (const track of processedStream.getTracks()) {
+				processedStream.removeTrack(track);
+			}
+		};
 
-	buildTracks();
-
-	stream.onaddtrack = async (_) => {
-		clearTracks();
 		buildTracks();
-	};
-	stream.onremovetrack = async (_) => {
-		clearTracks();
-		buildTracks();
-	};
 
-	return { stream: processedStream, scaler };
+		stream.onaddtrack = async (_) => {
+			clearTracks();
+			buildTracks();
+		};
+		stream.onremovetrack = async (_) => {
+			clearTracks();
+			buildTracks();
+		};
+
+		this.scaler = scaler;
+		this.stream = processedStream;
+	}
+	public resize(width: number, height: number) {
+		if (!this.scaler) return;
+
+		this.scaler.canvas.width = Math.round(width);
+		this.scaler.canvas.height = Math.round(height);
+		this.scaler.clear();
+	}
+	public destroy() {
+		if (!this.scaler) return;
+
+		this.stream.onaddtrack = null;
+		this.stream.onremovetrack = null;
+		this.stream.getTracks().forEach((track) => track.stop());
+
+		this.scaler.destroy();
+		this.scaler = undefined;
+	}
 }
