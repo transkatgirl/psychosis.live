@@ -48,6 +48,7 @@ export function createTextureFromImage(
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
 	return texture;
 }
 
@@ -63,6 +64,7 @@ export function updateTextureFromImage(
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
 }
 
 export function updateTextureFromEmpty(
@@ -79,12 +81,12 @@ export function updateTextureFromEmpty(
 	gl.texImage2D(
 		gl.TEXTURE_2D,
 		0,
-		gl.RGBA,
+		gl.RGBA16F,
 		width,
 		height,
 		0,
 		gl.RGBA,
-		gl.UNSIGNED_BYTE,
+		gl.HALF_FLOAT,
 		null
 	);
 }
@@ -103,12 +105,12 @@ export function createEmptyTexture(
 	gl.texImage2D(
 		gl.TEXTURE_2D,
 		0,
-		gl.RGBA,
+		gl.RGBA16F,
 		width,
 		height,
 		0,
 		gl.RGBA,
-		gl.UNSIGNED_BYTE,
+		gl.HALF_FLOAT,
 		null
 	);
 	return texture;

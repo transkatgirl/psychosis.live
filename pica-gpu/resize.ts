@@ -41,6 +41,7 @@ export function resize(
 	if (!gl) {
 		throw new Error("webgl2 context not found");
 	}
+	gl.getExtension("EXT_color_buffer_half_float");
 
 	const targetWidth = Math.round(options.targetWidth);
 	const targetHeight = Math.round(options.targetHeight);
@@ -166,6 +167,7 @@ export class Scaler {
 		if (!gl) throw new Error("Failed to initialize WebGL2 context");
 
 		this.gl = gl;
+		gl.getExtension("EXT_color_buffer_half_float");
 
 		this.windowSize = getResizeWindow(filter);
 
