@@ -442,7 +442,10 @@ export async function adaptiveSettings(
 	}
 }
 
-export function mediaStreamScaler(stream: MediaStream) {
+export function mediaStreamScaler(
+	stream: MediaStream,
+	preserveAspectRatio: boolean
+) {
 	// @ts-ignore
 	if (window.MediaStreamTrackProcessor === undefined) {
 		return {
@@ -471,7 +474,7 @@ export function mediaStreamScaler(stream: MediaStream) {
 
 				const transformer = new TransformStream({
 					async transform(frame, controller) {
-						scaler.process(frame);
+						scaler.process(frame, preserveAspectRatio);
 						frame.close();
 
 						controller.enqueue(

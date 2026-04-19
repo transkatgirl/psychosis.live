@@ -155,7 +155,7 @@ export class Scaler {
 
 	public constructor(
 		canvas: OffscreenCanvas,
-		filter: "box" | "hamming" | "lanczos2" | "lanczos3" | "mks2013"
+		filter: ResizeOptions["filter"]
 	) {
 		this.canvas = canvas;
 
@@ -203,8 +203,6 @@ export class Scaler {
 			throw new Error("target canvas width or height is 0");
 		}
 
-		this.gl.clear(this.gl.COLOR_BUFFER_BIT);
-
 		const srcWidth = frame.displayWidth;
 		const srcHeight = frame.displayHeight;
 
@@ -234,6 +232,8 @@ export class Scaler {
 		if (this.canvas.height > targetHeight) {
 			offsetY = Math.round((this.canvas.height - targetHeight) / 2);
 		}
+
+		this.gl.clear(this.gl.COLOR_BUFFER_BIT);
 
 		updateTextureFromImage(this.gl, this.sourceTexture, frame);
 		updateTextureFromEmpty(
