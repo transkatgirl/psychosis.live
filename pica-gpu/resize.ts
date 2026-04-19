@@ -133,9 +133,6 @@ export class Scaler {
 	public canvas: OffscreenCanvas;
 	gl: WebGL2RenderingContext;
 
-	public targetWidth: number | undefined;
-	public targetHeight: number | undefined;
-
 	windowSize: number;
 
 	sourceTexture: WebGLTexture;
@@ -198,7 +195,7 @@ export class Scaler {
 			generateVerticalShader(filter)
 		)!;
 	}
-	public process(frame: VideoFrame) {
+	public process(frame: VideoFrame, preserveAspectRatio = true) {
 		if (frame.displayWidth === 0 || frame.displayHeight === 0) {
 			throw new Error("source image width or height is 0");
 		}
@@ -206,16 +203,25 @@ export class Scaler {
 			throw new Error("target canvas width or height is 0");
 		}
 
-		this.sourceTexture;
+		this.gl.clear(this.gl.COLOR_BUFFER_BIT);
 
-		const targetWidth = Math.round(
-			this.targetWidth ? this.targetWidth : this.canvas.width
-		);
-		const targetHeight = Math.round(
-			this.targetHeight ? this.targetHeight : this.canvas.height
-		);
 		const srcWidth = frame.displayWidth;
 		const srcHeight = frame.displayHeight;
+
+		const srcAspectRatio = srcWidth / srcHeight;
+		const canvasAspectRatio = this.canvas.width / this.canvas.height;
+
+		let targetWidth = this.canvas.width;
+		let targetHeight = this.canvas.height;
+
+		if (srcAspectRatio != canvasAspectRatio && preserveAspectRatio) {
+			if (srcAspectRatio > canvasAspectRatio) {
+				targetHeight = Math.round(this.canvas.width / srcAspectRatio);
+			} else {
+				targetWidth = Math.round(this.canvas.height * srcAspectRatio);
+			}
+		}
+
 		const scaleX = targetWidth / srcWidth;
 		const scaleY = targetHeight / srcHeight;
 
