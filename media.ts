@@ -491,14 +491,16 @@ export class MediaScaler {
 					});
 
 					const transformer = new TransformStream({
-						async transform(frame, controller) {
+						async transform(frame: VideoFrame, controller) {
 							scaler.process(frame, preserveAspectRatio);
 							frame.close();
 
 							controller.enqueue(
 								new VideoFrame(scaler.canvas, {
 									timestamp: frame.timestamp,
-									duration: frame.duration,
+									duration: frame.duration
+										? frame.duration
+										: undefined,
 									alpha: "discard",
 								})
 							);
