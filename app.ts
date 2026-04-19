@@ -947,9 +947,9 @@ async function launchReceiver(credentials: RoomCredentials) {
 					if (video.srcObject === null) {
 						const scaler = new MediaScaler(
 							stream,
-							true,
 							video.clientWidth,
-							video.clientHeight
+							video.clientHeight,
+							true
 						);
 
 						peerScalers[peerId] = scaler;

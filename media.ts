@@ -447,9 +447,9 @@ export class MediaScaler {
 	scaler: Scaler | undefined;
 	public constructor(
 		stream: MediaStream,
-		preserveAspectRatio: boolean,
-		initialWidth = 1,
-		initialHeight = 1
+		width: number,
+		height: number,
+		preserveAspectRatio: boolean
 	) {
 		// @ts-ignore
 		if (window.MediaStreamTrackProcessor === undefined) {
@@ -464,10 +464,7 @@ export class MediaScaler {
 
 		try {
 			scaler = new Scaler(
-				new OffscreenCanvas(
-					Math.round(initialWidth),
-					Math.round(initialHeight)
-				),
+				new OffscreenCanvas(Math.round(width), Math.round(height)),
 				"lanczos3"
 			); // Reasonably good at scaling most content, but may be outperformed by other scalers for synthetic / displayMedia use cases
 		} catch (_error) {
