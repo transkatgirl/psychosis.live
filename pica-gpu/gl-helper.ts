@@ -141,6 +141,18 @@ export function createDefaultQuadBuffer(gl: WebGL2RenderingContext) {
 	return quadBuffer;
 }
 
+export function resetQuadBuffer(
+	gl: WebGL2RenderingContext,
+	quadBuffer: WebGLBuffer
+) {
+	gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
+	const quadVertices = new Float32Array([
+		// x, y, u, v
+		-1, -1, 0, 0, 1, -1, 1, 0, -1, 1, 0, 1, 1, 1, 1, 1,
+	]);
+	gl.bufferData(gl.ARRAY_BUFFER, quadVertices, gl.STATIC_DRAW);
+}
+
 export function useDefaultQuadBuffer(
 	gl: WebGL2RenderingContext,
 	program: WebGLProgram,

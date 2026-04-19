@@ -4,6 +4,7 @@ import {
 	createFramebuffer,
 	createProgram,
 	createTextureFromImage,
+	resetQuadBuffer,
 	updateTextureFromEmpty,
 	updateTextureFromImage,
 	useDefaultQuadBuffer,
@@ -217,6 +218,8 @@ export class Scaler {
 			this.canvas.width,
 			frame.displayHeight
 		);
+
+		resetQuadBuffer(this.gl, this.quadBuffer);
 
 		this.gl.useProgram(this.compiledHorizontal.program);
 		useDefaultQuadBuffer(
