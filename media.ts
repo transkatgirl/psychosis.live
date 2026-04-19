@@ -1,4 +1,5 @@
 import * as sdpTransform from "sdp-transform";
+import { Scaler } from "./pica-gpu";
 
 export function convertAudioBitrate(
 	bitrate: number,
@@ -441,14 +442,17 @@ export async function adaptiveSettings(
 	}
 }
 
-/*export function mediaStreamScaler(stream: MediaStream) {
+export function mediaStreamScaler(stream: MediaStream) {
 	// @ts-ignore
 	if (window.MediaStreamTrackProcessor === undefined) {
-		return stream;
+		return {
+			stream,
+			scaler: null,
+		};
 	}
 
-	const offscreen = new OffscreenCanvas(256, 256);
-	const scaler = new Scaler(offscreen, "lanczos3");
+	const canvas = new OffscreenCanvas(1, 1);
+	const scaler = new Scaler(canvas, "lanczos3");
 
 	const processedStream = new MediaStream();
 
@@ -471,7 +475,7 @@ export async function adaptiveSettings(
 						frame.close();
 
 						controller.enqueue(
-							new VideoFrame(offscreen, {
+							new VideoFrame(canvas, {
 								timestamp: frame.timestamp,
 								duration: frame.duration,
 							})
@@ -510,6 +514,5 @@ export async function adaptiveSettings(
 		buildTracks();
 	};
 
-	return processedStream;
+	return { stream: processedStream, scaler };
 }
-*/
