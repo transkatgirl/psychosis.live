@@ -233,6 +233,7 @@ export class Scaler {
 			offsetY = Math.round((this.canvas.height - targetHeight) / 2);
 		}
 
+		this.gl.clearColor(0, 0, 0, 255);
 		this.gl.clear(this.gl.COLOR_BUFFER_BIT);
 
 		updateTextureFromImage(this.gl, this.sourceTexture, frame);
@@ -333,6 +334,7 @@ export class Scaler {
 		this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
 	}
 	public clear() {
+		this.gl.clearColor(0, 0, 0, 255);
 		this.gl.clear(this.gl.COLOR_BUFFER_BIT);
 	}
 	public destroy() {
