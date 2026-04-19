@@ -29,7 +29,7 @@ bun build --compile --target=browser ./index.html --outdir=dist --minify-whitesp
 ```
 
 ## todo
-- [ ] override browser downscaler with mks2013, similar to [meta's downscaler](https://engineering.fb.com/2024/03/20/video-engineering/mobile-rtc-video-av1-hd/)
 - [ ] add on-screen RMS+clipping warning volume meter
 - [ ] display information (resolution, framerate, channel count, sample rate) about video/audio tracks in sender UI if showStats is enabled
 - [ ] receiver performance monitoring using [VideoPlaybackQuality](https://developer.mozilla.org/en-US/docs/Web/API/VideoPlaybackQuality)
+- [ ] override browser scalers with mks2013, similar to [meta's downscaler](https://engineering.fb.com/2024/03/20/video-engineering/mobile-rtc-video-av1-hd/)

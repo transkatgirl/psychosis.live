@@ -442,6 +442,7 @@ export async function adaptiveSettings(
 	}
 }
 
+// Currently disabled due to weird canvas gamma issues
 export class MediaScaler {
 	public stream: MediaStream;
 	scaler: Scaler | undefined;

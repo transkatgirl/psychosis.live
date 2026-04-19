@@ -871,13 +871,13 @@ async function launchReceiver(credentials: RoomCredentials) {
 	}
 
 	const peerVideos: Record<string, HTMLVideoElement> = {};
-	const peerStreams: Record<string, MediaStream> = {};
-	const peerScalers: Record<string, MediaScaler> = {};
+	//const peerStreams: Record<string, MediaStream> = {};
+	//const peerScalers: Record<string, MediaScaler> = {};
 	const videoContainer = document.createElement("div");
 	videoContainer.classList.add("gallery");
 	document.body.appendChild(videoContainer);
 
-	const updateScalers = () => {
+	/*const updateScalers = () => {
 		for (const [peerId, video] of Object.entries(peerVideos)) {
 			const scaler = peerScalers[peerId];
 
@@ -885,7 +885,7 @@ async function launchReceiver(credentials: RoomCredentials) {
 				scaler.resize(video.clientWidth, video.clientHeight);
 			}
 		}
-	};
+	};*/
 
 	const overlay = document.createElement("div");
 	overlay.classList.add("stats-overlay");
@@ -934,7 +934,7 @@ async function launchReceiver(credentials: RoomCredentials) {
 
 					videoContainer.appendChild(video);
 					updateGalleryStyles(videoContainer);
-					updateScalers();
+					//updateScalers();
 				}
 
 				peerVideos[peerId] = video;
@@ -942,7 +942,7 @@ async function launchReceiver(credentials: RoomCredentials) {
 				const stream = event.streams[0];
 
 				if (stream) {
-					peerStreams[peerId] = stream;
+					/*peerStreams[peerId] = stream;
 
 					if (video.srcObject === null) {
 						const scaler = new MediaScaler(
@@ -954,7 +954,9 @@ async function launchReceiver(credentials: RoomCredentials) {
 
 						peerScalers[peerId] = scaler;
 						video.srcObject = scaler.stream;
-					}
+					}*/
+
+					video.srcObject = stream;
 				}
 			};
 		},
@@ -963,12 +965,12 @@ async function launchReceiver(credentials: RoomCredentials) {
 
 			peer.pc.ontrack = null;
 
-			let stream = peerStreams[peerId];
+			/*let stream = peerStreams[peerId];
 			if (stream) {
 				stream.onaddtrack = null;
 				stream.onremovetrack = null;
 				stream.getTracks().forEach((track) => track.stop());
-			}
+			}*/
 			let video = peerVideos[peerId];
 			if (video) {
 				if (video.srcObject) {
@@ -982,12 +984,12 @@ async function launchReceiver(credentials: RoomCredentials) {
 				videoContainer.removeChild(video);
 				delete peerVideos[peerId];
 				updateGalleryStyles(videoContainer);
-				updateScalers();
+				//updateScalers();
 			}
-			let scaler = peerScalers[peerId];
+			/*let scaler = peerScalers[peerId];
 			if (scaler) {
 				scaler.destroy();
-			}
+			}*/
 		},
 		async (peers) => {
 			if (params.get("stats") === "true") {
@@ -1016,7 +1018,7 @@ async function launchReceiver(credentials: RoomCredentials) {
 				updateGalleryStyles(entry.target as HTMLElement);
 			}
 
-			updateScalers();
+			//updateScalers();
 		});
 	});
 
