@@ -133,6 +133,9 @@ export class Scaler {
 	public canvas: OffscreenCanvas;
 	gl: WebGL2RenderingContext;
 
+	public targetWidth: number | undefined;
+	public targetHeight: number | undefined;
+
 	windowSize: number;
 
 	sourceTexture: WebGLTexture;
@@ -205,15 +208,33 @@ export class Scaler {
 
 		this.sourceTexture;
 
-		const scaleX = this.canvas.width / frame.displayWidth;
-		const scaleY = this.canvas.height / frame.displayHeight;
+		const targetWidth = Math.round(
+			this.targetWidth ? this.targetWidth : this.canvas.width
+		);
+		const targetHeight = Math.round(
+			this.targetHeight ? this.targetHeight : this.canvas.height
+		);
+		const srcWidth = frame.displayWidth;
+		const srcHeight = frame.displayHeight;
+		const scaleX = targetWidth / srcWidth;
+		const scaleY = targetHeight / srcHeight;
+
+		let offsetX = 0;
+		if (this.canvas.width > targetWidth) {
+			offsetX = Math.round((this.canvas.width - targetWidth) / 2);
+		}
+
+		let offsetY = 0;
+		if (this.canvas.height > targetHeight) {
+			offsetY = Math.round((this.canvas.height - targetHeight) / 2);
+		}
 
 		updateTextureFromImage(this.gl, this.sourceTexture, frame);
 		updateTextureFromEmpty(
 			this.gl,
 			this.horizontalTexture,
-			this.canvas.width,
-			frame.displayHeight
+			targetWidth,
+			srcHeight
 		);
 
 		this.gl.useProgram(this.compiledHorizontal.program);
@@ -237,7 +258,7 @@ export class Scaler {
 				this.compiledHorizontal.program,
 				"u_textureWidth"
 			),
-			frame.displayWidth
+			srcWidth
 		);
 		this.gl.uniform1f(
 			this.gl.getUniformLocation(
@@ -255,7 +276,7 @@ export class Scaler {
 		);
 		this.gl.activeTexture(this.gl.TEXTURE0);
 		this.gl.bindTexture(this.gl.TEXTURE_2D, this.sourceTexture);
-		this.gl.viewport(0, 0, this.canvas.width, frame.displayHeight);
+		this.gl.viewport(0, 0, targetWidth, srcHeight);
 		this.gl.bindFramebuffer(
 			this.gl.FRAMEBUFFER,
 			this.horizontalFramebuffer
@@ -283,7 +304,7 @@ export class Scaler {
 				this.compiledVertical.program,
 				"u_textureHeight"
 			),
-			frame.displayHeight
+			srcHeight
 		);
 		this.gl.uniform1f(
 			this.gl.getUniformLocation(
@@ -301,7 +322,7 @@ export class Scaler {
 		);
 		this.gl.activeTexture(this.gl.TEXTURE0);
 		this.gl.bindTexture(this.gl.TEXTURE_2D, this.horizontalTexture);
-		this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+		this.gl.viewport(offsetX, offsetY, targetWidth, targetHeight);
 		this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
 		this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
 	}
