@@ -70,6 +70,7 @@ export function resize(
 		"a_texCoord"
 	);
 	const radiusX = scaleX < 1 ? windowSize / scaleX : windowSize;
+	gl.disable(gl.BLEND);
 	gl.uniform1i(gl.getUniformLocation(horizontalProgram, "u_image"), 0);
 	gl.uniform1f(
 		gl.getUniformLocation(horizontalProgram, "u_textureWidth"),
@@ -233,7 +234,7 @@ export class Scaler {
 			offsetY = Math.round((this.canvas.height - targetHeight) / 2);
 		}
 
-		this.gl.clearColor(0, 0, 0, 255);
+		this.gl.clearColor(0, 0, 0, 1);
 		this.gl.clear(this.gl.COLOR_BUFFER_BIT);
 
 		updateTextureFromImage(this.gl, this.sourceTexture, frame);
@@ -253,6 +254,7 @@ export class Scaler {
 			"a_texCoord"
 		);
 		const radiusX = scaleX < 1 ? this.windowSize / scaleX : this.windowSize;
+		this.gl.disable(this.gl.BLEND);
 		this.gl.uniform1i(
 			this.gl.getUniformLocation(
 				this.compiledHorizontal.program,
@@ -334,7 +336,7 @@ export class Scaler {
 		this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
 	}
 	public clear() {
-		this.gl.clearColor(0, 0, 0, 255);
+		this.gl.clearColor(0, 0, 0, 1);
 		this.gl.clear(this.gl.COLOR_BUFFER_BIT);
 	}
 	public destroy() {
