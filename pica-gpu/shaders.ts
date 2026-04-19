@@ -35,8 +35,9 @@ const fsHorizontal = `#version 300 es
    float sum = 0.0;
    vec4 color = vec4(0.0);
    for(int i = start; i <= end; i++){
-     float weight = resizeFilter(((float(i) + 0.5) - srcX) * u_filterScale);
      float texX = (float(i) + 0.5) / u_textureWidth;
+     if(texX < 0.0 || texX > 1.0) continue;
+     float weight = resizeFilter(((float(i) + 0.5) - srcX) * u_filterScale);
      vec4 sampleValue = texture(u_image, vec2(texX, v_texCoord.y));
      color += sampleValue * weight;
      sum += weight;
@@ -68,8 +69,9 @@ const fsVertical = `#version 300 es
    float sum = 0.0;
    vec4 color = vec4(0.0);
    for(int j = start; j <= end; j++){
-     float weight = resizeFilter(((float(j) + 0.5) - srcY) * u_filterScale);
      float texY = (float(j) + 0.5) / u_textureHeight;
+     if(texY < 0.0 || texY > 1.0) continue;
+     float weight = resizeFilter(((float(j) + 0.5) - srcY) * u_filterScale);
      vec4 sampleValue = texture(u_image, vec2(v_texCoord.x, texY));
      color += sampleValue * weight;
      sum += weight;
