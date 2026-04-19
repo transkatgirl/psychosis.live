@@ -37,10 +37,15 @@ export function resize(
 	if (to.width === 0 || to.height === 0) {
 		throw new Error("target canvas width or height is 0");
 	}
-	const gl = to.getContext("webgl2", { premultipliedAlpha: false });
+	const gl = to.getContext("webgl2", {
+		alpha: false,
+		premultipliedAlpha: false,
+		preserveDrawingBuffer: false,
+	});
 	if (!gl) {
 		throw new Error("webgl2 context not found");
 	}
+	gl.clearColor(0, 0, 0, 1);
 	gl.getExtension("EXT_color_buffer_half_float");
 
 	const targetWidth = Math.round(options.targetWidth);
@@ -162,12 +167,15 @@ export class Scaler {
 		this.canvas = canvas;
 
 		const gl = this.canvas.getContext("webgl2", {
+			alpha: false,
 			premultipliedAlpha: false,
+			preserveDrawingBuffer: false,
 		});
 		if (!gl) throw new Error("Failed to initialize WebGL2 context");
 
 		this.gl = gl;
-		gl.getExtension("EXT_color_buffer_half_float");
+		this.gl.clearColor(0, 0, 0, 1);
+		this.gl.getExtension("EXT_color_buffer_half_float");
 
 		this.windowSize = getResizeWindow(filter);
 
