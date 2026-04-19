@@ -332,6 +332,9 @@ export class Scaler {
 		this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
 		this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
 	}
+	public clear() {
+		this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+	}
 	public destroy() {
 		this.gl.deleteTexture(this.sourceTexture);
 		this.gl.deleteTexture(this.horizontalTexture);

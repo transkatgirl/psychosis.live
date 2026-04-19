@@ -448,14 +448,30 @@ export function mediaStreamScaler(
 ) {
 	// @ts-ignore
 	if (window.MediaStreamTrackProcessor === undefined) {
+		console.warn(
+			"MediaStreamTrackProcessor unsupported, falling back to browser scaler"
+		);
 		return {
 			stream,
 			scaler: null,
 		};
 	}
 
-	const canvas = new OffscreenCanvas(1, 1);
-	const scaler = new Scaler(canvas, "lanczos3");
+	let canvas;
+	let scaler;
+
+	try {
+		canvas = new OffscreenCanvas(1, 1);
+		scaler = new Scaler(canvas, "lanczos3");
+	} catch (_error) {
+		console.warn(
+			"WebGL initalization failed, falling back to browser scaler"
+		);
+		return {
+			stream,
+			scaler: null,
+		};
+	}
 
 	const processedStream = new MediaStream();
 

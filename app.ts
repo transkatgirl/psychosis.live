@@ -12,12 +12,14 @@ import {
 	calculateReasonableAudioBitrateKbps,
 	calculateReasonableMinimumAudioBitrateKbps,
 	calculateReasonableVideoBitrateKbps,
+	mediaStreamScaler,
 	mungeSDP,
 	mungeSDPOfferAnswer,
 	setCodecPreferences,
 	setReceiverSettings,
 	setSenderSettings,
 } from "./media";
+import type { Scaler } from "./pica-gpu";
 
 const defaultMqttEndpoint = "wss://broker.emqx.io:8084/mqtt";
 const defaultIceServers: RTCIceServer[] = [
@@ -870,9 +872,23 @@ async function launchReceiver(credentials: RoomCredentials) {
 	}
 
 	const peerVideos: Record<string, HTMLVideoElement> = {};
+	const peerStreams: Record<string, MediaStream> = {};
+	const peerScalers: Record<string, Scaler> = {};
 	const videoContainer = document.createElement("div");
 	videoContainer.classList.add("gallery");
 	document.body.appendChild(videoContainer);
+
+	const updateScalers = () => {
+		for (const [peerId, video] of Object.entries(peerVideos)) {
+			const scaler = peerScalers[peerId];
+
+			if (scaler) {
+				scaler.canvas.width = video.clientWidth;
+				scaler.canvas.height = video.clientHeight;
+				scaler.clear();
+			}
+		}
+	};
 
 	const overlay = document.createElement("div");
 	overlay.classList.add("stats-overlay");
@@ -921,6 +937,7 @@ async function launchReceiver(credentials: RoomCredentials) {
 
 					videoContainer.appendChild(video);
 					updateGalleryStyles(videoContainer);
+					updateScalers();
 				}
 
 				peerVideos[peerId] = video;
@@ -928,7 +945,20 @@ async function launchReceiver(credentials: RoomCredentials) {
 				const stream = event.streams[0];
 
 				if (stream) {
-					video.srcObject = stream;
+					peerStreams[peerId] = stream;
+
+					if (video.srcObject === null) {
+						const { stream: scaledStream, scaler } =
+							mediaStreamScaler(stream, true);
+
+						if (scaler) {
+							scaler.canvas.width = video.clientWidth;
+							scaler.canvas.height = video.clientHeight;
+							peerScalers[peerId] = scaler;
+						}
+
+						video.srcObject = scaledStream;
+					}
 				}
 			};
 		},
@@ -937,9 +967,17 @@ async function launchReceiver(credentials: RoomCredentials) {
 
 			peer.pc.ontrack = null;
 
+			let stream = peerStreams[peerId];
+			if (stream) {
+				stream.onaddtrack = null;
+				stream.onremovetrack = null;
+				stream.getTracks().forEach((track) => track.stop());
+			}
 			let video = peerVideos[peerId];
 			if (video) {
 				if (video.srcObject) {
+					(video.srcObject as MediaStream).onaddtrack = null;
+					(video.srcObject as MediaStream).onremovetrack = null;
 					(video.srcObject as MediaStream)
 						.getTracks()
 						.forEach((track) => track.stop());
@@ -948,6 +986,11 @@ async function launchReceiver(credentials: RoomCredentials) {
 				videoContainer.removeChild(video);
 				delete peerVideos[peerId];
 				updateGalleryStyles(videoContainer);
+				updateScalers();
+			}
+			let scaler = peerScalers[peerId];
+			if (scaler) {
+				scaler.destroy();
 			}
 		},
 		async (peers) => {
@@ -976,6 +1019,8 @@ async function launchReceiver(credentials: RoomCredentials) {
 			for (const entry of entries) {
 				updateGalleryStyles(entry.target as HTMLElement);
 			}
+
+			updateScalers();
 		});
 	});
 
