@@ -18,7 +18,7 @@ const fsHorizontal = `#version 300 es
 
  uniform sampler2D u_image;
  uniform float u_textureWidth;
- uniform float u_scale;
+ uniform float u_filterScale;
  uniform float u_radius;
 
  const float PI = 3.141592653589793;
@@ -35,7 +35,7 @@ const fsHorizontal = `#version 300 es
    float sum = 0.0;
    vec4 color = vec4(0.0);
    for(int i = start; i <= end; i++){
-     float weight = resizeFilter(((float(i) + 0.5) - srcX) * u_scale);
+     float weight = resizeFilter(((float(i) + 0.5) - srcX) * u_filterScale);
      float texX = (float(i) + 0.5) / u_textureWidth;
      vec4 sampleValue = texture(u_image, vec2(texX, v_texCoord.y));
      color += sampleValue * weight;
@@ -46,14 +46,13 @@ const fsHorizontal = `#version 300 es
  `;
 
 const fsVertical = `#version 300 es
- precision mediump float;
+ precision highp float;
  in vec2 v_texCoord;
  out vec4 outColor;
 
  uniform sampler2D u_image;
- uniform float u_textureWidth;
  uniform float u_textureHeight;
- uniform float u_scale;
+ uniform float u_filterScale;
  uniform float u_radius;
  const float PI = 3.141592653589793;
 
@@ -69,7 +68,7 @@ const fsVertical = `#version 300 es
    float sum = 0.0;
    vec4 color = vec4(0.0);
    for(int j = start; j <= end; j++){
-     float weight = resizeFilter(((float(j) + 0.5) - srcY) * u_scale);
+     float weight = resizeFilter(((float(j) + 0.5) - srcY) * u_filterScale);
      float texY = (float(j) + 0.5) / u_textureHeight;
      vec4 sampleValue = texture(u_image, vec2(v_texCoord.x, texY));
      color += sampleValue * weight;
@@ -81,7 +80,7 @@ const fsVertical = `#version 300 es
 
 const boxFilter = `float resizeFilter(float x) {
     x = abs(x);
-    return (x < 0.5) ? 1.0 : 0.0;
+    return (x <= 0.5) ? 1.0 : 0.0;
  }`;
 
 const hammingFilter = `float resizeFilter(float x) {
@@ -129,7 +128,7 @@ const windows = {
 	hamming: 1.0,
 	lanczos2: 2.0,
 	lanczos3: 3.0,
-	mks2013: 8.0,
+	mks2013: 2.5,
 };
 
 export function generateHorizontalShader(

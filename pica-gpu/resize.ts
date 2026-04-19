@@ -4,7 +4,6 @@ import {
 	createFramebuffer,
 	createProgram,
 	createTextureFromImage,
-	resetQuadBuffer,
 	updateTextureFromEmpty,
 	updateTextureFromImage,
 	useDefaultQuadBuffer,
@@ -70,16 +69,17 @@ export function resize(
 		"a_position",
 		"a_texCoord"
 	);
+	const radiusX = scaleX < 1 ? windowSize / scaleX : windowSize;
 	gl.uniform1i(gl.getUniformLocation(horizontalProgram, "u_image"), 0);
 	gl.uniform1f(
 		gl.getUniformLocation(horizontalProgram, "u_textureWidth"),
 		srcWidth
 	);
-	gl.uniform1f(gl.getUniformLocation(horizontalProgram, "u_scale"), scaleX);
 	gl.uniform1f(
-		gl.getUniformLocation(horizontalProgram, "u_radius"),
-		windowSize
+		gl.getUniformLocation(horizontalProgram, "u_filterScale"),
+		windowSize / radiusX
 	);
+	gl.uniform1f(gl.getUniformLocation(horizontalProgram, "u_radius"), radiusX);
 	gl.activeTexture(gl.TEXTURE0);
 	gl.bindTexture(gl.TEXTURE_2D, sourceTexture);
 	gl.viewport(0, 0, targetWidth, srcHeight);
@@ -100,20 +100,17 @@ export function resize(
 		"a_position",
 		"a_texCoord"
 	);
+	const radiusY = scaleY < 1 ? windowSize / scaleY : windowSize;
 	gl.uniform1i(gl.getUniformLocation(verticalProgram, "u_image"), 0);
-	gl.uniform1f(
-		gl.getUniformLocation(verticalProgram, "u_textureWidth"),
-		targetWidth
-	);
 	gl.uniform1f(
 		gl.getUniformLocation(verticalProgram, "u_textureHeight"),
 		srcHeight
 	);
-	gl.uniform1f(gl.getUniformLocation(verticalProgram, "u_scale"), scaleY);
 	gl.uniform1f(
-		gl.getUniformLocation(verticalProgram, "u_radius"),
-		windowSize
+		gl.getUniformLocation(verticalProgram, "u_filterScale"),
+		windowSize / radiusY
 	);
+	gl.uniform1f(gl.getUniformLocation(verticalProgram, "u_radius"), radiusY);
 	gl.activeTexture(gl.TEXTURE0);
 	gl.bindTexture(gl.TEXTURE_2D, horizontalTexture);
 	gl.viewport(0, 0, targetWidth, targetHeight);
@@ -219,8 +216,6 @@ export class Scaler {
 			frame.displayHeight
 		);
 
-		resetQuadBuffer(this.gl, this.quadBuffer);
-
 		this.gl.useProgram(this.compiledHorizontal.program);
 		useDefaultQuadBuffer(
 			this.gl,
@@ -229,6 +224,7 @@ export class Scaler {
 			"a_position",
 			"a_texCoord"
 		);
+		const radiusX = scaleX < 1 ? this.windowSize / scaleX : this.windowSize;
 		this.gl.uniform1i(
 			this.gl.getUniformLocation(
 				this.compiledHorizontal.program,
@@ -246,16 +242,16 @@ export class Scaler {
 		this.gl.uniform1f(
 			this.gl.getUniformLocation(
 				this.compiledHorizontal.program,
-				"u_scale"
+				"u_filterScale"
 			),
-			scaleX
+			this.windowSize / radiusX
 		);
 		this.gl.uniform1f(
 			this.gl.getUniformLocation(
 				this.compiledHorizontal.program,
 				"u_radius"
 			),
-			this.windowSize
+			radiusX
 		);
 		this.gl.activeTexture(this.gl.TEXTURE0);
 		this.gl.bindTexture(this.gl.TEXTURE_2D, this.sourceTexture);
@@ -274,19 +270,13 @@ export class Scaler {
 			"a_position",
 			"a_texCoord"
 		);
+		const radiusY = scaleY < 1 ? this.windowSize / scaleY : this.windowSize;
 		this.gl.uniform1i(
 			this.gl.getUniformLocation(
 				this.compiledVertical.program,
 				"u_image"
 			),
 			0
-		);
-		this.gl.uniform1f(
-			this.gl.getUniformLocation(
-				this.compiledVertical.program,
-				"u_textureWidth"
-			),
-			this.canvas.width
 		);
 		this.gl.uniform1f(
 			this.gl.getUniformLocation(
@@ -298,16 +288,16 @@ export class Scaler {
 		this.gl.uniform1f(
 			this.gl.getUniformLocation(
 				this.compiledVertical.program,
-				"u_scale"
+				"u_filterScale"
 			),
-			scaleY
+			this.windowSize / radiusY
 		);
 		this.gl.uniform1f(
 			this.gl.getUniformLocation(
 				this.compiledVertical.program,
 				"u_radius"
 			),
-			this.windowSize
+			radiusY
 		);
 		this.gl.activeTexture(this.gl.TEXTURE0);
 		this.gl.bindTexture(this.gl.TEXTURE_2D, this.horizontalTexture);
