@@ -465,7 +465,7 @@ export class MediaScaler {
 		try {
 			scaler = new Scaler(
 				new OffscreenCanvas(Math.round(width), Math.round(height)),
-				"lanczos3"
+				"mks2013"
 			); // Reasonably good at scaling most content, but may be outperformed by other scalers for synthetic / displayMedia use cases
 		} catch (_error) {
 			console.warn(
