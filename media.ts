@@ -102,6 +102,11 @@ export function mungeSDP(sdp: string, stereo: boolean): string {
 					delete params["usedtx"];
 					delete params["cbr"];
 
+					if (!("minptime" in params)) {
+						// frame sizes <10ms disable SILK; see https://wiki.hydrogenaudio.org/index.php?title=Opus#Packet_overhead_in_interactive_applications
+						params["minptime"] = 10;
+					}
+
 					if (!("useinbandfec" in params)) {
 						params["useinbandfec"] = 1;
 					}
