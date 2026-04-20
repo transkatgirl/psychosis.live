@@ -26,7 +26,7 @@ export function calculateReasonableAudioBitrateKbps(channels: number) {
 export function calculateReasonableMinimumAudioBitrateKbps(channels: number) {
 	return Math.min(
 		// minimum of 48 kbit/s stereo chosen based on https://wiki.hydrogenaudio.org/index.php?title=Opus#Indicative_bitrate_and_quality
-		convertAudioBitrate(3, 2, channels) * 16,
+		convertAudioBitrate(4, 2, channels) * 16,
 		// Opus supports a maximum bitrate of 510 kbit/s
 		510
 	);
