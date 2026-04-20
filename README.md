@@ -45,5 +45,5 @@ bun build --compile --target=browser ./index.html --outdir=dist --minify-whitesp
 - [ ] switch to MoQ when it's ready
 	- [ ] implement QUIC multipath draft
 - [ ] implement automatic codec switching
-	- [ ] implement [descript audio codec](https://github.com/descriptinc/descript-audio-codec) or similar for ultra-low-bitrate scenarios
+	- [ ] implement [descript audio codec](https://github.com/descriptinc/descript-audio-codec) or [similar codecs](https://github.com/FORARTfe/HyMPS/blob/main/Audio/AI-based.md#codecs-) for ultra-low-bitrate scenarios
 	- [ ] switch between video codecs based on target resolution and available CPU resources
