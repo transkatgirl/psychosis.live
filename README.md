@@ -33,4 +33,13 @@ bun build --compile --target=browser ./index.html --outdir=dist --minify-whitesp
 - [ ] display information (resolution, framerate, channel count, sample rate) about video/audio tracks in sender UI if showStats is enabled
 - [ ] receiver performance monitoring using [VideoPlaybackQuality](https://developer.mozilla.org/en-US/docs/Web/API/VideoPlaybackQuality)
 - [ ] override browser scalers with mks2013, similar to [meta's downscaler](https://engineering.fb.com/2024/03/20/video-engineering/mobile-rtc-video-av1-hd/)
-	- currently on-hold due to a weird browser canvas bug
+	- currently on-hold due to a weird browser canvas bug; consider making another chromium patch and/or hiding this behind a disabled-by-default toggle?
+
+### far future ideas
+- [ ] make native app implementation
+	- [ ] tweak WebRTC congestion control algorithm for this specific use case
+- [ ] switch to MoQ when it's ready
+	- [ ] implement QUIC multipath draft
+- [ ] implement automatic codec switching
+	- [ ] implement [descript audio codec](https://github.com/descriptinc/descript-audio-codec) or similar for ultra-low-bitrate scenarios
+	- [ ] switch between video codecs based on target resolution and available CPU resources
