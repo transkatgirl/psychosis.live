@@ -683,18 +683,25 @@ async function launchSender(credentials: RoomCredentials) {
 					? audioBitrateFloor
 					: 0;
 				if (dynamicAudioBitrate && audioBitrateFloorAdj < 32000) {
-					const audioChannelCount = stream
-						.getAudioTracks()[0]
-						?.getSettings()?.channelCount;
-					if (audioChannelCount && audioChannelCount > 0) {
+					if (channelCount == 1) {
+						// if channelCount is set to 1, multichannel tracks are down mixed to mono
 						audioBitrateFloorAdj =
-							calculateReasonableMinimumAudioBitrateKbps(
-								channelCount
-							) * 1000;
-					} else {
-						audioBitrateFloorAdj =
-							calculateReasonableMinimumAudioBitrateKbps(2) *
+							calculateReasonableMinimumAudioBitrateKbps(1) *
 							1000;
+					} else {
+						const audioChannelCount = stream
+							.getAudioTracks()[0]
+							?.getSettings()?.channelCount;
+						if (audioChannelCount && audioChannelCount > 0) {
+							audioBitrateFloorAdj =
+								calculateReasonableMinimumAudioBitrateKbps(
+									channelCount
+								) * 1000;
+						} else {
+							audioBitrateFloorAdj =
+								calculateReasonableMinimumAudioBitrateKbps(2) *
+								1000;
+						}
 					}
 				}
 
