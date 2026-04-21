@@ -598,6 +598,7 @@ export class MediaScaler {
 				"mks2013"
 			);
 		} catch (_error) {
+			this.scaler = undefined;
 			console.warn(
 				"WebGL initalization failed, falling back to browser scaler"
 			);
