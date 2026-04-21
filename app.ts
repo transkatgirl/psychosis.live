@@ -713,7 +713,8 @@ async function launchSender(credentials: RoomCredentials) {
 						params.has("maxVideoBitrate"),
 					audioBitrateFloorAdj,
 					audioBitrateCeil,
-					framerateCeil
+					framerateCeil,
+					params.get("dualDynamicAudioBitrate") === "true"
 				);
 			}
 
