@@ -581,7 +581,7 @@ export class MediaScaler {
 		stream: MediaStream,
 		width: number,
 		height: number,
-		preserveAspectRatio: boolean
+		preserveAspectRatio = true
 	) {
 		if (
 			!(
@@ -615,6 +615,9 @@ export class MediaScaler {
 		for (const track of stream.getTracks()) {
 			this.addTrack(track, preserveAspectRatio);
 		}
+	}
+	public get videoIdentifier() {
+		return this.videoId;
 	}
 	public resize(width: number, height: number) {
 		if (!this.scaler) return;

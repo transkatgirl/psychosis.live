@@ -580,6 +580,9 @@ async function launchSender(credentials: RoomCredentials) {
 		document.body.appendChild(settings);
 	}
 
+	//const peerStreams: Record<string, MediaStream> = {};
+	//const peerScalers: Record<string, MediaScaler> = {};
+
 	const addTrack = async (
 		pc: RTCPeerConnection,
 		track: MediaStreamTrack,
@@ -762,15 +765,35 @@ async function launchSender(credentials: RoomCredentials) {
 			return message;
 		}
 	);
+	let removedTracks: Record<string, MediaStreamTrack> = {};
 	stream.onaddtrack = async (event) => {
 		displayedTracks.clear();
 
+		console.log("track " + event.track.id + " added");
+
 		const room = (globalThis as any).room as Room;
 
-		for (const [peerId, peer] of Object.entries(room.peers)) {
-			if (!peer.pc || BigInt(peerId) % 2n != 0n) continue;
+		let removedTrack;
 
-			addTrack(peer.pc, event.track, stream);
+		for (const [id, track] of Object.entries(removedTracks)) {
+			if (
+				track.readyState === "ended" &&
+				track.kind == event.track.kind
+			) {
+				removedTrack = track;
+				delete removedTracks[id];
+				break;
+			}
+		}
+
+		if (removedTrack) {
+			for (const [peerId, peer] of Object.entries(room.peers)) {
+				if (!peer.pc || BigInt(peerId) % 2n != 0n) continue;
+
+				await replaceTrack(removedTrack, event.track);
+			}
+		} else {
+			console.warn("unable to find replacable track");
 		}
 
 		if (params.get("displayMedia") !== "true") {
@@ -786,17 +809,10 @@ async function launchSender(credentials: RoomCredentials) {
 	stream.onremovetrack = async (event) => {
 		displayedTracks.clear();
 
-		const room = (globalThis as any).room as Room;
+		console.log("track " + event.track.id + " removed");
 
-		for (const [peerId, peer] of Object.entries(room.peers)) {
-			if (!peer.pc || BigInt(peerId) % 2n != 0n) continue;
-
-			for (const transceiver of peer.pc.getTransceivers()) {
-				if (transceiver.sender.track?.id == event.track.id) {
-					transceiver.stop();
-				}
-			}
-		}
+		event.track.stop();
+		removedTracks[event.track.id] = event.track;
 
 		if (params.get("displayMedia") !== "true") {
 			await inputOverlay(
@@ -874,13 +890,13 @@ async function launchReceiver(credentials: RoomCredentials) {
 	}
 
 	const peerVideos: Record<string, HTMLVideoElement> = {};
-	//const peerStreams: Record<string, MediaStream> = {};
-	//const peerScalers: Record<string, MediaScaler> = {};
+	const peerStreams: Record<string, MediaStream> = {};
+	const peerScalers: Record<string, MediaScaler> = {};
 	const videoContainer = document.createElement("div");
 	videoContainer.classList.add("gallery");
 	document.body.appendChild(videoContainer);
 
-	/*const updateScalers = () => {
+	const updateScalers = () => {
 		for (const [peerId, video] of Object.entries(peerVideos)) {
 			const scaler = peerScalers[peerId];
 
@@ -888,7 +904,7 @@ async function launchReceiver(credentials: RoomCredentials) {
 				scaler.resize(video.clientWidth, video.clientHeight);
 			}
 		}
-	};*/
+	};
 
 	const overlay = document.createElement("div");
 	overlay.classList.add("stats-overlay");
@@ -937,7 +953,7 @@ async function launchReceiver(credentials: RoomCredentials) {
 
 					videoContainer.appendChild(video);
 					updateGalleryStyles(videoContainer);
-					//updateScalers();
+					updateScalers();
 				}
 
 				peerVideos[peerId] = video;
@@ -945,21 +961,29 @@ async function launchReceiver(credentials: RoomCredentials) {
 				const stream = event.streams[0];
 
 				if (stream) {
-					/*peerStreams[peerId] = stream;
+					if (params.get("overrideScaler") === "true") {
+						peerStreams[peerId] = stream;
 
-					if (video.srcObject === null) {
-						const scaler = new MediaScaler(
-							stream,
-							video.clientWidth,
-							video.clientHeight,
-							true
-						);
+						if (video.srcObject === null) {
+							const scaler = new MediaScaler(
+								stream,
+								video.clientWidth,
+								video.clientHeight
+							);
 
-						peerScalers[peerId] = scaler;
-						video.srcObject = scaler.stream;
-					}*/
+							peerScalers[peerId] = scaler;
+							video.srcObject = scaler.stream;
 
-					video.srcObject = stream;
+							stream.onaddtrack = (event) => {
+								scaler.addTrack(event.track);
+							};
+							stream.onremovetrack = async (event) => {
+								await scaler.removeTrack(event.track);
+							};
+						}
+					} else {
+						video.srcObject = stream;
+					}
 				}
 			};
 		},
@@ -968,12 +992,12 @@ async function launchReceiver(credentials: RoomCredentials) {
 
 			peer.pc.ontrack = null;
 
-			/*let stream = peerStreams[peerId];
+			let stream = peerStreams[peerId];
 			if (stream) {
 				stream.onaddtrack = null;
 				stream.onremovetrack = null;
 				stream.getTracks().forEach((track) => track.stop());
-			}*/
+			}
 			let video = peerVideos[peerId];
 			if (video) {
 				if (video.srcObject) {
@@ -987,12 +1011,12 @@ async function launchReceiver(credentials: RoomCredentials) {
 				videoContainer.removeChild(video);
 				delete peerVideos[peerId];
 				updateGalleryStyles(videoContainer);
-				//updateScalers();
+				updateScalers();
 			}
-			/*let scaler = peerScalers[peerId];
+			let scaler = peerScalers[peerId];
 			if (scaler) {
 				scaler.destroy();
-			}*/
+			}
 		},
 		async (peers) => {
 			if (params.get("stats") === "true") {
@@ -1021,7 +1045,7 @@ async function launchReceiver(credentials: RoomCredentials) {
 				updateGalleryStyles(entry.target as HTMLElement);
 			}
 
-			//updateScalers();
+			updateScalers();
 		});
 	});
 
