@@ -618,21 +618,6 @@ export class MediaScaler {
 		this.scaler.canvas.height = Math.round(height);
 		this.scaler.clear();
 	}
-	public async removeTrack(track: MediaStreamTrack) {
-		if (!this.scaler) return;
-
-		if (track.kind == "video") {
-			if (this.videoId != track.id && this.generator.id != track.id)
-				throw "Track is not attached to scaler.";
-
-			this.videoId = undefined;
-
-			this.generator.stop();
-			await this.transformerPromise;
-		} else {
-			this.stream.removeTrack(track);
-		}
-	}
 	public addTrack(track: MediaStreamTrack, preserveAspectRatio = true) {
 		if (!this.scaler) return;
 
@@ -689,6 +674,21 @@ export class MediaScaler {
 			this.stream.addTrack(this.generator);
 		} else {
 			this.stream.addTrack(track);
+		}
+	}
+	public async removeTrack(track: MediaStreamTrack) {
+		if (!this.scaler) return;
+
+		if (track.kind == "video") {
+			if (this.videoId != track.id && this.generator.id != track.id)
+				throw "Track is not attached to scaler.";
+
+			this.videoId = undefined;
+
+			this.generator.stop();
+			await this.transformerPromise;
+		} else {
+			this.stream.removeTrack(track);
 		}
 	}
 	public async destroy() {
