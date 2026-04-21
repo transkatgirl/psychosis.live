@@ -381,7 +381,7 @@ export async function adaptiveSettings(
 		) {
 			if (audioBitrateFloor && audioBitrateCeil && dynamicAudioBitrate) {
 				if (linearDynamicAudioBitrate) {
-					// minimum of 32 kbit/s (chosen based on https://wiki.hydrogenaudio.org/index.php?title=Opus#Indicative_bitrate_and_quality)
+					// minimum of 32 kbit/s (see calculateReasonableMinimumAudioBitrateKbps)
 					audioBitrateLower =
 						Math.max(Math.floor(report.targetBitrate / 128000), 1) *
 						32000;
@@ -389,8 +389,9 @@ export async function adaptiveSettings(
 						Math.max(Math.ceil(report.targetBitrate / 128000), 1) *
 						32000;
 				} else {
+					// prefer staying above 128 kbit/s (see calculateReasonableMinimumAudioBitrateKbps)
+
 					if (report.targetBitrate >= 64000 * 4) {
-						// prefer staying above 128 kbit/s (see calculateReasonableMinimumAudioBitrateKbps)
 						audioBitrateLower =
 							Math.max(
 								Math.floor(report.targetBitrate / 128000),
