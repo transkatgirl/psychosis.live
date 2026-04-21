@@ -714,7 +714,8 @@ async function launchSender(credentials: RoomCredentials) {
 					audioBitrateFloorAdj,
 					audioBitrateCeil,
 					framerateCeil,
-					params.get("linearDynamicAudioBitrate") === "true"
+					params.get("linearDynamicAudioBitrate") === "true" ||
+						channelCount > 2
 				);
 			}
 

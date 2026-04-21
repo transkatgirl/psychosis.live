@@ -431,13 +431,13 @@ export async function adaptiveSettings(
 				if (report.targetBitrate >= 1000000) {
 					videoFramerateLower = Math.min(
 						Math.max(
-							Math.floor(report.targetBitrate / 4000000),
+							Math.floor(report.targetBitrate / 3000000),
 							1
 						) * 30,
 						framerateCeil
 					);
 					videoFramerateUpper = Math.min(
-						Math.max(Math.ceil(report.targetBitrate / 4000000), 1) *
+						Math.max(Math.ceil(report.targetBitrate / 3000000), 1) *
 							30,
 						framerateCeil
 					);
