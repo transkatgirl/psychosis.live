@@ -364,7 +364,7 @@ export async function adaptiveSettings(
 	audioBitrateFloor?: number,
 	audioBitrateCeil?: number,
 	framerateCeil?: number,
-	dualDynamicAudioBitrate = true
+	linearDynamicAudioBitrate = false
 ) {
 	const stats = await pc.getStats();
 
@@ -380,7 +380,15 @@ export async function adaptiveSettings(
 			report.targetBitrate
 		) {
 			if (audioBitrateFloor && audioBitrateCeil && dynamicAudioBitrate) {
-				if (dualDynamicAudioBitrate) {
+				if (linearDynamicAudioBitrate) {
+					// minimum of 32 kbit/s (chosen based on https://wiki.hydrogenaudio.org/index.php?title=Opus#Indicative_bitrate_and_quality)
+					audioBitrateLower =
+						Math.max(Math.floor(report.targetBitrate / 128000), 1) *
+						32000;
+					audioBitrateUpper =
+						Math.max(Math.ceil(report.targetBitrate / 128000), 1) *
+						32000;
+				} else {
 					if (report.targetBitrate >= 64000 * 4) {
 						// prefer staying above 128 kbit/s (chosen based on https://wiki.hydrogenaudio.org/index.php?title=Opus#Indicative_bitrate_and_quality)
 						audioBitrateLower =
@@ -406,14 +414,6 @@ export async function adaptiveSettings(
 								1
 							) * 32000;
 					}
-				} else {
-					// minimum of 32 kbit/s (chosen based on https://wiki.hydrogenaudio.org/index.php?title=Opus#Indicative_bitrate_and_quality)
-					audioBitrateLower =
-						Math.max(Math.floor(report.targetBitrate / 128000), 1) *
-						32000;
-					audioBitrateUpper =
-						Math.max(Math.ceil(report.targetBitrate / 128000), 1) *
-						32000;
 				}
 
 				audioBitrateLower = Math.min(
