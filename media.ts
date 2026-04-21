@@ -88,6 +88,17 @@ export function calculateReasonableMinimumAudioBitrateKbps(channels: number) {
 	https://github.com/xiph/opus/blob/788cc89ce4f2c42025d8c70ec1b4457dc89cd50f/src/opus_encoder.c#L1653
 	- at certain bitrates (> 44000 bits/s for mono, > 88000 bits/s for stereo), fullband will be used even if the input signal is limited bandwidth
 
+	---
+
+	various CELT encoder thresholds
+
+	TODO: do more research into opus' inner workings
+
+	https://github.com/xiph/opus/blob/788cc89ce4f2c42025d8c70ec1b4457dc89cd50f/celt/celt_encoder.c#L876
+	- 64000 - 80000 "equiv_rate"
+	https://github.com/xiph/opus/blob/788cc89ce4f2c42025d8c70ec1b4457dc89cd50f/celt/celt_encoder.c#L2607
+	- 32000, 48000, 60000, 80000 "equiv_rate" per channel
+
 	*/
 
 	if (channels == 1) {
