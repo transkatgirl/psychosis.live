@@ -24,6 +24,72 @@ export function calculateReasonableAudioBitrateKbps(channels: number) {
 }
 
 export function calculateReasonableMinimumAudioBitrateKbps(channels: number) {
+	/* Possible bitrate bounds
+
+	---
+
+	real-world quality
+
+	https://wiki.hydrogenaudio.org/index.php?title=Opus#Indicative_bitrate_and_quality
+
+	- approaching transparent mono speech @ 24 kbit/s
+	- transparent mono speech @ 32 kbit/s
+	- approaching transparent stereo music @ 96 kbit/s
+	- near-transparent stereo music @ 128 kbit/s
+	- transparent stereo music @ 160 - 192 kbit/s
+
+	https://wiki.hydrogenaudio.org/index.php?title=Opus#CELT_layer_latency_versus_quality/bitrate_trade-off
+
+	to account for 10ms frames, increase bitrate by 10%
+
+	---
+
+	note: encoder settings are contrained VBR, 10ms min frame size, assume max complexity & no packet loss
+
+	https://github.com/xiph/opus/blob/788cc89ce4f2c42025d8c70ec1b4457dc89cd50f/src/opus_encoder.c#L1027
+
+	to account for 10ms frames, add +3000 bits/s for mono, 5000 bits/s stereo
+
+	---
+
+	CELT threshold
+
+	https://github.com/xiph/opus/blob/788cc89ce4f2c42025d8c70ec1b4457dc89cd50f/src/opus_encoder.c#L1422
+	- 90% speech confidence is the max
+	https://github.com/xiph/opus/blob/788cc89ce4f2c42025d8c70ec1b4457dc89cd50f/src/opus_encoder.c#L180
+	https://github.com/xiph/opus/blob/788cc89ce4f2c42025d8c70ec1b4457dc89cd50f/src/opus_encoder.c#L1495
+	- highest threshold is 58600 bits/s for mono, 40600 bits/s for stereo
+	https://github.com/xiph/opus/blob/788cc89ce4f2c42025d8c70ec1b4457dc89cd50f/src/opus_encoder.c#L1504
+	- threshold is increased by 8000 bits/s in VOIP mode
+	https://github.com/xiph/opus/blob/788cc89ce4f2c42025d8c70ec1b4457dc89cd50f/src/opus_encoder.c#L1507
+	- hysteresis threshold is increased by 4000 bits/s
+
+	[non-voip] total threshold is 62600 bits/s for mono (lower for stereo)
+	[voip] total threshold is 70600 bits/s for mono (lower for stereo)
+
+	---
+
+	fullband stereo threshold
+
+	https://github.com/xiph/opus/blob/788cc89ce4f2c42025d8c70ec1b4457dc89cd50f/src/opus_encoder.c#L148
+	- 16000 bits/s for fullband including hysteresis
+
+	https://github.com/xiph/opus/blob/788cc89ce4f2c42025d8c70ec1b4457dc89cd50f/src/opus_encoder.c#L176
+	https://github.com/xiph/opus/blob/788cc89ce4f2c42025d8c70ec1b4457dc89cd50f/src/opus_encoder.c#L1443
+	- 20000 bits/s for stereo including hysteresis
+
+	https://github.com/xiph/opus/blob/788cc89ce4f2c42025d8c70ec1b4457dc89cd50f/src/opus_encoder.c#L2322
+	- stereo width is reduced below 32000 bits/s
+
+	https://github.com/xiph/opus/blob/788cc89ce4f2c42025d8c70ec1b4457dc89cd50f/src/opus_encoder.c#L2059
+	- high frequencies are attenuated a perceptable amount when CELT is allocated less than 3500 bits/s
+	- this is negligible at a total bitrate of > 32000 bits/s (see https://github.com/xiph/opus/blob/788cc89ce4f2c42025d8c70ec1b4457dc89cd50f/src/opus_encoder.c#L978)
+
+	https://github.com/xiph/opus/blob/788cc89ce4f2c42025d8c70ec1b4457dc89cd50f/src/opus_encoder.c#L1653
+	- at certain bitrates (> 44000 bits/s for mono, > 88000 bits/s for stereo), fullband will be used even if the input signal is limited bandwidth
+
+	*/
+
 	if (channels == 1) {
 		return 40;
 	}
@@ -53,11 +119,6 @@ export function calculateReasonableVideoBitrateKbps(
 
 export function mungeSDP(sdp: string, stereo: boolean): string {
 	const parsed = sdpTransform.parse(sdp);
-
-	// UGLY HACK for enabling audio RTX
-	// based on:
-	// - https://groups.google.com/g/discuss-webrtc/c/JVRU91Xwb6U/m/0Mb8CQV7AAAJ
-	// - https://issues.webrtc.org/issues/42229513
 
 	for (const media of parsed.media) {
 		if (media.type == "audio") {
@@ -125,6 +186,11 @@ export function mungeSDP(sdp: string, stereo: boolean): string {
 			}
 
 			if (opus && !hasRTX && media.payloads) {
+				// enable audio RTX
+				// based on:
+				// - https://groups.google.com/g/discuss-webrtc/c/JVRU91Xwb6U/m/0Mb8CQV7AAAJ
+				// - https://issues.webrtc.org/issues/42229513
+
 				let payloads = sdpTransform.parsePayloads(media.payloads);
 				payloads.splice(payloads.indexOf(opus) + 1, 0, 112);
 
