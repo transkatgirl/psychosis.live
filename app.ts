@@ -12,6 +12,7 @@ import {
 	calculateReasonableAudioBitrateKbps,
 	calculateReasonableMinimumAudioBitrateKbps,
 	calculateReasonableVideoBitrateKbps,
+	calculateStickyDynamicAudioBitrateTarget,
 	MediaScaler,
 	mungeSDP,
 	mungeSDPOfferAnswer,
@@ -678,31 +679,25 @@ async function launchSender(credentials: RoomCredentials) {
 				const dynamicAudioBitrate =
 					params.get("dynamicAudioBitrate") === "true" &&
 					params.get("displayMedia") !== "true";
+				let audioChannelCount = stream
+					.getAudioTracks()[0]
+					?.getSettings()?.channelCount;
 
-				let audioBitrateFloorAdj = audioBitrateFloor
-					? audioBitrateFloor
-					: 0;
-				if (dynamicAudioBitrate && audioBitrateFloorAdj < 32000) {
-					if (channelCount == 1) {
-						// if channelCount is set to 1, multichannel tracks are down mixed to mono
-						audioBitrateFloorAdj =
-							calculateReasonableMinimumAudioBitrateKbps(1) *
-							1000;
-					} else {
-						const audioChannelCount = stream
-							.getAudioTracks()[0]
-							?.getSettings()?.channelCount;
-						if (audioChannelCount && audioChannelCount > 0) {
-							audioBitrateFloorAdj =
-								calculateReasonableMinimumAudioBitrateKbps(
-									channelCount
-								) * 1000;
-						} else {
-							audioBitrateFloorAdj =
-								calculateReasonableMinimumAudioBitrateKbps(2) *
-								1000;
-						}
-					}
+				if (channelCount == 1) {
+					// if channelCount is set to 1, multichannel tracks are down mixed to mono
+					audioChannelCount = 1;
+				} else if (!audioChannelCount || audioChannelCount <= 0) {
+					// assume stereo if audioChannelCount is unknown
+					audioChannelCount = 2;
+				}
+
+				let audioBitrateFloorAdj = audioBitrateFloor;
+
+				if (!audioBitrateFloorAdj || audioBitrateFloorAdj < 32000) {
+					audioBitrateFloorAdj =
+						calculateReasonableMinimumAudioBitrateKbps(
+							channelCount
+						) * 1000;
 				}
 
 				await adaptiveSettings(
@@ -714,8 +709,8 @@ async function launchSender(credentials: RoomCredentials) {
 					audioBitrateFloorAdj,
 					audioBitrateCeil,
 					framerateCeil,
-					params.get("linearDynamicAudioBitrate") === "true" ||
-						channelCount > 2
+					params.get("linearDynamicAudioBitrate") === "true",
+					calculateStickyDynamicAudioBitrateTarget(audioChannelCount)
 				);
 			}
 

@@ -102,6 +102,21 @@ export function calculateReasonableMinimumAudioBitrateKbps(channels: number) {
 	);
 }
 
+export function calculateStickyDynamicAudioBitrateTarget(channels: number) {
+	// see above function for reference regarding how these targets were chosen
+	// returned values will be multiplied against 32 kbit/s to calculate the final value
+
+	if (channels == 1) {
+		return 3; // 96 kbit/s
+	}
+
+	if (channels == 2) {
+		return 4; // 128 kbit/s
+	}
+
+	return convertAudioBitrate(4, 2, channels);
+}
+
 export function calculateReasonableVideoBitrateKbps(
 	width: number,
 	height: number,
@@ -364,7 +379,8 @@ export async function adaptiveSettings(
 	audioBitrateFloor?: number,
 	audioBitrateCeil?: number,
 	framerateCeil?: number,
-	linearDynamicAudioBitrate = false
+	linearDynamicAudioBitrate = false, // should be disabled if using RED
+	stickyDynamicAudioBitrateTarget = 4 // preferred minimum audio bitrate = stickyDynamicAudioBitrateTarget * 32 kbit/s; see calculateStickyDynamicAudioBitrateTarget
 ) {
 	const stats = await pc.getStats();
 
@@ -389,21 +405,25 @@ export async function adaptiveSettings(
 						Math.max(Math.ceil(report.targetBitrate / 128000), 1) *
 						32000;
 				} else {
-					// prefer staying above 128 kbit/s (see calculateReasonableMinimumAudioBitrateKbps)
+					// prefer staying above stickyDynamicAudioBitrateTarget * 32 kbit/s
 
-					if (report.targetBitrate >= 64000 * 4) {
+					if (
+						report.targetBitrate >=
+						64000 * stickyDynamicAudioBitrateTarget
+					) {
 						audioBitrateLower =
 							Math.max(
 								Math.floor(report.targetBitrate / 128000),
-								4
+								stickyDynamicAudioBitrateTarget
 							) * 32000;
 						audioBitrateUpper =
 							Math.max(
 								Math.ceil(report.targetBitrate / 128000),
-								4
+								stickyDynamicAudioBitrateTarget
 							) * 32000;
 					} else {
 						// minimum of 32 kbit/s (see calculateReasonableMinimumAudioBitrateKbps)
+
 						audioBitrateLower =
 							Math.max(
 								Math.floor(report.targetBitrate / 64000),
