@@ -583,10 +583,14 @@ export class MediaScaler {
 		height: number,
 		preserveAspectRatio: boolean
 	) {
-		// @ts-ignore
-		if (window.MediaStreamTrackProcessor === undefined) {
+		if (
+			!(
+				"MediaStreamTrackProcessor" in window &&
+				"MediaStreamTrackGenerator" in window
+			)
+		) {
 			console.warn(
-				"MediaStreamTrackProcessor unsupported, falling back to browser scaler"
+				"Insertable Streams unsupported, falling back to browser scaler"
 			);
 			this.stream = stream;
 			return;
@@ -641,7 +645,7 @@ export class MediaScaler {
 			const scaler = this.scaler;
 
 			const transformer = new TransformStream({
-				async transform(frame: VideoFrame, controller) {
+				transform(frame: VideoFrame, controller) {
 					scaler.process(frame, preserveAspectRatio);
 					frame.close();
 
@@ -666,7 +670,7 @@ export class MediaScaler {
 				.pipeThrough(transformer)
 				.pipeTo(this.generator.writable as WritableStream<VideoFrame>);
 
-			this.stream.addTrack(this.generator);
+			this.stream.addTrack(this.generator as MediaStreamTrack);
 		} else {
 			this.stream.addTrack(track);
 		}
@@ -680,9 +684,9 @@ export class MediaScaler {
 
 			this.videoId = undefined;
 
-			this.generator.stop();
+			(this.generator as MediaStreamTrack).stop();
 			await this.transformerPromise;
-			this.stream.removeTrack(this.generator);
+			this.stream.removeTrack(this.generator as MediaStreamTrack);
 
 			this.processor = undefined;
 			this.generator = undefined;
