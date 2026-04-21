@@ -722,8 +722,10 @@ export class MediaScaler {
 				.pipeTo(this.generator.writable as WritableStream<VideoFrame>);
 
 			this.stream.addTrack(this.generator as MediaStreamTrack);
+			return (this.generator as MediaStreamTrack).id;
 		} else {
 			this.stream.addTrack(track);
+			return track.id;
 		}
 	}
 	public async removeTrack(track: MediaStreamTrack) {
@@ -739,10 +741,15 @@ export class MediaScaler {
 			await this.transformerPromise;
 			this.stream.removeTrack(this.generator as MediaStreamTrack);
 
+			const generatorId = (this.generator as MediaStreamTrack).id;
+
 			this.processor = undefined;
 			this.generator = undefined;
+
+			return generatorId;
 		} else {
 			this.stream.removeTrack(track);
+			return track.id;
 		}
 	}
 	public async destroy() {
