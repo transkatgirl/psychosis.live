@@ -584,7 +584,7 @@ export class MediaScaler {
 		width: number,
 		height: number,
 		preserveAspectRatio = true,
-		enforceAspectRatio = false
+		enforceAspectRatio = true
 	) {
 		if (
 			!(
@@ -638,7 +638,7 @@ export class MediaScaler {
 	public addTrack(
 		track: MediaStreamTrack,
 		preserveAspectRatio = true,
-		enforceAspectRatio = false
+		enforceAspectRatio = true
 	) {
 		if (!this.scaler) return;
 
@@ -665,7 +665,12 @@ export class MediaScaler {
 
 			const transformer = new TransformStream({
 				transform(frame: VideoFrame, controller) {
-					if (enforceAspectRatio && originalWidth && originalHeight) {
+					if (
+						preserveAspectRatio &&
+						enforceAspectRatio &&
+						originalWidth &&
+						originalHeight
+					) {
 						const srcAspectRatio =
 							frame.displayWidth / frame.displayHeight;
 						const canvasAspectRatio =
