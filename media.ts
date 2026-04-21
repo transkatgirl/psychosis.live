@@ -577,11 +577,14 @@ export class MediaScaler {
 	processor: any;
 	transformerPromise: Promise<void> | undefined;
 	generator: any;
+	originalWidth: number | undefined;
+	originalHeight: number | undefined;
 	public constructor(
 		stream: MediaStream,
 		width: number,
 		height: number,
-		preserveAspectRatio = true
+		preserveAspectRatio = true,
+		enforceAspectRatio = false
 	) {
 		if (
 			!(
@@ -597,8 +600,11 @@ export class MediaScaler {
 		}
 
 		try {
+			this.originalWidth = Math.round(width);
+			this.originalHeight = Math.round(height);
+
 			this.scaler = new Scaler(
-				new OffscreenCanvas(Math.round(width), Math.round(height)),
+				new OffscreenCanvas(this.originalWidth, this.originalHeight),
 				"mks2013"
 			);
 		} catch (_error) {
@@ -613,7 +619,7 @@ export class MediaScaler {
 		this.stream = new MediaStream();
 
 		for (const track of stream.getTracks()) {
-			this.addTrack(track, preserveAspectRatio);
+			this.addTrack(track, preserveAspectRatio, enforceAspectRatio);
 		}
 	}
 	public get videoIdentifier() {
@@ -622,11 +628,18 @@ export class MediaScaler {
 	public resize(width: number, height: number) {
 		if (!this.scaler) return;
 
-		this.scaler.canvas.width = Math.round(width);
-		this.scaler.canvas.height = Math.round(height);
+		this.originalWidth = Math.round(width);
+		this.originalHeight = Math.round(height);
+
+		this.scaler.canvas.width = this.originalWidth;
+		this.scaler.canvas.height = this.originalHeight;
 		this.scaler.clear();
 	}
-	public addTrack(track: MediaStreamTrack, preserveAspectRatio = true) {
+	public addTrack(
+		track: MediaStreamTrack,
+		preserveAspectRatio = true,
+		enforceAspectRatio = false
+	) {
 		if (!this.scaler) return;
 
 		if (track.kind == "video") {
@@ -647,8 +660,38 @@ export class MediaScaler {
 
 			const scaler = this.scaler;
 
+			const originalWidth = this.originalWidth;
+			const originalHeight = this.originalHeight;
+
 			const transformer = new TransformStream({
 				transform(frame: VideoFrame, controller) {
+					if (enforceAspectRatio && originalWidth && originalHeight) {
+						const srcAspectRatio =
+							frame.displayWidth / frame.displayHeight;
+						const canvasAspectRatio =
+							originalWidth / originalHeight;
+						const activeAspectRatio =
+							scaler.canvas.width / scaler.canvas.height;
+
+						if (
+							srcAspectRatio != canvasAspectRatio &&
+							srcAspectRatio != activeAspectRatio
+						) {
+							if (srcAspectRatio > canvasAspectRatio) {
+								scaler.canvas.width = originalWidth;
+								scaler.canvas.height = Math.round(
+									originalWidth / srcAspectRatio
+								);
+							} else {
+								scaler.canvas.height = originalHeight;
+								scaler.canvas.width = Math.round(
+									originalHeight * srcAspectRatio
+								);
+							}
+							scaler.clear();
+						}
+					}
+
 					scaler.process(frame, preserveAspectRatio);
 					frame.close();
 
