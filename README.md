@@ -44,6 +44,6 @@ bun build --compile --target=browser ./index.html --outdir=dist --minify-whitesp
 - [ ] implement remote monitoring of peer metrics (viewing receiver metrics on sender and sender metrics on receiver)
 - [ ] switch to MoQ when it's ready
 	- [ ] implement QUIC multipath draft
-- [ ] implement automatic codec switching
+- [ ] implement automatic codec switching (this is difficult to do *well*, especially for audio)
 	- [ ] implement [FlowDec codec](https://github.com/facebookresearch/FlowDec) or [similar codecs](https://github.com/FORARTfe/HyMPS/blob/main/Audio/AI-based.md#codecs-) for ultra-low-bitrate scenarios
 	- [ ] switch between video codecs based on target resolution and available CPU resources
