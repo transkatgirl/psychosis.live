@@ -664,13 +664,7 @@ export class MediaScaler {
 				this.processor.readable as ReadableStream<VideoFrame>
 			)
 				.pipeThrough(transformer)
-				.pipeTo(this.generator.writable as WritableStream<VideoFrame>)
-				.then(async () => {
-					this.stream.removeTrack(this.generator);
-
-					this.processor = undefined;
-					this.generator = undefined;
-				});
+				.pipeTo(this.generator.writable as WritableStream<VideoFrame>);
 
 			this.stream.addTrack(this.generator);
 		} else {
@@ -688,12 +682,19 @@ export class MediaScaler {
 
 			this.generator.stop();
 			await this.transformerPromise;
+			this.stream.removeTrack(this.generator);
+
+			this.processor = undefined;
+			this.generator = undefined;
 		} else {
 			this.stream.removeTrack(track);
 		}
 	}
 	public async destroy() {
 		if (!this.scaler) return;
+
+		this.stream.onaddtrack = null;
+		this.stream.onremovetrack = null;
 
 		for (const track of this.stream.getTracks()) {
 			await this.removeTrack(track);
