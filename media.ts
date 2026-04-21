@@ -570,10 +570,13 @@ export async function adaptiveSettings(
 	}
 }
 
-// Currently disabled due to weird canvas gamma issues
 export class MediaScaler {
 	public stream: MediaStream;
+	videoId: string | undefined;
 	scaler: Scaler | undefined;
+	processor: any;
+	transformerPromise: Promise<void> | undefined;
+	generator: any;
 	public constructor(
 		stream: MediaStream,
 		width: number,
@@ -589,10 +592,8 @@ export class MediaScaler {
 			return;
 		}
 
-		let scaler;
-
 		try {
-			scaler = new Scaler(
+			this.scaler = new Scaler(
 				new OffscreenCanvas(Math.round(width), Math.round(height)),
 				"mks2013"
 			);
@@ -604,71 +605,11 @@ export class MediaScaler {
 			return;
 		}
 
-		const processedStream = new MediaStream();
+		this.stream = new MediaStream();
 
-		const buildTracks = () => {
-			for (const track of stream.getTracks()) {
-				if (track.kind == "video") {
-					// @ts-ignore
-					const processor = new MediaStreamTrackProcessor({
-						track,
-						maxBufferSize: 1,
-					});
-					// @ts-ignore
-					const generator = new MediaStreamTrackGenerator({
-						kind: track.kind,
-					});
-
-					const transformer = new TransformStream({
-						async transform(frame: VideoFrame, controller) {
-							scaler.process(frame, preserveAspectRatio);
-							frame.close();
-
-							controller.enqueue(
-								new VideoFrame(scaler.canvas, {
-									timestamp: frame.timestamp,
-									duration: frame.duration
-										? frame.duration
-										: undefined,
-									alpha: "discard",
-								})
-							);
-						},
-						flush(controller) {
-							controller.terminate();
-						},
-					});
-
-					processor.readable
-						.pipeThrough(transformer)
-						.pipeTo(generator.writable);
-
-					processedStream.addTrack(generator);
-				} else {
-					processedStream.addTrack(track);
-				}
-			}
-		};
-
-		const clearTracks = () => {
-			for (const track of processedStream.getTracks()) {
-				processedStream.removeTrack(track);
-			}
-		};
-
-		buildTracks();
-
-		stream.onaddtrack = async (_) => {
-			clearTracks();
-			buildTracks();
-		};
-		stream.onremovetrack = async (_) => {
-			clearTracks();
-			buildTracks();
-		};
-
-		this.scaler = scaler;
-		this.stream = processedStream;
+		for (const track of stream.getTracks()) {
+			this.addTrack(track, preserveAspectRatio);
+		}
 	}
 	public resize(width: number, height: number) {
 		if (!this.scaler) return;
@@ -677,12 +618,85 @@ export class MediaScaler {
 		this.scaler.canvas.height = Math.round(height);
 		this.scaler.clear();
 	}
-	public destroy() {
+	public async removeTrack(track: MediaStreamTrack) {
 		if (!this.scaler) return;
 
-		this.stream.onaddtrack = null;
-		this.stream.onremovetrack = null;
-		this.stream.getTracks().forEach((track) => track.stop());
+		if (track.kind == "video") {
+			if (this.videoId != track.id && this.generator.id != track.id)
+				throw "Track is not attached to scaler.";
+
+			this.videoId = undefined;
+
+			this.generator.stop();
+			await this.transformerPromise;
+		} else {
+			this.stream.removeTrack(track);
+		}
+	}
+	public addTrack(track: MediaStreamTrack, preserveAspectRatio = true) {
+		if (!this.scaler) return;
+
+		if (track.kind == "video") {
+			if (this.videoId)
+				throw "Scaler already has an attached video track.";
+
+			this.videoId = track.id;
+
+			// @ts-ignore
+			this.processor = new MediaStreamTrackProcessor({
+				track,
+				maxBufferSize: 1,
+			});
+			// @ts-ignore
+			this.generator = new MediaStreamTrackGenerator({
+				kind: track.kind,
+			});
+
+			const scaler = this.scaler;
+
+			const transformer = new TransformStream({
+				async transform(frame: VideoFrame, controller) {
+					scaler.process(frame, preserveAspectRatio);
+					frame.close();
+
+					controller.enqueue(
+						new VideoFrame(scaler.canvas, {
+							timestamp: frame.timestamp,
+							duration: frame.duration
+								? frame.duration
+								: undefined,
+							alpha: "discard",
+						})
+					);
+				},
+				flush(controller) {
+					controller.terminate();
+				},
+			});
+
+			this.transformerPromise = (
+				this.processor.readable as ReadableStream<VideoFrame>
+			)
+				.pipeThrough(transformer)
+				.pipeTo(this.generator.writable as WritableStream<VideoFrame>)
+				.then(async () => {
+					this.stream.removeTrack(this.generator);
+
+					this.processor = undefined;
+					this.generator = undefined;
+				});
+
+			this.stream.addTrack(this.generator);
+		} else {
+			this.stream.addTrack(track);
+		}
+	}
+	public async destroy() {
+		if (!this.scaler) return;
+
+		for (const track of this.stream.getTracks()) {
+			await this.removeTrack(track);
+		}
 
 		this.scaler.destroy();
 		this.scaler = undefined;
