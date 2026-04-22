@@ -617,10 +617,6 @@ export class MediaScaler {
 		}
 
 		this.stream = new MediaStream();
-
-		for (const track of stream.getTracks()) {
-			this.addTrack(track, preserveAspectRatio, enforceAspectRatio);
-		}
 	}
 	public get videoIdentifier() {
 		return this.videoId;
@@ -722,10 +718,10 @@ export class MediaScaler {
 				.pipeTo(this.generator.writable as WritableStream<VideoFrame>);
 
 			this.stream.addTrack(this.generator as MediaStreamTrack);
-			return (this.generator as MediaStreamTrack).id;
+			return this.generator as MediaStreamTrack;
 		} else {
 			this.stream.addTrack(track);
-			return track.id;
+			return track;
 		}
 	}
 	public async removeTrack(track: MediaStreamTrack) {

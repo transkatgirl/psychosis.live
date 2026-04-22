@@ -580,27 +580,74 @@ async function launchSender(credentials: RoomCredentials) {
 		document.body.appendChild(settings);
 	}
 
-	//const peerStreams: Record<string, MediaStream> = {};
-	//const peerScalers: Record<string, MediaScaler> = {};
+	const peerScalers: Record<string, MediaScaler> = {};
 
 	const addTrack = async (
 		pc: RTCPeerConnection,
+		peerId: string,
 		track: MediaStreamTrack,
 		stream: MediaStream
 	) => {
-		const transceiver = pc.addTransceiver(track, {
-			sendEncodings: [
-				buildSenderEncoding(
-					track.kind,
-					maxVideoBitrate,
-					maxFramerate,
-					maxAudioBitrate,
-					"very-low",
-					"high"
-				),
-			],
-			streams: [stream],
-		});
+		let transceiver;
+
+		if (params.get("overrideScaler") === "true" && width && height) {
+			let scaler = peerScalers[peerId];
+			let scalerTrack;
+
+			if (!scaler) {
+				scaler = new MediaScaler(stream, width, height);
+				peerScalers[peerId] = scaler;
+
+				scalerTrack = scaler.addTrack(track);
+			} else {
+				scalerTrack = scaler.addTrack(track);
+			}
+
+			if (scalerTrack) {
+				transceiver = pc.addTransceiver(scalerTrack, {
+					sendEncodings: [
+						buildSenderEncoding(
+							track.kind,
+							maxVideoBitrate,
+							maxFramerate,
+							maxAudioBitrate,
+							"very-low",
+							"high"
+						),
+					],
+					streams: [scaler.stream],
+				});
+			} else {
+				transceiver = pc.addTransceiver(track, {
+					sendEncodings: [
+						buildSenderEncoding(
+							track.kind,
+							maxVideoBitrate,
+							maxFramerate,
+							maxAudioBitrate,
+							"very-low",
+							"high"
+						),
+					],
+					streams: [stream],
+				});
+			}
+		} else {
+			transceiver = pc.addTransceiver(track, {
+				sendEncodings: [
+					buildSenderEncoding(
+						track.kind,
+						maxVideoBitrate,
+						maxFramerate,
+						maxAudioBitrate,
+						"very-low",
+						"high"
+					),
+				],
+				streams: [stream],
+			});
+		}
+
 		if (codecOrderPreference) {
 			setCodecPreferences(transceiver, codecOrderPreference);
 		}
@@ -625,19 +672,47 @@ async function launchSender(credentials: RoomCredentials) {
 		for (const [peerId, peer] of Object.entries(room.peers)) {
 			if (!peer.pc || BigInt(peerId) % 2n != 0n) continue;
 
+			let scaler = peerScalers[peerId];
+
 			for (const transceiver of peer.pc.getTransceivers()) {
-				if (transceiver.sender.track?.id == oldTrack.id) {
-					promises.push(
-						transceiver.sender.replaceTrack(newTrack).catch(() => {
-							console.log(
-								"replaceTrack failed, using fallback method for " +
-									peerId
-							);
-							// replaceTrack() *almost* always works. in the rare cases it doesn't, restarting the connection is by far the most reliable way to handle switching tracks, even if it is quite slow.
-							// trust me, i've tried pretty much everything when it comes to good fallbacks for replacing tracks, and i just couldn't come up of anything that would work reliably across browsers. there are always weird edge cases and irrecoverable failure modes you would run into once in a rare while, and although i got close to cross-browser reliability through "restart the connection if anything looks funny", it was becoming such a tangled mess that i didn't feel comfortable trusting it.
-							peer.close();
-						})
+				const onReplaceTrackRejected = () => {
+					console.log(
+						"replaceTrack failed, using fallback method for " +
+							peerId
 					);
+					// replaceTrack() *almost* always works. in the rare cases it doesn't, restarting the connection is by far the most reliable way to handle switching tracks, even if it is quite slow.
+					// trust me, i've tried pretty much everything when it comes to good fallbacks for replacing tracks, and i just couldn't come up of anything that would work reliably across browsers. there are always weird edge cases and irrecoverable failure modes you would run into once in a rare while, and although i got close to cross-browser reliability through "restart the connection if anything looks funny", it was becoming such a tangled mess that i didn't feel comfortable trusting it.
+					peer.close();
+				};
+
+				if (
+					transceiver.sender.track?.id === oldTrack.id ||
+					scaler?.videoId === oldTrack.id
+				) {
+					if (scaler) {
+						const removedId = await scaler.removeTrack(oldTrack);
+						const scaledTrack = scaler.addTrack(newTrack);
+
+						if (removedId && scaledTrack) {
+							promises.push(
+								transceiver.sender
+									.replaceTrack(scaledTrack)
+									.catch(onReplaceTrackRejected)
+							);
+						} else {
+							promises.push(
+								transceiver.sender
+									.replaceTrack(newTrack)
+									.catch(onReplaceTrackRejected)
+							);
+						}
+					} else {
+						promises.push(
+							transceiver.sender
+								.replaceTrack(newTrack)
+								.catch(onReplaceTrackRejected)
+						);
+					}
 				}
 			}
 		}
@@ -669,7 +744,7 @@ async function launchSender(credentials: RoomCredentials) {
 				stream.getTracks().forEach((track) => {
 					if (!peer.pc) return;
 
-					addTrack(peer.pc, track, stream);
+					addTrack(peer.pc, peerId, track, stream);
 				});
 			}
 		},
@@ -970,6 +1045,10 @@ async function launchReceiver(credentials: RoomCredentials) {
 								video.clientWidth,
 								video.clientHeight
 							);
+
+							for (const track of stream.getTracks()) {
+								scaler.addTrack(track);
+							}
 
 							peerScalers[peerId] = scaler;
 							video.srcObject = scaler.stream;
