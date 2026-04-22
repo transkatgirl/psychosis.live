@@ -674,7 +674,7 @@ async function launchSender(credentials: RoomCredentials) {
 						scaler?.videoId === oldTrack.id)
 				) {
 					if (scaler) {
-						await scaler.removeTrack(oldTrack);
+						scaler.removeTrack(oldTrack);
 						const scaledTrack = scaler.addTrack(newTrack);
 
 						promises.push(
@@ -728,9 +728,8 @@ async function launchSender(credentials: RoomCredentials) {
 			const scaler = peerScalers[peerId];
 
 			if (scaler) {
-				scaler.destroy().then(() => {
-					delete peerScalers[peerId];
-				});
+				scaler.destroy();
+				delete peerScalers[peerId];
 			}
 		},
 		async (peers) => {
@@ -1040,7 +1039,7 @@ async function launchReceiver(credentials: RoomCredentials) {
 								scaler.addTrack(event.track);
 							};
 							stream.onremovetrack = async (event) => {
-								await scaler.removeTrack(event.track);
+								scaler.removeTrack(event.track);
 							};
 						}
 					} else {
@@ -1077,9 +1076,8 @@ async function launchReceiver(credentials: RoomCredentials) {
 			}
 			let scaler = peerScalers[peerId];
 			if (scaler) {
-				scaler.destroy().then(() => {
-					delete peerScalers[peerId];
-				});
+				scaler.destroy();
+				delete peerScalers[peerId];
 			}
 		},
 		async (peers) => {

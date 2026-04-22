@@ -575,7 +575,6 @@ export class MediaScaler {
 	videoId: string | undefined;
 	scaler: Scaler;
 	processor: any;
-	transformerPromise: Promise<void> | undefined;
 	generator: any;
 	originalWidth: number;
 	originalHeight: number;
@@ -683,9 +682,7 @@ export class MediaScaler {
 				},
 			});
 
-			this.transformerPromise = (
-				this.processor.readable as ReadableStream<VideoFrame>
-			)
+			(this.processor.readable as ReadableStream<VideoFrame>)
 				.pipeThrough(transformer)
 				.pipeTo(this.generator.writable as WritableStream<VideoFrame>);
 
@@ -696,7 +693,7 @@ export class MediaScaler {
 			return track;
 		}
 	}
-	public async removeTrack(track: MediaStreamTrack) {
+	public removeTrack(track: MediaStreamTrack) {
 		if (track.kind == "video") {
 			if (this.videoId != track.id && this.generator.id != track.id)
 				throw "Track is not attached to scaler.";
@@ -704,13 +701,6 @@ export class MediaScaler {
 			this.videoId = undefined;
 
 			(this.generator as MediaStreamTrack).stop();
-
-			try {
-				await this.transformerPromise;
-			} catch (error) {
-				console.warn(error);
-			}
-
 			this.stream.removeTrack(this.generator as MediaStreamTrack);
 
 			const generatorId = (this.generator as MediaStreamTrack).id;
@@ -724,12 +714,12 @@ export class MediaScaler {
 			return track.id;
 		}
 	}
-	public async destroy() {
+	public destroy() {
 		this.stream.onaddtrack = null;
 		this.stream.onremovetrack = null;
 
 		for (const track of this.stream.getTracks()) {
-			await this.removeTrack(track);
+			this.removeTrack(track);
 		}
 
 		this.scaler.destroy();
