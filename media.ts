@@ -393,14 +393,14 @@ export interface AdaptiveAudioTargets {
 export interface AdaptiveVideoTargets {
 	width?: number;
 	height?: number;
-	framerate?: number;
-	browserDegradationDisabled?: boolean; // Enable if degradationPreference is maintain-framerate-and-resolution; implements custom resolution & framerate adaptation
+	framerate: number;
 }
 
 async function adaptiveSettingsNew( // WIP
 	pc: RTCPeerConnection,
 	peerData: AdaptiveData,
-	targets: AdaptiveTargets
+	targets: AdaptiveTargets,
+	peerScaler?: MediaScaler // See adaptiveVideoSettings
 ) {
 	const stats = await pc.getStats();
 
@@ -409,7 +409,13 @@ async function adaptiveSettingsNew( // WIP
 	}
 
 	if (targets.video) {
-		await adaptiveVideoSettings(pc, stats, peerData, targets.video);
+		await adaptiveVideoSettings(
+			pc,
+			stats,
+			peerData,
+			targets.video,
+			peerScaler
+		);
 	}
 }
 
@@ -528,14 +534,10 @@ async function adaptiveVideoSettings(
 	pc: RTCPeerConnection,
 	stats: RTCStatsReport,
 	data: AdaptiveData,
-	targets: AdaptiveVideoTargets
+	targets: AdaptiveVideoTargets,
+	peerScaler?: MediaScaler // Should only be specified if degradationPreference is maintain-framerate-and-resolution; implements custom adaptation algorithm
 ) {
-	if (
-		targets.width &&
-		targets.height &&
-		targets.framerate &&
-		targets.browserDegradationDisabled
-	) {
+	if (targets.width && targets.height && peerScaler) {
 		const adaptUp = (width: number, height: number, framerate: number) => {
 			const adjustedFramerate = Math.round((framerate * 3) / 2);
 
@@ -611,7 +613,9 @@ async function adaptiveVideoSettings(
 
 			return [adjustedWidth, adjustedHeight, framerate];
 		};
-	} else if (targets.framerate) {
+
+		// TODO
+	} else {
 		let framerateLower = 0;
 		let framerateUpper = Infinity;
 
