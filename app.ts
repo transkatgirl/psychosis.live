@@ -678,7 +678,7 @@ async function launchSender(credentials: RoomCredentials) {
 
 			for (const transceiver of peer.pc.getTransceivers()) {
 				const onReplaceTrackRejected = () => {
-					console.log(
+					console.warn(
 						"replaceTrack failed, using fallback method for " +
 							peerId
 					);
@@ -689,7 +689,8 @@ async function launchSender(credentials: RoomCredentials) {
 
 				if (
 					transceiver.sender.track?.id === oldTrack.id ||
-					scaler?.videoId === oldTrack.id
+					(transceiver.sender.track?.kind === "video" &&
+						scaler?.videoId === oldTrack.id)
 				) {
 					if (scaler) {
 						const removedId = await scaler.removeTrack(oldTrack);
