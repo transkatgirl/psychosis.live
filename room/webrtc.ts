@@ -42,7 +42,7 @@ export class Room {
 		credentials: RoomCredentials,
 		configuration: RTCConfiguration,
 		configurePeer: (peerId: string, peer: Peer) => void,
-		beforePeerClose: (peerId: string, peer: Peer) => void,
+		beforePeerClose: (peerId: string, peer: Peer) => Promise<void>,
 		onScan: (peers: Record<string, Peer>) => void = () => {},
 		mungeIncoming: (
 			peerId: string,
@@ -103,7 +103,7 @@ export class Room {
 							message.from < selfId,
 							sendResponse,
 							async (peer) => {
-								beforePeerClose(peerId, peer);
+								await beforePeerClose(peerId, peer);
 								if (this.room.client.connected) {
 									await sendResponse({});
 								}
@@ -189,7 +189,7 @@ export class Peer {
 	makingOffer = false;
 	ignoreOffer = false;
 	isSettingRemoteAnswerPending = false;
-	beforeClose: (pc: Peer) => void;
+	beforeClose: (pc: Peer) => Promise<void>;
 	mungeAnswer: (
 		message: RTCSessionDescriptionInit
 	) => RTCSessionDescriptionInit;
@@ -198,7 +198,7 @@ export class Peer {
 		configuration: RTCConfiguration,
 		polite: boolean,
 		sendMessage: (message: WebRTCMessage) => Promise<void>,
-		beforeClose: (pc: Peer) => void,
+		beforeClose: (pc: Peer) => Promise<void>,
 		timeout: number = 15_000,
 		mungeOffer: (
 			message: RTCSessionDescriptionInit
@@ -330,7 +330,7 @@ export class Peer {
 			this.close();
 		}
 	}
-	public close() {
+	public async close() {
 		if (!this.pc) return;
 
 		this.pc.onicecandidate = null;
@@ -340,7 +340,7 @@ export class Peer {
 		this.pc.onnegotiationneeded = null;
 
 		try {
-			this.beforeClose(this);
+			await this.beforeClose(this);
 		} catch (error) {
 			console.error(error);
 		}
