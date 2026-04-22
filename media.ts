@@ -372,6 +372,230 @@ function sortCodecs(codecs: RTCRtpCodec[], preferredOrder: string[]) {
 	});
 }
 
+/*
+export interface AdaptiveData {
+	framesEncoded?: number;
+	framesSent?: number;
+	qpSum?: number;
+	totalEncodeTime?: number;
+}
+
+export interface AdaptiveTargets {
+	audio?: AdaptiveAudioTargets;
+	video?: AdaptiveVideoTargets;
+}
+
+export interface AdaptiveAudioTargets {
+	channels?: number;
+	bitrate: number;
+	linearDecrease?: boolean; // Should be enabled if RED is enabled
+}
+
+export interface AdaptiveVideoTargets {
+	width?: number;
+	height?: number;
+	framerate?: number;
+	browserDegradationDisabled?: boolean; // Enable if degradationPreference is maintain-framerate-and-resolution; implements custom resolution & framerate adaptation
+}
+
+export async function adaptiveSettingsNew(
+	pc: RTCPeerConnection,
+	peerData: AdaptiveData,
+	targets: AdaptiveTargets
+) {
+	const stats = await pc.getStats();
+
+	if (targets.audio) {
+		await adaptiveAudioBitrate(pc, stats, targets.audio);
+	}
+
+	if (targets.video) {
+		await adaptiveVideoSettings(pc, stats, peerData, targets.video);
+	}
+}
+
+async function adaptiveAudioBitrate(
+	pc: RTCPeerConnection,
+	stats: RTCStatsReport,
+	targets: AdaptiveAudioTargets
+) {
+	const channels = targets.channels ? targets.channels : 1;
+	const minBitrate = calculateReasonableMinimumAudioBitrateKbps(channels);
+	const maxBitrate = targets.bitrate;
+	const stickyTarget = calculateStickyDynamicAudioBitrateTarget(channels);
+
+	let bitrateLower = 0;
+	let bitrateUpper = Infinity;
+	let usingOpus = false;
+
+	stats.forEach((report) => {
+		if (
+			report.type == "outbound-rtp" &&
+			report.kind == "video" &&
+			report.targetBitrate
+		) {
+			if (targets.linearDecrease) {
+				// minimum of 32 kbit/s (see calculateReasonableMinimumAudioBitrateKbps for details)
+				bitrateLower =
+					Math.max(Math.floor(report.targetBitrate / 128000), 1) *
+					32000;
+				bitrateUpper =
+					Math.max(Math.ceil(report.targetBitrate / 128000), 1) *
+					32000;
+			} else {
+				// prefer staying above stickyTarget * 32 kbit/s
+
+				if (report.targetBitrate >= 64000 * stickyTarget) {
+					bitrateLower =
+						Math.max(
+							Math.floor(report.targetBitrate / 128000),
+							stickyTarget
+						) * 32000;
+					bitrateUpper =
+						Math.max(
+							Math.ceil(report.targetBitrate / 128000),
+							stickyTarget
+						) * 32000;
+				} else {
+					// minimum of 32 kbit/s (see calculateReasonableMinimumAudioBitrateKbps for details)
+
+					bitrateLower =
+						Math.max(Math.floor(report.targetBitrate / 64000), 1) *
+						32000;
+					bitrateUpper =
+						Math.max(Math.ceil(report.targetBitrate / 64000), 1) *
+						32000;
+				}
+			}
+
+			bitrateLower = Math.min(
+				Math.max(bitrateLower, minBitrate),
+				maxBitrate
+			);
+			bitrateUpper = Math.min(
+				Math.max(bitrateUpper, minBitrate),
+				maxBitrate
+			);
+		}
+		if (
+			report.type == "codec" &&
+			report.mimeType.toLowerCase() == "audio/opus"
+		) {
+			usingOpus = true;
+		}
+	});
+
+	if (!usingOpus || bitrateLower == 0 || bitrateUpper == Infinity) return;
+
+	for (const transceiver of pc.getTransceivers()) {
+		if (transceiver.sender.track?.kind == "audio") {
+			let parameters = transceiver.sender.getParameters();
+
+			let changed = false;
+
+			for (const encoding of parameters.encodings) {
+				if (encoding.maxBitrate) {
+					if (encoding.maxBitrate > bitrateUpper) {
+						DEV: console.log(
+							"set audio maxBitrate",
+							bitrateUpper / 1000
+						);
+						encoding.maxBitrate = bitrateUpper;
+						changed = true;
+					}
+
+					if (encoding.maxBitrate < bitrateLower) {
+						DEV: console.log(
+							"set audio maxBitrate",
+							bitrateLower / 1000
+						);
+						encoding.maxBitrate = bitrateLower;
+						changed = true;
+					}
+				}
+			}
+
+			if (changed) {
+				await transceiver.sender.setParameters(parameters);
+			}
+		}
+	}
+}
+
+async function adaptiveVideoSettings(
+	pc: RTCPeerConnection,
+	stats: RTCStatsReport,
+	data: AdaptiveData,
+	targets: AdaptiveVideoTargets
+) {
+	const adaptUp = (width: number, height: number, framerate: number) => {
+		const adjustedFramerate = Math.round((framerate * 3) / 2);
+
+		if (
+			width * height > 1_960_000 &&
+			targets.framerate &&
+			framerate < targets.framerate
+		) {
+			return [
+				width,
+				height,
+				Math.min(adjustedFramerate, targets.framerate),
+			];
+		}
+		if (width * height > 810_000 && framerate < 60) {
+			return [width, height, Math.min(adjustedFramerate, 60)];
+		}
+		if (framerate < 30) {
+			return [width, height, 30];
+		}
+
+		const adjustedPixels = (width * height * 5) / 3;
+
+		const adjustedWidth =
+			Math.round(Math.sqrt(adjustedPixels * (width / height)) / 4) * 4;
+		const adjustedHeight =
+			Math.round(Math.sqrt(adjustedPixels * (height / width)) / 4) * 4;
+
+		if (
+			targets.width &&
+			targets.height &&
+			(adjustedWidth >= targets.width || adjustedHeight >= targets.height)
+		) {
+			return [targets.width, targets.height, framerate];
+		}
+
+		return [adjustedWidth, adjustedHeight, framerate];
+	};
+	const adaptDown = (width: number, height: number, framerate: number) => {
+		const adjustedFramerate = Math.round((framerate * 2) / 3);
+
+		if (width * height <= 3_610_000 && framerate > 60) {
+			return [width, height, Math.max(adjustedFramerate, 60)];
+		}
+		if (width * height <= 810_000 && framerate > 30) {
+			return [width, height, Math.max(adjustedFramerate, 30)];
+		}
+
+		const adjustedPixels = (width * height * 3) / 5;
+
+		const adjustedWidth =
+			Math.round(Math.sqrt(adjustedPixels * (width / height)) / 4) * 4;
+		const adjustedHeight =
+			Math.round(Math.sqrt(adjustedPixels * (height / width)) / 4) * 4;
+
+		if (
+			(adjustedPixels < 57_600 ||
+				adjustedWidth < 180 ||
+				adjustedHeight < 180) &&
+			framerate > 22
+		) {
+			return [width, height, 22];
+		}
+
+		return [adjustedWidth, adjustedHeight, framerate];
+	};
+}*/
+
 export async function adaptiveSettings(
 	pc: RTCPeerConnection,
 	dynamicAudioBitrate: boolean,
@@ -558,6 +782,31 @@ export async function adaptiveSettings(
 		}
 	}
 }
+
+interface CodecAdaptiveData {
+	lowQP?: number;
+	highQP?: number;
+}
+
+const H264_ADAPTIVE_DATA: CodecAdaptiveData = {
+	lowQP: 24,
+	highQP: 37,
+};
+
+const VP8_ADAPTIVE_DATA: CodecAdaptiveData = {
+	lowQP: 14.5,
+	highQP: 47.5,
+};
+
+const VP9_ADAPTIVE_DATA: CodecAdaptiveData = {
+	lowQP: 37.25,
+	highQP: 51.25,
+};
+
+const AV1_ADAPTIVE_DATA: CodecAdaptiveData = {
+	lowQP: 36.25,
+	highQP: 51.25,
+};
 
 export class MediaScaler {
 	public stream: MediaStream;
