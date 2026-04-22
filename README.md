@@ -37,9 +37,13 @@ bun build --compile --target=browser ./index.html --outdir=dist --minify-whitesp
 ### low priority
 - [ ] add on-screen RMS+clipping warning volume meter
 - [ ] display information (resolution, framerate, channel count, sample rate) about video/audio tracks in sender UI if showStats is enabled
-- [ ] get [Opus DRED](https://opus-codec.org/demo/opus-1.5/) working (do any browsers support it yet?)
 
 ### far future ideas
+- [ ] update WebRTC Opus to 1.6
+	- [ ] get [DRED](https://opus-codec.org/demo/opus-1.5/) working
+	- [ ] get [DeepPLC](https://opus-codec.org/demo/opus-1.5/) working
+	- [ ] get [NoLACE](https://opus-codec.org/demo/opus-1.5/) working
+	- [ ] get [BWE](https://opus-codec.org/demo/opus-1.6/) working
 - [ ] make native app implementation
 	- [ ] tweak WebRTC congestion control algorithm for this specific use case
 - [ ] implement remote monitoring of peer metrics (viewing receiver metrics on sender and sender metrics on receiver)
