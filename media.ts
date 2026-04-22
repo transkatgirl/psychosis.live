@@ -734,7 +734,13 @@ export class MediaScaler {
 			this.videoId = undefined;
 
 			(this.generator as MediaStreamTrack).stop();
-			await this.transformerPromise;
+
+			try {
+				await this.transformerPromise;
+			} catch (error) {
+				console.warn(error);
+			}
+
 			this.stream.removeTrack(this.generator as MediaStreamTrack);
 
 			const generatorId = (this.generator as MediaStreamTrack).id;
