@@ -573,48 +573,29 @@ export async function adaptiveSettings(
 export class MediaScaler {
 	public stream: MediaStream;
 	videoId: string | undefined;
-	scaler: Scaler | undefined;
+	scaler: Scaler;
 	processor: any;
 	transformerPromise: Promise<void> | undefined;
 	generator: any;
-	originalWidth: number | undefined;
-	originalHeight: number | undefined;
-	public constructor(
-		stream: MediaStream,
-		width: number,
-		height: number,
-		preserveAspectRatio = true,
-		enforceAspectRatio = true
-	) {
+	originalWidth: number;
+	originalHeight: number;
+	public constructor(width: number, height: number) {
 		if (
 			!(
 				"MediaStreamTrackProcessor" in window &&
 				"MediaStreamTrackGenerator" in window
 			)
 		) {
-			console.warn(
-				"Insertable Streams unsupported, falling back to browser scaler"
-			);
-			this.stream = stream;
-			return;
+			throw "Insertable Streams unsupported";
 		}
 
-		try {
-			this.originalWidth = Math.round(width);
-			this.originalHeight = Math.round(height);
+		this.originalWidth = Math.round(width);
+		this.originalHeight = Math.round(height);
 
-			this.scaler = new Scaler(
-				new OffscreenCanvas(this.originalWidth, this.originalHeight),
-				"mks2013"
-			);
-		} catch (_error) {
-			this.scaler = undefined;
-			console.warn(
-				"WebGL initalization failed, falling back to browser scaler"
-			);
-			this.stream = stream;
-			return;
-		}
+		this.scaler = new Scaler(
+			new OffscreenCanvas(this.originalWidth, this.originalHeight),
+			"mks2013"
+		);
 
 		this.stream = new MediaStream();
 	}
@@ -622,8 +603,6 @@ export class MediaScaler {
 		return this.videoId;
 	}
 	public resize(width: number, height: number) {
-		if (!this.scaler) return;
-
 		this.originalWidth = Math.round(width);
 		this.originalHeight = Math.round(height);
 
@@ -636,8 +615,6 @@ export class MediaScaler {
 		preserveAspectRatio = true,
 		enforceAspectRatio = true
 	) {
-		if (!this.scaler) return;
-
 		if (track.kind == "video") {
 			if (this.videoId)
 				throw "Scaler already has an attached video track.";
@@ -661,12 +638,7 @@ export class MediaScaler {
 
 			const transformer = new TransformStream({
 				transform(frame: VideoFrame, controller) {
-					if (
-						preserveAspectRatio &&
-						enforceAspectRatio &&
-						originalWidth &&
-						originalHeight
-					) {
+					if (preserveAspectRatio && enforceAspectRatio) {
 						const srcAspectRatio =
 							frame.displayWidth / frame.displayHeight;
 						const canvasAspectRatio =
@@ -725,8 +697,6 @@ export class MediaScaler {
 		}
 	}
 	public async removeTrack(track: MediaStreamTrack) {
-		if (!this.scaler) return;
-
 		if (track.kind == "video") {
 			if (this.videoId != track.id && this.generator.id != track.id)
 				throw "Track is not attached to scaler.";
@@ -755,8 +725,6 @@ export class MediaScaler {
 		}
 	}
 	public async destroy() {
-		if (!this.scaler) return;
-
 		this.stream.onaddtrack = null;
 		this.stream.onremovetrack = null;
 
@@ -765,6 +733,5 @@ export class MediaScaler {
 		}
 
 		this.scaler.destroy();
-		this.scaler = undefined;
 	}
 }

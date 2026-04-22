@@ -594,46 +594,27 @@ async function launchSender(credentials: RoomCredentials) {
 
 		if (params.get("overrideScaler") === "true" && width && height) {
 			let scaler = peerScalers[peerId];
-			let scalerTrack;
 
 			if (!scaler) {
-				scaler = new MediaScaler(stream, width, height);
+				scaler = new MediaScaler(width, height);
 				peerScalers[peerId] = scaler;
-
-				scalerTrack = scaler.addTrack(track);
-			} else {
-				scalerTrack = scaler.addTrack(track);
 			}
 
-			if (scalerTrack) {
-				transceiver = pc.addTransceiver(scalerTrack, {
-					sendEncodings: [
-						buildSenderEncoding(
-							track.kind,
-							maxVideoBitrate,
-							maxFramerate,
-							maxAudioBitrate,
-							"very-low",
-							"high"
-						),
-					],
-					streams: [scaler.stream],
-				});
-			} else {
-				transceiver = pc.addTransceiver(track, {
-					sendEncodings: [
-						buildSenderEncoding(
-							track.kind,
-							maxVideoBitrate,
-							maxFramerate,
-							maxAudioBitrate,
-							"very-low",
-							"high"
-						),
-					],
-					streams: [stream],
-				});
-			}
+			const scalerTrack = scaler.addTrack(track);
+
+			transceiver = pc.addTransceiver(scalerTrack, {
+				sendEncodings: [
+					buildSenderEncoding(
+						track.kind,
+						maxVideoBitrate,
+						maxFramerate,
+						maxAudioBitrate,
+						"very-low",
+						"high"
+					),
+				],
+				streams: [scaler.stream],
+			});
 		} else {
 			transceiver = pc.addTransceiver(track, {
 				sendEncodings: [
@@ -693,22 +674,14 @@ async function launchSender(credentials: RoomCredentials) {
 						scaler?.videoId === oldTrack.id)
 				) {
 					if (scaler) {
-						const removedId = await scaler.removeTrack(oldTrack);
+						await scaler.removeTrack(oldTrack);
 						const scaledTrack = scaler.addTrack(newTrack);
 
-						if (removedId && scaledTrack) {
-							promises.push(
-								transceiver.sender
-									.replaceTrack(scaledTrack)
-									.catch(onReplaceTrackRejected)
-							);
-						} else {
-							promises.push(
-								transceiver.sender
-									.replaceTrack(newTrack)
-									.catch(onReplaceTrackRejected)
-							);
-						}
+						promises.push(
+							transceiver.sender
+								.replaceTrack(scaledTrack)
+								.catch(onReplaceTrackRejected)
+						);
 					} else {
 						promises.push(
 							transceiver.sender
@@ -1052,7 +1025,6 @@ async function launchReceiver(credentials: RoomCredentials) {
 
 						if (video.srcObject === null) {
 							const scaler = new MediaScaler(
-								stream,
 								video.clientWidth,
 								video.clientHeight
 							);
