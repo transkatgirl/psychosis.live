@@ -83,7 +83,7 @@ export function resize(
 		srcWidth
 	);
 	gl.uniform1f(
-		gl.getUniformLocation(horizontalProgram, "u_filterScale"),
+		gl.getUniformLocation(horizontalProgram, "u_scale"),
 		windowSize / radiusX
 	);
 	gl.uniform1f(gl.getUniformLocation(horizontalProgram, "u_radius"), radiusX);
@@ -114,7 +114,7 @@ export function resize(
 		srcHeight
 	);
 	gl.uniform1f(
-		gl.getUniformLocation(verticalProgram, "u_filterScale"),
+		gl.getUniformLocation(verticalProgram, "u_scale"),
 		windowSize / radiusY
 	);
 	gl.uniform1f(gl.getUniformLocation(verticalProgram, "u_radius"), radiusY);
@@ -284,7 +284,7 @@ export class Scaler {
 		this.gl.uniform1f(
 			this.gl.getUniformLocation(
 				this.compiledHorizontal.program,
-				"u_filterScale"
+				"u_scale"
 			),
 			this.windowSize / radiusX
 		);
@@ -330,7 +330,7 @@ export class Scaler {
 		this.gl.uniform1f(
 			this.gl.getUniformLocation(
 				this.compiledVertical.program,
-				"u_filterScale"
+				"u_scale"
 			),
 			this.windowSize / radiusY
 		);

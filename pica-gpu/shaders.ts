@@ -18,7 +18,7 @@ const fsHorizontal = `#version 300 es
 
  uniform sampler2D u_image;
  uniform float u_textureWidth;
- uniform float u_filterScale;
+ uniform float u_scale;
  uniform float u_radius;
 
  const float PI = 3.141592653589793;
@@ -36,7 +36,7 @@ const fsHorizontal = `#version 300 es
    vec4 color = vec4(0.0);
    for(int i = start; i <= end; i++){
      float texX = (float(i) + 0.5) / u_textureWidth;
-     float weight = resizeFilter(((float(i) + 0.5) - srcX) * u_filterScale);
+     float weight = resizeFilter(((float(i) + 0.5) - srcX) * u_scale);
      vec4 sampleValue = texture(u_image, vec2(texX, v_texCoord.y));
      color += sampleValue * weight;
      sum += weight;
@@ -52,7 +52,7 @@ const fsVertical = `#version 300 es
 
  uniform sampler2D u_image;
  uniform float u_textureHeight;
- uniform float u_filterScale;
+ uniform float u_scale;
  uniform float u_radius;
  const float PI = 3.141592653589793;
 
@@ -69,7 +69,7 @@ const fsVertical = `#version 300 es
    vec4 color = vec4(0.0);
    for(int j = start; j <= end; j++){
      float texY = (float(j) + 0.5) / u_textureHeight;
-     float weight = resizeFilter(((float(j) + 0.5) - srcY) * u_filterScale);
+     float weight = resizeFilter(((float(j) + 0.5) - srcY) * u_scale);
      vec4 sampleValue = texture(u_image, vec2(v_texCoord.x, texY));
      color += sampleValue * weight;
      sum += weight;
