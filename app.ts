@@ -724,12 +724,13 @@ async function launchSender(credentials: RoomCredentials) {
 				});
 			}
 		},
-		async (peerId, _peer) => {
+		(peerId, _peer) => {
 			const scaler = peerScalers[peerId];
 
 			if (scaler) {
-				await scaler.destroy();
-				delete peerScalers[peerId];
+				scaler.destroy().then(() => {
+					delete peerScalers[peerId];
+				});
 			}
 		},
 		async (peers) => {
@@ -1048,7 +1049,7 @@ async function launchReceiver(credentials: RoomCredentials) {
 				}
 			};
 		},
-		async (peerId, peer) => {
+		(peerId, peer) => {
 			if (!peer.pc) return;
 
 			peer.pc.ontrack = null;
@@ -1076,8 +1077,9 @@ async function launchReceiver(credentials: RoomCredentials) {
 			}
 			let scaler = peerScalers[peerId];
 			if (scaler) {
-				await scaler.destroy();
-				delete peerScalers[peerId];
+				scaler.destroy().then(() => {
+					delete peerScalers[peerId];
+				});
 			}
 		},
 		async (peers) => {
