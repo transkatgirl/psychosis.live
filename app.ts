@@ -380,6 +380,8 @@ async function launchSender(credentials: RoomCredentials) {
 		};
 	}
 
+	// TODO: Calculate maxAudioBitrate and maxVideoBitrate using stream attributes (channelCount, width, height, etc)
+
 	if (maxAudioBitrate && maxAudioBitrate < 0) {
 		if (channelCount > 0) {
 			maxAudioBitrate = calculateReasonableAudioBitrateKbps(channelCount);
