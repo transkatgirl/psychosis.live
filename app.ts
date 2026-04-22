@@ -580,6 +580,10 @@ async function launchSender(credentials: RoomCredentials) {
 		document.body.appendChild(settings);
 	}
 
+	// TODO: When using overrideScaler, replace browser adaptive resolution algorithm with our own. Set sender degradationPreference to "maintain-framerate-and-resolution", and reimplement degradationPreference ourselves using JavaScript.
+
+	// TODO: When using overrideScaler, apply a scaler to the preview.
+
 	const peerScalers: Record<string, MediaScaler> = {};
 
 	const addTrack = async (
