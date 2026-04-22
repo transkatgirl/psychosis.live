@@ -372,7 +372,6 @@ function sortCodecs(codecs: RTCRtpCodec[], preferredOrder: string[]) {
 	});
 }
 
-/*
 export interface AdaptiveData {
 	framesEncoded?: number;
 	framesSent?: number;
@@ -386,7 +385,7 @@ export interface AdaptiveTargets {
 }
 
 export interface AdaptiveAudioTargets {
-	channels?: number;
+	channels: number;
 	bitrate: number;
 	linearDecrease?: boolean; // Should be enabled if RED is enabled
 }
@@ -398,7 +397,7 @@ export interface AdaptiveVideoTargets {
 	browserDegradationDisabled?: boolean; // Enable if degradationPreference is maintain-framerate-and-resolution; implements custom resolution & framerate adaptation
 }
 
-export async function adaptiveSettingsNew(
+async function adaptiveSettingsNew( // WIP
 	pc: RTCPeerConnection,
 	peerData: AdaptiveData,
 	targets: AdaptiveTargets
@@ -419,10 +418,13 @@ async function adaptiveAudioBitrate(
 	stats: RTCStatsReport,
 	targets: AdaptiveAudioTargets
 ) {
-	const channels = targets.channels ? targets.channels : 1;
-	const minBitrate = calculateReasonableMinimumAudioBitrateKbps(channels);
+	const minBitrate = calculateReasonableMinimumAudioBitrateKbps(
+		targets.channels
+	);
 	const maxBitrate = targets.bitrate;
-	const stickyTarget = calculateStickyDynamicAudioBitrateTarget(channels);
+	const stickyTarget = calculateStickyDynamicAudioBitrateTarget(
+		targets.channels
+	);
 
 	let bitrateLower = 0;
 	let bitrateUpper = Infinity;
@@ -528,73 +530,147 @@ async function adaptiveVideoSettings(
 	data: AdaptiveData,
 	targets: AdaptiveVideoTargets
 ) {
-	const adaptUp = (width: number, height: number, framerate: number) => {
-		const adjustedFramerate = Math.round((framerate * 3) / 2);
+	if (
+		targets.width &&
+		targets.height &&
+		targets.framerate &&
+		targets.browserDegradationDisabled
+	) {
+		const adaptUp = (width: number, height: number, framerate: number) => {
+			const adjustedFramerate = Math.round((framerate * 3) / 2);
 
-		if (
-			width * height > 1_960_000 &&
-			targets.framerate &&
-			framerate < targets.framerate
-		) {
-			return [
-				width,
-				height,
-				Math.min(adjustedFramerate, targets.framerate),
-			];
+			if (
+				width * height > 1_960_000 &&
+				targets.framerate &&
+				framerate < targets.framerate
+			) {
+				return [
+					width,
+					height,
+					Math.min(adjustedFramerate, targets.framerate),
+				];
+			}
+			if (width * height > 810_000 && framerate < 60) {
+				return [width, height, Math.min(adjustedFramerate, 60)];
+			}
+			if (framerate < 30) {
+				return [width, height, 30];
+			}
+
+			const adjustedPixels = (width * height * 5) / 3;
+
+			const adjustedWidth =
+				Math.round(Math.sqrt(adjustedPixels * (width / height)) / 4) *
+				4;
+			const adjustedHeight =
+				Math.round(Math.sqrt(adjustedPixels * (height / width)) / 4) *
+				4;
+
+			if (
+				targets.width &&
+				targets.height &&
+				(adjustedWidth >= targets.width ||
+					adjustedHeight >= targets.height)
+			) {
+				return [targets.width, targets.height, framerate];
+			}
+
+			return [adjustedWidth, adjustedHeight, framerate];
+		};
+		const adaptDown = (
+			width: number,
+			height: number,
+			framerate: number
+		) => {
+			const adjustedFramerate = Math.round((framerate * 2) / 3);
+
+			if (width * height <= 3_610_000 && framerate > 60) {
+				return [width, height, Math.max(adjustedFramerate, 60)];
+			}
+			if (width * height <= 810_000 && framerate > 30) {
+				return [width, height, Math.max(adjustedFramerate, 30)];
+			}
+
+			const adjustedPixels = (width * height * 3) / 5;
+
+			const adjustedWidth =
+				Math.round(Math.sqrt(adjustedPixels * (width / height)) / 4) *
+				4;
+			const adjustedHeight =
+				Math.round(Math.sqrt(adjustedPixels * (height / width)) / 4) *
+				4;
+
+			if (
+				(adjustedPixels < 57_600 ||
+					adjustedWidth < 180 ||
+					adjustedHeight < 180) &&
+				framerate > 22
+			) {
+				return [width, height, 22];
+			}
+
+			return [adjustedWidth, adjustedHeight, framerate];
+		};
+	} else if (targets.framerate) {
+		let framerateLower = 0;
+		let framerateUpper = Infinity;
+
+		stats.forEach((report) => {
+			if (
+				report.type == "outbound-rtp" &&
+				report.kind == "video" &&
+				report.targetBitrate &&
+				targets.framerate
+			) {
+				framerateLower = Math.min(
+					Math.max(Math.floor(report.targetBitrate / 3000000), 1) *
+						30,
+					targets.framerate
+				);
+				framerateUpper = Math.min(
+					Math.max(Math.ceil(report.targetBitrate / 3000000), 1) * 30,
+					targets.framerate
+				);
+			}
+		});
+
+		if (framerateLower != 0 && framerateUpper != Infinity) {
+			for (const transceiver of pc.getTransceivers()) {
+				if (transceiver.sender.track?.kind == "video") {
+					let parameters = transceiver.sender.getParameters();
+
+					let changed = false;
+
+					for (const encoding of parameters.encodings) {
+						if (encoding.maxFramerate) {
+							if (encoding.maxFramerate > framerateUpper) {
+								DEV: console.log(
+									"set video maxFramerate",
+									framerateUpper
+								);
+								encoding.maxFramerate = framerateUpper;
+								changed = true;
+							}
+
+							if (encoding.maxFramerate < framerateLower) {
+								DEV: console.log(
+									"set video maxFramerate",
+									framerateLower
+								);
+								encoding.maxFramerate = framerateLower;
+								changed = true;
+							}
+						}
+					}
+
+					if (changed) {
+						await transceiver.sender.setParameters(parameters);
+					}
+				}
+			}
 		}
-		if (width * height > 810_000 && framerate < 60) {
-			return [width, height, Math.min(adjustedFramerate, 60)];
-		}
-		if (framerate < 30) {
-			return [width, height, 30];
-		}
-
-		const adjustedPixels = (width * height * 5) / 3;
-
-		const adjustedWidth =
-			Math.round(Math.sqrt(adjustedPixels * (width / height)) / 4) * 4;
-		const adjustedHeight =
-			Math.round(Math.sqrt(adjustedPixels * (height / width)) / 4) * 4;
-
-		if (
-			targets.width &&
-			targets.height &&
-			(adjustedWidth >= targets.width || adjustedHeight >= targets.height)
-		) {
-			return [targets.width, targets.height, framerate];
-		}
-
-		return [adjustedWidth, adjustedHeight, framerate];
-	};
-	const adaptDown = (width: number, height: number, framerate: number) => {
-		const adjustedFramerate = Math.round((framerate * 2) / 3);
-
-		if (width * height <= 3_610_000 && framerate > 60) {
-			return [width, height, Math.max(adjustedFramerate, 60)];
-		}
-		if (width * height <= 810_000 && framerate > 30) {
-			return [width, height, Math.max(adjustedFramerate, 30)];
-		}
-
-		const adjustedPixels = (width * height * 3) / 5;
-
-		const adjustedWidth =
-			Math.round(Math.sqrt(adjustedPixels * (width / height)) / 4) * 4;
-		const adjustedHeight =
-			Math.round(Math.sqrt(adjustedPixels * (height / width)) / 4) * 4;
-
-		if (
-			(adjustedPixels < 57_600 ||
-				adjustedWidth < 180 ||
-				adjustedHeight < 180) &&
-			framerate > 22
-		) {
-			return [width, height, 22];
-		}
-
-		return [adjustedWidth, adjustedHeight, framerate];
-	};
-}*/
+	}
+}
 
 export async function adaptiveSettings(
 	pc: RTCPeerConnection,
