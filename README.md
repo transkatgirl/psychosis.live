@@ -37,6 +37,7 @@ bun build --compile --target=browser ./index.html --outdir=dist --minify-whitesp
 ### low priority
 - [ ] add on-screen RMS+clipping warning volume meter
 - [ ] display information (resolution, framerate, channel count, sample rate) about video/audio tracks in sender UI if showStats is enabled
+- [ ] get [Opus DRED](https://opus-codec.org/demo/opus-1.5/) working (do any browsers support it yet?)
 
 ### far future ideas
 - [ ] make native app implementation
@@ -44,6 +45,3 @@ bun build --compile --target=browser ./index.html --outdir=dist --minify-whitesp
 - [ ] implement remote monitoring of peer metrics (viewing receiver metrics on sender and sender metrics on receiver)
 - [ ] switch to MoQ when it's ready
 	- [ ] implement QUIC multipath draft
-- [ ] implement automatic codec switching (this is difficult to do *well*, especially for audio)
-	- [ ] implement [FlowDec codec](https://github.com/facebookresearch/FlowDec) or [similar codecs](https://github.com/FORARTfe/HyMPS/blob/main/Audio/AI-based.md#codecs-) for ultra-low-bitrate scenarios
-	- [ ] switch between video codecs based on target resolution and available CPU resources
