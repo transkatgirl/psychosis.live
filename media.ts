@@ -684,7 +684,8 @@ export class MediaScaler {
 
 			(this.processor.readable as ReadableStream<VideoFrame>)
 				.pipeThrough(transformer)
-				.pipeTo(this.generator.writable as WritableStream<VideoFrame>);
+				.pipeTo(this.generator.writable as WritableStream<VideoFrame>)
+				.catch(() => {});
 
 			this.stream.addTrack(this.generator as MediaStreamTrack);
 			return this.generator as MediaStreamTrack;
