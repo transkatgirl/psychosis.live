@@ -544,83 +544,6 @@ async function adaptiveVideoSettings(
 		// - https://github.com/webrtc-sdk/webrtc/blob/m144_release/modules/video_coding/utility/quality_scaler.cc
 		// - https://github.com/webrtc-sdk/webrtc/blob/m144_release/call/adaptation/video_stream_adapter.cc
 		// - https://github.com/webrtc-sdk/webrtc/blob/6c1aa903241e69eb2eca64caad16779351bb1ab2/video/adaptation/video_stream_encoder_resource_manager.cc
-
-		const adaptUp = (width: number, height: number, framerate: number) => {
-			const adjustedFramerate = Math.round((framerate * 3) / 2);
-
-			if (
-				width * height > 1_960_000 &&
-				targets.framerate &&
-				framerate < targets.framerate
-			) {
-				return [
-					width,
-					height,
-					Math.min(adjustedFramerate, targets.framerate),
-				];
-			}
-			if (width * height > 810_000 && framerate < 60) {
-				return [width, height, Math.min(adjustedFramerate, 60)];
-			}
-			if (framerate < 30) {
-				return [width, height, 30];
-			}
-
-			const adjustedPixels = (width * height * 5) / 3;
-
-			const adjustedWidth =
-				Math.round(Math.sqrt(adjustedPixels * (width / height)) / 4) *
-				4;
-			const adjustedHeight =
-				Math.round(Math.sqrt(adjustedPixels * (height / width)) / 4) *
-				4;
-
-			if (
-				targets.width &&
-				targets.height &&
-				(adjustedWidth >= targets.width ||
-					adjustedHeight >= targets.height)
-			) {
-				return [targets.width, targets.height, framerate];
-			}
-
-			return [adjustedWidth, adjustedHeight, framerate];
-		};
-		const adaptDown = (
-			width: number,
-			height: number,
-			framerate: number
-		) => {
-			const adjustedFramerate = Math.round((framerate * 2) / 3);
-
-			if (width * height <= 3_610_000 && framerate > 60) {
-				return [width, height, Math.max(adjustedFramerate, 60)];
-			}
-			if (width * height <= 810_000 && framerate > 30) {
-				return [width, height, Math.max(adjustedFramerate, 30)];
-			}
-
-			const adjustedPixels = (width * height * 3) / 5;
-
-			const adjustedWidth =
-				Math.round(Math.sqrt(adjustedPixels * (width / height)) / 4) *
-				4;
-			const adjustedHeight =
-				Math.round(Math.sqrt(adjustedPixels * (height / width)) / 4) *
-				4;
-
-			if (
-				(adjustedPixels < 57_600 ||
-					adjustedWidth < 180 ||
-					adjustedHeight < 180) &&
-				framerate > 22
-			) {
-				return [width, height, 22];
-			}
-
-			return [adjustedWidth, adjustedHeight, framerate];
-		};
-
 		// TODO
 	} else {
 		let framerateLower = 0;
@@ -902,6 +825,85 @@ const AV1_ADAPTIVE_DATA: CodecAdaptiveData = {
 	lowQP: 36.25,
 	highQP: 51.25,
 };
+
+// Adaptation functions are loosely inspired by https://github.com/webrtc-sdk/webrtc/blob/m144_release/call/adaptation/video_stream_adapter.cc
+
+function adaptUp(
+	width: number,
+	height: number,
+	framerate: number,
+	maxFramerate: number
+) {
+	const adjustedFramerate = Math.round((framerate * 3) / 2);
+
+	if (
+		width * height > 1_960_000 &&
+		maxFramerate &&
+		framerate < maxFramerate
+	) {
+		return [width, height, Math.min(adjustedFramerate, maxFramerate)];
+	}
+	if (width * height > 810_000 && framerate < 60) {
+		return [width, height, Math.min(adjustedFramerate, 60)];
+	}
+	if (framerate < 30) {
+		return [width, height, 30];
+	}
+
+	const adjustedPixels = (width * height * 5) / 3;
+
+	const adjustedWidth =
+		Math.round(Math.sqrt(adjustedPixels * (width / height)) / 4) * 4;
+	const adjustedHeight =
+		Math.round(Math.sqrt(adjustedPixels * (height / width)) / 4) * 4;
+
+	return [adjustedWidth, adjustedHeight, framerate];
+}
+
+function adaptDown(width: number, height: number, framerate: number) {
+	const adjustedFramerate = Math.round((framerate * 2) / 3);
+
+	if (width * height <= 3_610_000 && framerate > 60) {
+		return [width, height, Math.max(adjustedFramerate, 60)];
+	}
+	if (width * height <= 810_000 && framerate > 30) {
+		return [width, height, Math.max(adjustedFramerate, 30)];
+	}
+
+	const adjustedPixels = (width * height * 3) / 5;
+
+	const adjustedWidth =
+		Math.round(Math.sqrt(adjustedPixels * (width / height)) / 4) * 4;
+	const adjustedHeight =
+		Math.round(Math.sqrt(adjustedPixels * (height / width)) / 4) * 4;
+
+	if (
+		(adjustedPixels < 57_600 ||
+			adjustedWidth < 180 ||
+			adjustedHeight < 180) &&
+		framerate > 22
+	) {
+		return [width, height, 22];
+	}
+
+	return [adjustedWidth, adjustedHeight, framerate];
+}
+
+function adaptDefault(width: number, height: number, framerate: number) {
+	while (width * height > 640 * 360) {
+		const adjustedPixels = (width * height * 3) / 5;
+
+		const adjustedWidth =
+			Math.round(Math.sqrt(adjustedPixels * (width / height)) / 4) * 4;
+		const adjustedHeight =
+			Math.round(Math.sqrt(adjustedPixels * (height / width)) / 4) * 4;
+
+		width = adjustedWidth;
+		height = adjustedHeight;
+	}
+
+	return [width, height, 30];
+}
 
 export class MediaScaler {
 	public stream: MediaStream;
