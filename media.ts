@@ -374,8 +374,10 @@ function sortCodecs(codecs: RTCRtpCodec[], preferredOrder: string[]) {
 
 export interface AdaptiveData {
 	framesEncoded?: number;
+	framesEncodedOlder?: number; // 2 scan intervals ago
 	framesSent?: number;
-	qpSum?: number;
+	qpSum?: number; // 1 scan interval ago
+	qpSumOlder?: number; // 2 scan intervals ago
 	totalEncodeTime?: number;
 }
 
@@ -618,8 +620,6 @@ async function adaptiveVideoSettings(
 
 			return [adjustedWidth, adjustedHeight, framerate];
 		};
-
-		// Only allow adapting up if targetrate > 75 kbit
 
 		// TODO
 	} else {
@@ -871,8 +871,12 @@ export async function adaptiveSettings(
 }
 
 interface CodecAdaptiveData {
-	lowQP?: number;
-	highQP?: number;
+	lowQP: number;
+	highQP: number;
+}
+
+function calculateHigherQP(data: CodecAdaptiveData) {
+	return Math.min(data.highQP - data.lowQP + data.highQP, 63);
 }
 
 // https://github.com/webrtc-sdk/webrtc/blob/6c1aa903241e69eb2eca64caad16779351bb1ab2/modules/video_coding/codecs/h264/h264_encoder_impl.cc#L69
