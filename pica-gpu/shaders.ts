@@ -88,7 +88,7 @@ const hammingFilter = `float resizeFilter(float x) {
     if(x >= 1.0) return 0.0;
     if(x < 1.19209290E-7) return 1.0;
     float xpi = x * PI;
-    return ((sin(xpi) / xpi) * (0.54 + 0.46 * cos(xpi / 1.0)));
+    return ((sin(xpi) / xpi) * (0.54 + 0.46 * cos(xpi)));
  }`;
 
 const lanczos2Filter = `float resizeFilter(float x) {
