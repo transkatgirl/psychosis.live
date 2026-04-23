@@ -382,6 +382,14 @@ export interface AdaptiveData {
 	skipNextInterval?: boolean;
 }
 
+interface AdaptiveDataAnalysis {
+	framesAnalyzed?: number;
+	qpAvg?: number;
+	frameDropRate?: number;
+}
+
+function analyzeAdaptiveData(data: AdaptiveData) {}
+
 export interface AdaptiveTargets {
 	audio?: AdaptiveAudioTargets;
 	video?: AdaptiveVideoTargets;
@@ -533,7 +541,7 @@ async function adaptiveAudioBitrate(
 	}
 }
 
-// Needs to be called every 2s
+// Needs to be called every 2s (or 2.5s for behavior closer to libwebrtc)
 async function adaptiveVideoSettings(
 	pc: RTCPeerConnection,
 	stats: RTCStatsReport,
@@ -542,7 +550,7 @@ async function adaptiveVideoSettings(
 	peerScaler?: MediaScaler // Should only be specified if degradationPreference is maintain-framerate-and-resolution; implements custom adaptation algorithm
 ) {
 	if (targets.width && targets.height && peerScaler) {
-		// Loosely inspired by:
+		// Based on:
 		// - https://github.com/webrtc-sdk/webrtc/blob/m144_release/modules/video_coding/utility/quality_scaler.cc
 		// - https://github.com/webrtc-sdk/webrtc/blob/m144_release/call/adaptation/video_stream_adapter.cc
 		// - https://github.com/webrtc-sdk/webrtc/blob/6c1aa903241e69eb2eca64caad16779351bb1ab2/video/adaptation/video_stream_encoder_resource_manager.cc
@@ -583,7 +591,11 @@ async function adaptiveVideoSettings(
 			);
 
 			// clear averages
-		}*/
+		}
+
+		width = Math.min(width, targets.width);
+		height = Math.min(height, targets.height);
+		framerate = Math.min(framerate, targets.framerate);*/
 	} else {
 		let framerateLower = 0;
 		let framerateUpper = Infinity;
