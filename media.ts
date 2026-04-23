@@ -663,8 +663,6 @@ export async function adaptiveSettings(
 	let videoFramerateUpper = Infinity;
 
 	stats.forEach((report) => {
-		console.log(report);
-
 		if (
 			report.type == "outbound-rtp" &&
 			report.kind == "video" &&
