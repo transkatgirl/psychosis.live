@@ -538,6 +538,11 @@ async function adaptiveVideoSettings(
 	peerScaler?: MediaScaler // Should only be specified if degradationPreference is maintain-framerate-and-resolution; implements custom adaptation algorithm
 ) {
 	if (targets.width && targets.height && peerScaler) {
+		// Loosely inspired by:
+		// - https://github.com/webrtc-sdk/webrtc/blob/m144_release/modules/video_coding/utility/quality_scaler.cc
+		// - https://github.com/webrtc-sdk/webrtc/blob/m144_release/call/adaptation/video_stream_adapter.cc
+		// - https://github.com/webrtc-sdk/webrtc/blob/6c1aa903241e69eb2eca64caad16779351bb1ab2/video/adaptation/video_stream_encoder_resource_manager.cc
+
 		const adaptUp = (width: number, height: number, framerate: number) => {
 			const adjustedFramerate = Math.round((framerate * 3) / 2);
 
@@ -613,6 +618,8 @@ async function adaptiveVideoSettings(
 
 			return [adjustedWidth, adjustedHeight, framerate];
 		};
+
+		// Only allow adapting up if targetrate > 75 kbit
 
 		// TODO
 	} else {
@@ -868,21 +875,25 @@ interface CodecAdaptiveData {
 	highQP?: number;
 }
 
+// https://github.com/webrtc-sdk/webrtc/blob/6c1aa903241e69eb2eca64caad16779351bb1ab2/modules/video_coding/codecs/h264/h264_encoder_impl.cc#L69
 const H264_ADAPTIVE_DATA: CodecAdaptiveData = {
 	lowQP: 24,
 	highQP: 37,
 };
 
+// https://github.com/webrtc-sdk/webrtc/blob/6c1aa903241e69eb2eca64caad16779351bb1ab2/modules/video_coding/codecs/vp8/libvpx_vp8_encoder.cc#L91; Converted from range of [0, 127] to [0, 63]
 const VP8_ADAPTIVE_DATA: CodecAdaptiveData = {
 	lowQP: 14.5,
 	highQP: 47.5,
 };
 
+// https://github.com/webrtc-sdk/webrtc/blob/6c1aa903241e69eb2eca64caad16779351bb1ab2/modules/video_coding/codecs/vp9/libvpx_vp9_encoder.cc#L107; Converted from range of [0, 255] to [0, 63]
 const VP9_ADAPTIVE_DATA: CodecAdaptiveData = {
 	lowQP: 37.25,
 	highQP: 51.25,
 };
 
+// https://github.com/webrtc-sdk/webrtc/blob/6c1aa903241e69eb2eca64caad16779351bb1ab2/modules/video_coding/codecs/av1/libaom_av1_encoder.cc#L80; Converted from range of [0, 255] to [0, 63]
 const AV1_ADAPTIVE_DATA: CodecAdaptiveData = {
 	lowQP: 36.25,
 	highQP: 51.25,
