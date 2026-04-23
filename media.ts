@@ -682,36 +682,15 @@ export async function adaptiveSettings(
 			}
 
 			if (framerateCeil && dynamicVideoFramerate) {
-				if (report.targetBitrate >= 1000000) {
-					videoFramerateLower = Math.min(
-						Math.max(
-							Math.floor(report.targetBitrate / 3000000),
-							1
-						) * 30,
-						framerateCeil
-					);
-					videoFramerateUpper = Math.min(
-						Math.max(Math.ceil(report.targetBitrate / 3000000), 1) *
-							30,
-						framerateCeil
-					);
-				} else {
-					// minimum of 24fps (lowest common framerate where motion reliably appears fluid)
-					videoFramerateLower = Math.min(
-						Math.max(
-							Math.floor(report.targetBitrate / 500000),
-							1.6
-						) * 15,
-						framerateCeil
-					);
-					videoFramerateUpper = Math.min(
-						Math.max(
-							Math.ceil(report.targetBitrate / 500000),
-							1.6
-						) * 15,
-						framerateCeil
-					);
-				}
+				videoFramerateLower = Math.min(
+					Math.max(Math.floor(report.targetBitrate / 3000000), 1) *
+						30,
+					framerateCeil
+				);
+				videoFramerateUpper = Math.min(
+					Math.max(Math.ceil(report.targetBitrate / 3000000), 1) * 30,
+					framerateCeil
+				);
 			}
 		}
 	});
