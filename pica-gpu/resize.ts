@@ -179,16 +179,8 @@ export class Scaler {
 
 		this.windowSize = getResizeWindow(filter);
 
-		this.sourceTexture = createEmptyTexture(
-			this.gl,
-			canvas.width,
-			canvas.height
-		);
-		this.horizontalTexture = createEmptyTexture(
-			gl,
-			canvas.width,
-			canvas.height
-		);
+		this.sourceTexture = createEmptyTexture(this.gl, 1, 1);
+		this.horizontalTexture = createEmptyTexture(gl, 1, 1);
 
 		this.quadBuffer = createDefaultQuadBuffer(this.gl);
 
@@ -225,7 +217,11 @@ export class Scaler {
 		let targetWidth = this.canvas.width;
 		let targetHeight = this.canvas.height;
 
-		if (srcAspectRatio != canvasAspectRatio && preserveAspectRatio) {
+		const EPSILON = 1e-6;
+		if (
+			Math.abs(srcAspectRatio - canvasAspectRatio) > EPSILON &&
+			preserveAspectRatio
+		) {
 			if (srcAspectRatio > canvasAspectRatio) {
 				targetHeight = Math.round(this.canvas.width / srcAspectRatio);
 			} else {
@@ -246,6 +242,7 @@ export class Scaler {
 			offsetY = Math.round((this.canvas.height - targetHeight) / 2);
 		}
 
+		this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
 		this.gl.clearColor(0, 0, 0, 1);
 		this.gl.clear(this.gl.COLOR_BUFFER_BIT);
 
