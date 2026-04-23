@@ -58,6 +58,12 @@ const fsVertical = `#version 300 es
 
  /* FILTER_FUNCTION */
 
+ vec3 linearToSrgb(vec3 c) {
+   vec3 lo = c * 12.92;
+   vec3 hi = 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055;
+   return mix(lo, hi, step(0.0031308, c));
+ }
+
  void main(){
    float srcY = (v_texCoord.y * u_textureHeight);
    float top = srcY - u_radius;
@@ -74,7 +80,8 @@ const fsVertical = `#version 300 es
      color += sampleValue * weight;
      sum += weight;
    }
-   outColor = color / sum;
+   vec4 linearColor = color / sum;
+   outColor = vec4(linearToSrgb(clamp(linearColor.rgb, 0.0, 1.0)), linearColor.a);
  }
  `;
 
