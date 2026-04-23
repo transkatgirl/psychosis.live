@@ -379,6 +379,7 @@ export interface AdaptiveData {
 	qpSum?: number; // 1 scan interval ago
 	qpSumOlder?: number; // 2 scan intervals ago
 	totalEncodeTime?: number;
+	skipNextInterval?: boolean;
 }
 
 export interface AdaptiveTargets {
@@ -532,6 +533,7 @@ async function adaptiveAudioBitrate(
 	}
 }
 
+// Needs to be called every 2s
 async function adaptiveVideoSettings(
 	pc: RTCPeerConnection,
 	stats: RTCStatsReport,
@@ -545,6 +547,43 @@ async function adaptiveVideoSettings(
 		// - https://github.com/webrtc-sdk/webrtc/blob/m144_release/call/adaptation/video_stream_adapter.cc
 		// - https://github.com/webrtc-sdk/webrtc/blob/6c1aa903241e69eb2eca64caad16779351bb1ab2/video/adaptation/video_stream_encoder_resource_manager.cc
 		// TODO
+		/*const frameCount = 0; // TODO: set averaged frames
+		const frameDropRate = 0; // TODO: avg over 4s
+		const avgQP = 0; // TODO: avg over 4s
+
+		const codecData = AV1_ADAPTIVE_DATA; // TODO
+		let width = 0;
+		let height = 0;
+		let framerate = 0;
+
+		if (frameCount < framerate * 2) {
+			return;
+		}
+
+		// TODO: after first downscale, skip every other iteration
+
+		if (frameDropRate > 0.6 || codecData.highQP < avgQP) {
+			[width, height, framerate] = adaptDown(width, height, framerate);
+
+			if (calculateHigherQP(codecData) > avgQP) {
+				[width, height, framerate] = adaptDown(
+					width,
+					height,
+					framerate
+				);
+			}
+
+			// clear averages
+		} else if (codecData.lowQP >= avgQP) {
+			[width, height, framerate] = adaptUp(
+				width,
+				height,
+				framerate,
+				targets.framerate
+			);
+
+			// clear averages
+		}*/
 	} else {
 		let framerateLower = 0;
 		let framerateUpper = Infinity;
@@ -624,6 +663,8 @@ export async function adaptiveSettings(
 	let videoFramerateUpper = Infinity;
 
 	stats.forEach((report) => {
+		console.log(report);
+
 		if (
 			report.type == "outbound-rtp" &&
 			report.kind == "video" &&
@@ -812,7 +853,7 @@ function adaptUp(
 	height: number,
 	framerate: number,
 	maxFramerate: number
-) {
+): [number, number, number] {
 	const adjustedFramerate = Math.round((framerate * 3) / 2);
 
 	if (
@@ -839,7 +880,11 @@ function adaptUp(
 	return [adjustedWidth, adjustedHeight, framerate];
 }
 
-function adaptDown(width: number, height: number, framerate: number) {
+function adaptDown(
+	width: number,
+	height: number,
+	framerate: number
+): [number, number, number] {
 	const adjustedFramerate = Math.round((framerate * 2) / 3);
 
 	if (width * height <= 3_610_000 && framerate > 60) {
@@ -868,7 +913,7 @@ function adaptDown(width: number, height: number, framerate: number) {
 	return [adjustedWidth, adjustedHeight, framerate];
 }
 
-function adaptDefault(width: number, height: number, framerate: number) {
+function adaptDefault(width: number, height: number): [number, number, number] {
 	while (width * height > 640 * 360) {
 		const adjustedPixels = (width * height * 3) / 5;
 
