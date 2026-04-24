@@ -401,17 +401,19 @@ function analyzeAdaptiveData(stats: RTCStatsReport, data: AdaptiveData) {
 
 	stats.forEach((report) => {
 		if (report.type == "codec") {
+			// We manually adjust the QP targets to be more aggressive, as sharper upscalers benefit more from a lower resolution + high quality stream than a higher resolution + low quality one.
+
 			if (report.mimeType.toLowerCase() == "video/av1") {
-				analysis.codecData = AV1_ADAPTIVE_DATA;
+				analysis.codecData = adjustCodecData(AV1_ADAPTIVE_DATA, 0.75);
 			}
 			if (report.mimeType.toLowerCase() == "video/vp9") {
-				analysis.codecData = VP9_ADAPTIVE_DATA;
+				analysis.codecData = adjustCodecData(VP9_ADAPTIVE_DATA, 0.7);
 			}
 			if (report.mimeType.toLowerCase() == "video/vp8") {
-				analysis.codecData = VP8_ADAPTIVE_DATA;
+				analysis.codecData = adjustCodecData(VP8_ADAPTIVE_DATA, 0.5);
 			}
 			if (report.mimeType.toLowerCase() == "video/h264") {
-				analysis.codecData = H264_ADAPTIVE_DATA;
+				analysis.codecData = adjustCodecData(H264_ADAPTIVE_DATA, 0.5);
 			}
 		}
 		if (report.type == "outbound-rtp" && report.kind == "video") {
@@ -703,12 +705,6 @@ function adaptiveVideoSettings(
 			(!analysis.framesAnalyzed ||
 				analysis.framesAnalyzed >= framerate * 2)
 		) {
-			// Make QP targets 50% more aggressive, as sharper upscalers benefit more from a lower resolution + high quality stream than a higher resolution + low quality one.
-
-			const qpAdjustment =
-				(analysis.codecData.highQP - analysis.codecData.lowQP) * 0.5;
-			analysis.qpAvg += qpAdjustment;
-
 			if (
 				(analysis.frameDropRate && analysis.frameDropRate > 0.6) ||
 				analysis.codecData.highQP < analysis.qpAvg
@@ -850,6 +846,18 @@ const AV1_ADAPTIVE_DATA: CodecAdaptiveData = {
 	lowQP: 145,
 	highQP: 205,
 };
+
+function adjustCodecData(
+	data: CodecAdaptiveData,
+	adjustment: number
+): CodecAdaptiveData {
+	const qpAdjustment = (data.highQP - data.lowQP) * adjustment;
+
+	return {
+		lowQP: data.lowQP - qpAdjustment,
+		highQP: data.highQP - qpAdjustment,
+	};
+}
 
 // Adaptation functions are loosely inspired by https://github.com/webrtc-sdk/webrtc/blob/m144_release/call/adaptation/video_stream_adapter.cc
 
