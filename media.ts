@@ -493,47 +493,34 @@ export async function adaptiveSettings(
 	let videoParameters;
 
 	for (const transceiver of pc.getTransceivers()) {
-		if (transceiver.sender.track?.kind == "audio") {
+		if (transceiver.sender.track?.kind == "audio" && targets.audio) {
 			if (audioParameters) {
 				throw "Unsupported transceiver count";
 			}
 
 			audioParameters = transceiver.sender.getParameters();
+			adaptiveAudioBitrate(stats, audioParameters, targets.audio);
+			await transceiver.sender.setParameters(audioParameters);
 		}
-		if (transceiver.sender.track?.kind == "video") {
+		if (transceiver.sender.track?.kind == "video" && targets.video) {
 			if (videoParameters) {
 				throw "Unsupported transceiver count";
 			}
 
 			videoParameters = transceiver.sender.getParameters();
-		}
-	}
-
-	if (audioParameters && targets.audio) {
-		await adaptiveAudioBitrate(stats, audioParameters, targets.audio);
-	}
-
-	if (videoParameters && targets.video) {
-		await adaptiveVideoSettings(
-			stats,
-			videoParameters,
-			peerData,
-			targets.video,
-			peerScaler
-		);
-	}
-
-	for (const transceiver of pc.getTransceivers()) {
-		if (transceiver.sender.track?.kind == "audio" && audioParameters) {
-			await transceiver.sender.setParameters(audioParameters);
-		}
-		if (transceiver.sender.track?.kind == "video" && videoParameters) {
+			adaptiveVideoSettings(
+				stats,
+				videoParameters,
+				peerData,
+				targets.video,
+				peerScaler
+			);
 			await transceiver.sender.setParameters(videoParameters);
 		}
 	}
 }
 
-async function adaptiveAudioBitrate(
+function adaptiveAudioBitrate(
 	stats: RTCStatsReport,
 	parameters: RTCRtpSendParameters,
 	targets: AdaptiveAudioTargets
@@ -638,7 +625,7 @@ async function adaptiveAudioBitrate(
 }
 
 // Needs to be called every 2s (or 2.5s for behavior closer to libwebrtc)
-async function adaptiveVideoSettings(
+function adaptiveVideoSettings(
 	stats: RTCStatsReport,
 	parameters: RTCRtpSendParameters,
 	data: AdaptiveData,
