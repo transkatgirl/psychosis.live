@@ -785,7 +785,7 @@ function adaptiveVideoSettings(
 					width,
 					height,
 					targets.width / targets.height,
-					2
+					1
 				);
 
 				console.log("set video scaler resolution", adjWidth, adjHeight);
@@ -965,9 +965,11 @@ function adaptToRatioUnrounded(
 	height: number,
 	ratio: number
 ): [number, number] {
+	const initialRatio = width / height;
+
 	const EPSILON = 1e-6;
-	if (Math.abs(ratio - width / height) > EPSILON) {
-		if (ratio > width / height) {
+	if (Math.abs(ratio - initialRatio) > EPSILON) {
+		if (ratio > initialRatio) {
 			height = width / ratio;
 		} else {
 			width = height * ratio;
@@ -984,6 +986,11 @@ function readjustResolution(
 	multiple: number
 ): [number, number] {
 	[width, height] = adaptToRatioUnrounded(width, height, aspectRatio);
+	[width, height] = adaptToRatioUnrounded(
+		Math.round(width),
+		Math.round(height),
+		aspectRatio
+	);
 
 	return [
 		Math.round(width / multiple) * multiple,
@@ -997,8 +1004,6 @@ export class MediaScaler {
 	scaler: Scaler;
 	processor: any;
 	generator: any;
-	originalWidth: number;
-	originalHeight: number;
 	public constructor(width: number, height: number) {
 		if (
 			!(
@@ -1009,11 +1014,8 @@ export class MediaScaler {
 			throw "Insertable Streams unsupported";
 		}
 
-		this.originalWidth = Math.round(width);
-		this.originalHeight = Math.round(height);
-
 		this.scaler = new Scaler(
-			new OffscreenCanvas(this.originalWidth, this.originalHeight),
+			new OffscreenCanvas(Math.round(width), Math.round(height)),
 			"mks2013"
 		);
 
@@ -1023,11 +1025,8 @@ export class MediaScaler {
 		return this.videoId;
 	}
 	public resize(width: number, height: number) {
-		this.originalWidth = Math.round(width);
-		this.originalHeight = Math.round(height);
-
-		this.scaler.canvas.width = this.originalWidth;
-		this.scaler.canvas.height = this.originalHeight;
+		this.scaler.canvas.width = Math.round(width);
+		this.scaler.canvas.height = Math.round(height);
 		this.scaler.clear();
 	}
 	public addTrack(
