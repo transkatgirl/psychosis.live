@@ -1045,50 +1045,36 @@ export class MediaScaler {
 
 			const scaler = this.scaler;
 
-			const originalWidth = this.originalWidth;
-			const originalHeight = this.originalHeight;
-
 			const transformer = new TransformStream({
 				transform(frame: VideoFrame, controller) {
-					if (enforceAspectRatio) {
-						const srcAspectRatio =
-							frame.displayWidth / frame.displayHeight;
-						const canvasAspectRatio =
-							originalWidth / originalHeight;
-						const activeAspectRatio =
-							scaler.canvas.width / scaler.canvas.height;
-
-						if (
-							srcAspectRatio != canvasAspectRatio &&
-							srcAspectRatio != activeAspectRatio
-						) {
-							if (srcAspectRatio > canvasAspectRatio) {
-								scaler.canvas.width = originalWidth;
-								scaler.canvas.height = Math.round(
-									originalWidth / srcAspectRatio
-								);
-							} else {
-								scaler.canvas.height = originalHeight;
-								scaler.canvas.width = Math.round(
-									originalHeight * srcAspectRatio
-								);
-							}
-							scaler.clear();
-						}
-					}
-
-					scaler.process(frame, preserveAspectRatio);
+					const visibleRect = scaler.process(
+						frame,
+						preserveAspectRatio
+					);
 					frame.close();
 
-					controller.enqueue(
-						new VideoFrame(scaler.canvas, {
-							timestamp: frame.timestamp,
-							duration: frame.duration
-								? frame.duration
-								: undefined,
-							alpha: "discard",
-						})
-					);
+					if (enforceAspectRatio) {
+						controller.enqueue(
+							new VideoFrame(scaler.canvas, {
+								timestamp: frame.timestamp,
+								duration: frame.duration
+									? frame.duration
+									: undefined,
+								alpha: "discard",
+								visibleRect,
+							})
+						);
+					} else {
+						controller.enqueue(
+							new VideoFrame(scaler.canvas, {
+								timestamp: frame.timestamp,
+								duration: frame.duration
+									? frame.duration
+									: undefined,
+								alpha: "discard",
+							})
+						);
+					}
 				},
 				flush(controller) {
 					controller.terminate();

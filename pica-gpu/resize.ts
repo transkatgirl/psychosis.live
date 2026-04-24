@@ -200,7 +200,7 @@ export class Scaler {
 			generateVerticalShader(filter)
 		)!;
 	}
-	public process(frame: VideoFrame, preserveAspectRatio = true) {
+	public process(frame: VideoFrame, preserveAspectRatio = true): DOMRectInit {
 		if (frame.displayWidth === 0 || frame.displayHeight === 0) {
 			throw new Error("source image width or height is 0");
 		}
@@ -343,6 +343,13 @@ export class Scaler {
 		this.gl.viewport(offsetX, offsetY, targetWidth, targetHeight);
 		this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
 		this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+
+		return {
+			x: offsetX,
+			y: offsetY,
+			width: targetWidth,
+			height: targetHeight,
+		};
 	}
 	public clear() {
 		this.gl.clearColor(0, 0, 0, 1);
