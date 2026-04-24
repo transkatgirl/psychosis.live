@@ -1061,7 +1061,7 @@ export class MediaScaler {
 					);
 					frame.close();
 
-					if (enforceAspectRatio) {
+					if (preserveAspectRatio && enforceAspectRatio) {
 						controller.enqueue(
 							new VideoFrame(scaler.canvas, {
 								timestamp: frame.timestamp,
