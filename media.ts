@@ -691,10 +691,20 @@ function adaptiveVideoSettings(
 		let hasAdapted = false;
 
 		if (data.lastTarget) {
-			//width = data.lastTarget[0];
-			//height = data.lastTarget[1];
-			width = peerScaler.scaler.canvas.width;
-			height = peerScaler.scaler.canvas.height;
+			if (
+				peerScaler.scaler.canvas.width != data.lastTarget[0] ||
+				peerScaler.scaler.canvas.height != data.lastTarget[1]
+			) {
+				[width, height] = adaptToPixelCount(
+					peerScaler.scaler.canvas.width,
+					peerScaler.scaler.canvas.height,
+					(data.lastTarget[0], data.lastTarget[1])
+				);
+				hasAdapted = true;
+			} else {
+				width = data.lastTarget[0];
+				height = data.lastTarget[1];
+			}
 			framerate = data.lastTarget[2];
 		} else {
 			hasAdapted = true;
