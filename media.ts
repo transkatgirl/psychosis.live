@@ -609,7 +609,15 @@ async function adaptiveAudioBitrate(
 		}
 	});
 
-	if (!usingOpus || bitrateLower == 0 || bitrateUpper == Infinity) return;
+	if (!usingOpus || bitrateLower == 0 || bitrateUpper == Infinity) {
+		for (const encoding of parameters.encodings) {
+			if (encoding.maxBitrate !== maxBitrate) {
+				console.log("set audio maxBitrate", maxBitrate / 1000);
+				encoding.maxBitrate = maxBitrate;
+			}
+		}
+		return;
+	}
 
 	for (const encoding of parameters.encodings) {
 		if (encoding.maxBitrate) {

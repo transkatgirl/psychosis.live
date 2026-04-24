@@ -745,6 +745,17 @@ async function launchSender(credentials: RoomCredentials) {
 				let audioChannelCount = stream
 					.getAudioTracks()[0]
 					?.getSettings()?.channelCount;
+
+				if (!audioChannelCount) {
+					if (channelCount == 1) {
+						audioChannelCount = 1;
+					} else if (channelCount > 0) {
+						audioChannelCount = channelCount;
+					} else {
+						audioChannelCount = 2;
+					}
+				}
+
 				let streamWidth = stream
 					.getVideoTracks()[0]
 					?.getSettings()?.width;
@@ -759,8 +770,7 @@ async function launchSender(credentials: RoomCredentials) {
 
 				if (
 					params.get("displayMedia") !== "true" &&
-					params.get("dynamicAudioBitrate") === "true" &&
-					audioChannelCount
+					params.get("dynamicAudioBitrate") === "true"
 				) {
 					targets.audio = {
 						channels: audioChannelCount,
