@@ -374,45 +374,97 @@ function sortCodecs(codecs: RTCRtpCodec[], preferredOrder: string[]) {
 
 export interface AdaptiveData {
 	framesEncoded?: number;
-	framesEncodedOlder?: number; // 2 scan intervals ago
+	framesEncodedOlder?: number;
 	framesSent?: number;
+	framesSentOlder?: number;
 	qpSum?: number; // 1 scan interval ago
 	qpSumOlder?: number; // 2 scan intervals ago
-	totalEncodeTime?: number;
+
 	skipNextInterval?: boolean;
+	lastTarget?: [number, number, number];
 }
 
 interface AdaptiveDataAnalysis {
+	codecData?: CodecAdaptiveData;
 	framesAnalyzed?: number;
 	qpAvg?: number;
 	frameDropRate?: number;
 }
 
 function analyzeAdaptiveData(stats: RTCStatsReport, data: AdaptiveData) {
-	let codecData: CodecAdaptiveData | undefined;
+	let analysis: AdaptiveDataAnalysis = {};
+
+	if (data.framesEncoded) {
+		data.framesEncodedOlder = data.framesEncoded;
+		data.framesEncoded = undefined;
+	}
+
+	if (data.framesSent) {
+		data.framesSentOlder = data.framesSent;
+		data.framesSent = undefined;
+	}
+
+	if (data.qpSum) {
+		data.qpSumOlder = data.qpSum;
+		data.qpSum = undefined;
+	}
 
 	stats.forEach((report) => {
 		if (report.type == "codec") {
 			if (report.mimeType.toLowerCase() == "video/av1") {
-				codecData = AV1_ADAPTIVE_DATA;
+				analysis.codecData = AV1_ADAPTIVE_DATA;
 			}
 			if (report.mimeType.toLowerCase() == "video/vp9") {
-				codecData = VP9_ADAPTIVE_DATA;
+				analysis.codecData = VP9_ADAPTIVE_DATA;
 			}
 			if (report.mimeType.toLowerCase() == "video/vp8") {
-				codecData = VP8_ADAPTIVE_DATA;
+				analysis.codecData = VP8_ADAPTIVE_DATA;
 			}
 			if (report.mimeType.toLowerCase() == "video/h264") {
-				codecData = H264_ADAPTIVE_DATA;
+				analysis.codecData = H264_ADAPTIVE_DATA;
+			}
+		}
+		if (report.type == "outbound-rtp" && report.kind == "video") {
+			if (report.framesEncoded) {
+				data.framesEncoded = report.framesEncoded;
+			}
+			if (report.framesSent) {
+				data.framesSent = report.framesSent;
+			}
+			if (report.qpSum) {
+				data.qpSum = report.qpSum;
 			}
 		}
 	});
 
-	if (!codecData) {
-		throw "Invalid video codec";
+	if (data.framesEncoded) {
+		const framesEncoded = data.framesEncodedOlder
+			? data.framesEncodedOlder
+			: data.framesEncoded;
+
+		analysis.framesAnalyzed = framesEncoded;
+
+		if (!data.framesEncodedOlder) {
+			data.framesSentOlder = undefined;
+			data.qpSumOlder = undefined;
+		}
+
+		if (data.framesSent) {
+			const framesSent = data.framesSentOlder
+				? data.framesSentOlder
+				: data.framesSent;
+
+			analysis.frameDropRate = 1 - framesSent / framesEncoded;
+		}
+
+		if (data.qpSum) {
+			const qpSum = data.qpSumOlder ? data.qpSumOlder : data.qpSum;
+
+			analysis.qpAvg = qpSum / framesEncoded;
+		}
 	}
 
-	stats.forEach((report) => {});
+	return analysis;
 }
 
 export interface AdaptiveTargets {
