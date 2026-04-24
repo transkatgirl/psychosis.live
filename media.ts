@@ -860,7 +860,6 @@ const AV1_ADAPTIVE_DATA: CodecAdaptiveData = {
 
 const FHD_PIXELS = 1920 * 1080;
 const HD_PIXELS = 1280 * 720;
-const DEFAULT_PIXELS = 320 * 180;
 const MIN_PIXELS = 320 * 180;
 
 function adaptUp(
@@ -908,6 +907,9 @@ function adaptDown(
 	if (width * height <= HD_PIXELS && framerate > 30) {
 		return [width, height, Math.max(adjustedFramerate, 30)];
 	}
+	if (width * height <= MIN_PIXELS && framerate >= 22) {
+		return [width, height, 22];
+	}
 
 	const adjustedPixels = (width * height * 3) / 5;
 
@@ -916,14 +918,14 @@ function adaptDown(
 	const adjustedHeight =
 		Math.round(Math.sqrt(adjustedPixels * (height / width)) / 4) * 4;
 
-	if (adjustedPixels <= MIN_PIXELS && framerate > 22) {
+	if (adjustedPixels < MIN_PIXELS) {
 		const [adjustedWidth, adjustedHeight] = adaptToPixelCount(
 			width,
 			height,
 			MIN_PIXELS
 		);
 
-		return [adjustedWidth, adjustedHeight, 22];
+		return [adjustedWidth, adjustedHeight, framerate];
 	}
 
 	return [adjustedWidth, adjustedHeight, framerate];
