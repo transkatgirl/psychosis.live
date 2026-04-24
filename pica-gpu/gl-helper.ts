@@ -101,7 +101,7 @@ export function updateTextureFromEmpty(
 		height,
 		0,
 		gl.RGBA,
-		gl.HALF_FLOAT,
+		useFloat ? gl.HALF_FLOAT : gl.UNSIGNED_BYTE,
 		null
 	);
 }
@@ -126,7 +126,7 @@ export function createEmptyTexture(
 		height,
 		0,
 		gl.RGBA,
-		gl.HALF_FLOAT,
+		useFloat ? gl.HALF_FLOAT : gl.UNSIGNED_BYTE,
 		null
 	);
 	return texture;
