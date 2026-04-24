@@ -188,7 +188,7 @@ function generateURL(role: Role, id: string, pass: string): string {
 		url.searchParams.set("maxAudioBitrate", "-1");
 		url.searchParams.set("maxVideoBitrate", "-1");
 		url.searchParams.set("dynamicAudioBitrate", "true"); // TODO: use SDP munging to enable https://issues.webrtc.org/issues/41480988 when sending audio only(?)
-		url.searchParams.set("dynamicVideoFramerate", "true");
+		url.searchParams.set("dynamicVideoParams", "true");
 	}
 	if (role == Role.Receiver) {
 		//url.searchParams.set("jitterBufferTarget", String(1300)); // chosen based on https://ieeexplore.ieee.org/document/6962149
@@ -374,13 +374,18 @@ async function launchSender(credentials: RoomCredentials) {
 		};
 	}
 
-	// TODO: Calculate maxAudioBitrate and maxVideoBitrate using stream attributes (channelCount, width, height, etc)
-
 	if (maxAudioBitrate && maxAudioBitrate < 0) {
 		if (channelCount > 0) {
 			maxAudioBitrate = calculateReasonableAudioBitrateKbps(channelCount);
 		} else {
 			maxAudioBitrate = calculateReasonableAudioBitrateKbps(2);
+		}
+
+		if (
+			params.get("displayMedia") !== "true" &&
+			params.get("dynamicAudioBitrate") === "true"
+		) {
+			maxAudioBitrate = undefined; // dynamicAudioBitrate adjusts it adaptively based on stream channel count
 		}
 	}
 
@@ -413,6 +418,16 @@ async function launchSender(credentials: RoomCredentials) {
 					30
 				);
 			}
+		}
+
+		if (
+			params.get("displayMedia") !== "true" &&
+			params.get("dynamicVideoParams") === "true" &&
+			width &&
+			height &&
+			frameRate
+		) {
+			maxVideoBitrate = undefined; // dynamicVideoParams adjusts it adaptively based on stream attributes
 		}
 	}
 
@@ -767,6 +782,8 @@ async function launchSender(credentials: RoomCredentials) {
 					targets.video = {
 						framerate: streamFramerate,
 						bitrate: maxVideoBitrate,
+						width,
+						height,
 					};
 				}
 
