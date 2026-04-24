@@ -5,8 +5,8 @@ import {
 	createProgram,
 	createTextureFromImage,
 	createVAOForQuadBuffer,
-	updateTextureData,
 	updateTextureFromEmpty,
+	updateTextureFromImage,
 	useDefaultQuadBuffer,
 } from "./gl-helper";
 import {
@@ -72,7 +72,7 @@ export function resize(
 		gl,
 		vsSource,
 		generateHorizontalShader(options.filter)
-	)!;
+	);
 	const horizontalProgram = compiledHorizontal.program;
 	gl.useProgram(horizontalProgram);
 	useDefaultQuadBuffer(
@@ -104,7 +104,7 @@ export function resize(
 		gl,
 		vsSource,
 		generateVerticalShader(options.filter)
-	)!;
+	);
 	const verticalProgram = compiledVertical.program;
 	gl.useProgram(verticalProgram);
 	useDefaultQuadBuffer(
@@ -234,12 +234,12 @@ export class Scaler {
 			this.gl,
 			vsSource,
 			generateHorizontalShader(filter)
-		)!;
+		);
 		this.compiledVertical = createProgram(
 			this.gl,
 			vsSource,
 			generateVerticalShader(filter)
-		)!;
+		);
 
 		this.horizontalLocations = {
 			textureWidth: this.gl.getUniformLocation(
@@ -347,7 +347,7 @@ export class Scaler {
 			offsetY = Math.round((this.canvas.height - targetHeight) / 2);
 		}
 
-		updateTextureData(this.gl, this.sourceTexture, frame);
+		updateTextureFromImage(this.gl, this.sourceTexture, frame);
 
 		if (
 			this.horizontalTextureWidth !== targetWidth ||
