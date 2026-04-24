@@ -422,10 +422,7 @@ async function launchSender(credentials: RoomCredentials) {
 
 		if (
 			params.get("displayMedia") !== "true" &&
-			params.get("dynamicVideoParams") === "true" &&
-			width &&
-			height &&
-			frameRate
+			params.get("dynamicVideoParams") === "true"
 		) {
 			maxVideoBitrate = undefined; // dynamicVideoParams adjusts it adaptively based on stream attributes
 		}
@@ -748,23 +745,22 @@ async function launchSender(credentials: RoomCredentials) {
 				let audioChannelCount = stream
 					.getAudioTracks()[0]
 					?.getSettings()?.channelCount;
+				let streamWidth = stream
+					.getVideoTracks()[0]
+					?.getSettings()?.width;
+				let streamHeight = stream
+					.getVideoTracks()[0]
+					?.getSettings()?.height;
 				let streamFramerate = stream
 					.getVideoTracks()[0]
 					?.getSettings()?.frameRate;
-
-				if (channelCount == 1) {
-					// if channelCount is set to 1, multichannel tracks are down mixed to mono
-					audioChannelCount = 1;
-				} else if (!audioChannelCount || audioChannelCount <= 0) {
-					// assume stereo if audioChannelCount is unknown
-					audioChannelCount = 2;
-				}
 
 				let targets: AdaptiveTargets = {};
 
 				if (
 					params.get("displayMedia") !== "true" &&
-					params.get("dynamicAudioBitrate") === "true"
+					params.get("dynamicAudioBitrate") === "true" &&
+					audioChannelCount
 				) {
 					targets.audio = {
 						channels: audioChannelCount,
@@ -780,10 +776,10 @@ async function launchSender(credentials: RoomCredentials) {
 					streamFramerate
 				) {
 					targets.video = {
+						width: streamWidth,
+						height: streamHeight,
 						framerate: streamFramerate,
 						bitrate: maxVideoBitrate,
-						width,
-						height,
 					};
 				}
 

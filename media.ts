@@ -647,7 +647,7 @@ async function adaptiveVideoSettings(
 			  );
 
 		for (const encoding of parameters.encodings) {
-			if (encoding.maxBitrate !== maxBitrate) {
+			if (encoding.maxBitrate !== maxBitrate * 1000) {
 				console.log("set video maxBitrate", maxBitrate);
 				encoding.maxBitrate = maxBitrate * 1000;
 			}
