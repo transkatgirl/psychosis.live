@@ -161,9 +161,7 @@ export function mungeSDP(sdp: string, stereo: boolean): string {
 				if (entry.payload == opus) {
 					// make sure DTX & CBR is disabled; make sure FEC is enabled
 
-					DEV: console.log(
-						"updating opus parameters using SDP munging"
-					);
+					console.log("updating opus parameters using SDP munging");
 
 					const params = sdpTransform.parseParams(entry.config);
 
@@ -218,9 +216,7 @@ export function mungeSDP(sdp: string, stereo: boolean): string {
 				};
 
 				if (media.rtcpFb) {
-					DEV: console.log(
-						"force enabling audio NACK using SDP munging"
-					);
+					console.log("force enabling audio NACK using SDP munging");
 					media.rtcpFb.push({ payload: opus, type: "nack" });
 					media.rtcpFb.sort(payloadOrdering);
 				}
@@ -261,7 +257,7 @@ export function mungeSDPOfferAnswer(sdp: string): string {
 
 			for (const entry of media.fmtp) {
 				if (entry.payload == opus && !entry.config.includes("stereo")) {
-					DEV: console.log(
+					console.log(
 						"force enabling stereo audio using SDP munging"
 					);
 					if (entry.config.length == 0) {
@@ -474,7 +470,7 @@ export interface AdaptiveTargets {
 
 export interface AdaptiveAudioTargets {
 	channels: number;
-	bitrate: number;
+	bitrate?: number;
 	linearDecrease?: boolean; // Should be enabled if RED is enabled
 }
 
@@ -482,9 +478,10 @@ export interface AdaptiveVideoTargets {
 	width?: number;
 	height?: number;
 	framerate: number;
+	bitrate?: number;
 }
 
-async function adaptiveSettingsNew( // WIP
+export async function adaptiveSettings(
 	pc: RTCPeerConnection,
 	peerData: AdaptiveData,
 	targets: AdaptiveTargets,
@@ -492,30 +489,61 @@ async function adaptiveSettingsNew( // WIP
 ) {
 	const stats = await pc.getStats();
 
-	if (targets.audio) {
-		await adaptiveAudioBitrate(pc, stats, targets.audio);
+	let audioParameters;
+	let videoParameters;
+
+	for (const transceiver of pc.getTransceivers()) {
+		if (transceiver.sender.track?.kind == "audio") {
+			if (audioParameters) {
+				throw "Unsupported transceiver count";
+			}
+
+			audioParameters = transceiver.sender.getParameters();
+		}
+		if (transceiver.sender.track?.kind == "video") {
+			if (videoParameters) {
+				throw "Unsupported transceiver count";
+			}
+
+			videoParameters = transceiver.sender.getParameters();
+		}
 	}
 
-	if (targets.video) {
+	if (audioParameters && targets.audio) {
+		await adaptiveAudioBitrate(stats, audioParameters, targets.audio);
+	}
+
+	if (videoParameters && targets.video) {
 		await adaptiveVideoSettings(
-			pc,
 			stats,
+			videoParameters,
 			peerData,
 			targets.video,
 			peerScaler
 		);
 	}
+
+	for (const transceiver of pc.getTransceivers()) {
+		if (transceiver.sender.track?.kind == "audio" && audioParameters) {
+			await transceiver.sender.setParameters(audioParameters);
+		}
+		if (transceiver.sender.track?.kind == "video" && videoParameters) {
+			await transceiver.sender.setParameters(videoParameters);
+		}
+	}
 }
 
 async function adaptiveAudioBitrate(
-	pc: RTCPeerConnection,
 	stats: RTCStatsReport,
+	parameters: RTCRtpSendParameters,
 	targets: AdaptiveAudioTargets
 ) {
-	const minBitrate = calculateReasonableMinimumAudioBitrateKbps(
-		targets.channels
-	);
-	const maxBitrate = targets.bitrate;
+	const minBitrate =
+		calculateReasonableMinimumAudioBitrateKbps(targets.channels) * 1000;
+	const maxBitrate =
+		(targets.bitrate
+			? targets.bitrate
+			: calculateReasonableAudioBitrateKbps(targets.channels)) * 1000;
 	const stickyTarget = calculateStickyDynamicAudioBitrateTarget(
 		targets.channels
 	);
@@ -583,49 +611,49 @@ async function adaptiveAudioBitrate(
 
 	if (!usingOpus || bitrateLower == 0 || bitrateUpper == Infinity) return;
 
-	for (const transceiver of pc.getTransceivers()) {
-		if (transceiver.sender.track?.kind == "audio") {
-			let parameters = transceiver.sender.getParameters();
-
-			let changed = false;
-
-			for (const encoding of parameters.encodings) {
-				if (encoding.maxBitrate) {
-					if (encoding.maxBitrate > bitrateUpper) {
-						DEV: console.log(
-							"set audio maxBitrate",
-							bitrateUpper / 1000
-						);
-						encoding.maxBitrate = bitrateUpper;
-						changed = true;
-					}
-
-					if (encoding.maxBitrate < bitrateLower) {
-						DEV: console.log(
-							"set audio maxBitrate",
-							bitrateLower / 1000
-						);
-						encoding.maxBitrate = bitrateLower;
-						changed = true;
-					}
-				}
+	for (const encoding of parameters.encodings) {
+		if (encoding.maxBitrate) {
+			if (encoding.maxBitrate > bitrateUpper) {
+				console.log("set audio maxBitrate", bitrateUpper / 1000);
+				encoding.maxBitrate = bitrateUpper;
 			}
 
-			if (changed) {
-				await transceiver.sender.setParameters(parameters);
+			if (encoding.maxBitrate < bitrateLower) {
+				console.log("set audio maxBitrate", bitrateLower / 1000);
+				encoding.maxBitrate = bitrateLower;
 			}
+		} else {
+			console.log("set audio maxBitrate", bitrateLower / 1000);
+			encoding.maxBitrate = bitrateLower;
 		}
 	}
 }
 
 // Needs to be called every 2s (or 2.5s for behavior closer to libwebrtc)
 async function adaptiveVideoSettings(
-	pc: RTCPeerConnection,
 	stats: RTCStatsReport,
+	parameters: RTCRtpSendParameters,
 	data: AdaptiveData,
 	targets: AdaptiveVideoTargets,
 	peerScaler?: MediaScaler // Should only be specified if degradationPreference is maintain-framerate-and-resolution; implements custom adaptation algorithm
 ) {
+	if (targets.width && targets.height) {
+		const maxBitrate = targets.bitrate
+			? targets.bitrate
+			: calculateReasonableVideoBitrateKbps(
+					targets.width,
+					targets.height,
+					targets.framerate
+			  );
+
+		for (const encoding of parameters.encodings) {
+			if (encoding.maxBitrate !== maxBitrate) {
+				console.log("set video maxBitrate", maxBitrate);
+				encoding.maxBitrate = maxBitrate;
+			}
+		}
+	}
+
 	if (targets.width && targets.height && peerScaler) {
 		// Based on:
 		// - https://github.com/webrtc-sdk/webrtc/blob/m144_release/modules/video_coding/utility/quality_scaler.cc
@@ -725,17 +753,10 @@ async function adaptiveVideoSettings(
 			}
 
 			if (!data.lastTarget || data.lastTarget[2] != framerate) {
-				for (const transceiver of pc.getTransceivers()) {
-					if (transceiver.sender.track?.kind == "video") {
-						let parameters = transceiver.sender.getParameters();
-
-						for (const encoding of parameters.encodings) {
-							if (encoding.maxFramerate) {
-								encoding.maxFramerate = framerate;
-							}
-						}
-
-						await transceiver.sender.setParameters(parameters);
+				for (const encoding of parameters.encodings) {
+					if (encoding.maxFramerate) {
+						console.log("set video maxFramerate", framerate);
+						encoding.maxFramerate = framerate;
 					}
 				}
 			}
@@ -745,6 +766,7 @@ async function adaptiveVideoSettings(
 				data.lastTarget[0] != width ||
 				data.lastTarget[1] != height
 			) {
+				console.log("set video scaler resolution", width, height);
 				peerScaler.resize(width, height);
 			}
 
@@ -774,204 +796,18 @@ async function adaptiveVideoSettings(
 		});
 
 		if (framerateLower != 0 && framerateUpper != Infinity) {
-			for (const transceiver of pc.getTransceivers()) {
-				if (transceiver.sender.track?.kind == "video") {
-					let parameters = transceiver.sender.getParameters();
-
-					let changed = false;
-
-					for (const encoding of parameters.encodings) {
-						if (encoding.maxFramerate) {
-							if (encoding.maxFramerate > framerateUpper) {
-								DEV: console.log(
-									"set video maxFramerate",
-									framerateUpper
-								);
-								encoding.maxFramerate = framerateUpper;
-								changed = true;
-							}
-
-							if (encoding.maxFramerate < framerateLower) {
-								DEV: console.log(
-									"set video maxFramerate",
-									framerateLower
-								);
-								encoding.maxFramerate = framerateLower;
-								changed = true;
-							}
-						}
-					}
-
-					if (changed) {
-						await transceiver.sender.setParameters(parameters);
-					}
-				}
-			}
-		}
-	}
-}
-
-export async function adaptiveSettings(
-	pc: RTCPeerConnection,
-	dynamicAudioBitrate: boolean,
-	dynamicVideoFramerate: boolean,
-	audioBitrateFloor?: number,
-	audioBitrateCeil?: number,
-	framerateCeil?: number,
-	linearDynamicAudioBitrate = false, // should be disabled if using RED
-	stickyDynamicAudioBitrateTarget = 4 // preferred minimum audio bitrate = stickyDynamicAudioBitrateTarget * 32 kbit/s; see calculateStickyDynamicAudioBitrateTarget
-) {
-	const stats = await pc.getStats();
-
-	let audioBitrateLower = 0;
-	let audioBitrateUpper = Infinity;
-	let videoFramerateLower = 0;
-	let videoFramerateUpper = Infinity;
-
-	stats.forEach((report) => {
-		if (
-			report.type == "outbound-rtp" &&
-			report.kind == "video" &&
-			report.targetBitrate
-		) {
-			if (audioBitrateFloor && audioBitrateCeil && dynamicAudioBitrate) {
-				if (linearDynamicAudioBitrate) {
-					// minimum of 32 kbit/s (see calculateReasonableMinimumAudioBitrateKbps)
-					audioBitrateLower =
-						Math.max(Math.floor(report.targetBitrate / 128000), 1) *
-						32000;
-					audioBitrateUpper =
-						Math.max(Math.ceil(report.targetBitrate / 128000), 1) *
-						32000;
-				} else {
-					// prefer staying above stickyDynamicAudioBitrateTarget * 32 kbit/s
-
-					if (
-						report.targetBitrate >=
-						64000 * stickyDynamicAudioBitrateTarget
-					) {
-						audioBitrateLower =
-							Math.max(
-								Math.floor(report.targetBitrate / 128000),
-								stickyDynamicAudioBitrateTarget
-							) * 32000;
-						audioBitrateUpper =
-							Math.max(
-								Math.ceil(report.targetBitrate / 128000),
-								stickyDynamicAudioBitrateTarget
-							) * 32000;
-					} else {
-						// minimum of 32 kbit/s (see calculateReasonableMinimumAudioBitrateKbps)
-
-						audioBitrateLower =
-							Math.max(
-								Math.floor(report.targetBitrate / 64000),
-								1
-							) * 32000;
-						audioBitrateUpper =
-							Math.max(
-								Math.ceil(report.targetBitrate / 64000),
-								1
-							) * 32000;
-					}
-				}
-
-				audioBitrateLower = Math.min(
-					Math.max(audioBitrateLower, audioBitrateFloor),
-					audioBitrateCeil
-				);
-				audioBitrateUpper = Math.min(
-					Math.max(audioBitrateUpper, audioBitrateFloor),
-					audioBitrateCeil
-				);
-			}
-
-			if (framerateCeil && dynamicVideoFramerate) {
-				videoFramerateLower = Math.min(
-					Math.max(Math.floor(report.targetBitrate / 3000000), 1) *
-						30,
-					framerateCeil
-				);
-				videoFramerateUpper = Math.min(
-					Math.max(Math.ceil(report.targetBitrate / 3000000), 1) * 30,
-					framerateCeil
-				);
-			}
-		}
-	});
-
-	for (const transceiver of pc.getTransceivers()) {
-		if (transceiver.sender.track?.kind == "video") {
-			let parameters = transceiver.sender.getParameters();
-
-			let changed = false;
-
 			for (const encoding of parameters.encodings) {
 				if (encoding.maxFramerate) {
-					if (
-						videoFramerateLower != 0 &&
-						videoFramerateUpper != Infinity
-					) {
-						if (encoding.maxFramerate > videoFramerateUpper) {
-							DEV: console.log(
-								"set video maxFramerate",
-								videoFramerateUpper
-							);
-							encoding.maxFramerate = videoFramerateUpper;
-							changed = true;
-						}
+					if (encoding.maxFramerate > framerateUpper) {
+						console.log("set video maxFramerate", framerateUpper);
+						encoding.maxFramerate = framerateUpper;
+					}
 
-						if (encoding.maxFramerate < videoFramerateLower) {
-							DEV: console.log(
-								"set video maxFramerate",
-								videoFramerateLower
-							);
-							encoding.maxFramerate = videoFramerateLower;
-							changed = true;
-						}
+					if (encoding.maxFramerate < framerateLower) {
+						console.log("set video maxFramerate", framerateLower);
+						encoding.maxFramerate = framerateLower;
 					}
 				}
-			}
-
-			if (changed) {
-				await transceiver.sender.setParameters(parameters);
-			}
-		}
-
-		if (transceiver.sender.track?.kind == "audio") {
-			let parameters = transceiver.sender.getParameters();
-
-			let changed = false;
-
-			for (const encoding of parameters.encodings) {
-				if (encoding.maxBitrate) {
-					if (
-						audioBitrateLower != 0 &&
-						audioBitrateUpper != Infinity
-					) {
-						if (encoding.maxBitrate > audioBitrateUpper) {
-							DEV: console.log(
-								"set audio maxBitrate",
-								audioBitrateUpper / 1000
-							);
-							encoding.maxBitrate = audioBitrateUpper;
-							changed = true;
-						}
-
-						if (encoding.maxBitrate < audioBitrateLower) {
-							DEV: console.log(
-								"set audio maxBitrate",
-								audioBitrateLower / 1000
-							);
-							encoding.maxBitrate = audioBitrateLower;
-							changed = true;
-						}
-					}
-				}
-			}
-
-			if (changed) {
-				await transceiver.sender.setParameters(parameters);
 			}
 		}
 	}
