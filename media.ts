@@ -781,7 +781,8 @@ function adaptiveVideoSettings(
 				const [adjWidth, adjHeight] = readjustResolution(
 					width,
 					height,
-					targets.width / targets.height
+					targets.width / targets.height,
+					2
 				);
 
 				console.log("set video scaler resolution", adjWidth, adjHeight);
@@ -976,11 +977,15 @@ function adaptToRatioUnrounded(
 function readjustResolution(
 	width: number,
 	height: number,
-	aspectRatio: number
+	aspectRatio: number,
+	multiple: number
 ): [number, number] {
 	[width, height] = adaptToRatioUnrounded(width, height, aspectRatio);
 
-	return [Math.round(width / 2) * 2, Math.round(height / 2) * 2];
+	return [
+		Math.round(width / multiple) * multiple,
+		Math.round(height / multiple) * multiple,
+	];
 }
 
 export class MediaScaler {
