@@ -705,8 +705,11 @@ function adaptiveVideoSettings(
 
 		if (hasAdapted) {
 			[pixels, framerate] = [
-				Math.min(pixels, targets.width * targets.height),
-				Math.min(framerate, targets.framerate),
+				Math.max(
+					Math.min(pixels, targets.width * targets.height),
+					MIN_PIXELS
+				),
+				Math.max(Math.min(framerate, targets.framerate), 5),
 			];
 
 			data.framesEncodedOlder = undefined;
