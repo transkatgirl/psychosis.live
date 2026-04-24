@@ -19,6 +19,7 @@ export interface ResizeOptions {
 	targetWidth: number;
 	targetHeight: number;
 	filter: "box" | "hamming" | "lanczos2" | "lanczos3" | "mks2013";
+	useFloatTextures: boolean;
 }
 
 export function resize(
@@ -59,7 +60,12 @@ export function resize(
 	const sourceTexture = createTextureFromImage(gl, from);
 	const quadBuffer = createDefaultQuadBuffer(gl);
 
-	const horizontalTexture = createEmptyTexture(gl, targetWidth, srcHeight);
+	const horizontalTexture = createEmptyTexture(
+		gl,
+		targetWidth,
+		srcHeight,
+		options.useFloatTextures
+	);
 	const horizontalFramebuffer = createFramebuffer(gl, horizontalTexture);
 	const compiledHorizontal = createProgram(
 		gl,
@@ -139,6 +145,7 @@ export function resize(
 export class Scaler {
 	public canvas: OffscreenCanvas;
 	gl: WebGL2RenderingContext;
+	useFloatTextures: boolean;
 
 	windowSize: number;
 
@@ -162,7 +169,8 @@ export class Scaler {
 
 	public constructor(
 		canvas: OffscreenCanvas,
-		filter: ResizeOptions["filter"]
+		filter: ResizeOptions["filter"],
+		useFloatTextures: boolean
 	) {
 		this.canvas = canvas;
 
@@ -175,12 +183,20 @@ export class Scaler {
 
 		this.gl = gl;
 		this.gl.clearColor(0, 0, 0, 1);
-		this.gl.getExtension("EXT_color_buffer_half_float");
+		if (useFloatTextures) {
+			this.gl.getExtension("EXT_color_buffer_half_float");
+		}
+		this.useFloatTextures = useFloatTextures;
 
 		this.windowSize = getResizeWindow(filter);
 
-		this.sourceTexture = createEmptyTexture(this.gl, 1, 1);
-		this.horizontalTexture = createEmptyTexture(gl, 1, 1);
+		this.sourceTexture = createEmptyTexture(
+			this.gl,
+			1,
+			1,
+			useFloatTextures
+		);
+		this.horizontalTexture = createEmptyTexture(gl, 1, 1, useFloatTextures);
 
 		this.quadBuffer = createDefaultQuadBuffer(this.gl);
 
@@ -251,7 +267,8 @@ export class Scaler {
 			this.gl,
 			this.horizontalTexture,
 			targetWidth,
-			srcHeight
+			srcHeight,
+			this.useFloatTextures
 		);
 
 		this.gl.useProgram(this.compiledHorizontal.program);

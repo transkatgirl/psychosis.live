@@ -85,7 +85,8 @@ export function updateTextureFromEmpty(
 	gl: WebGL2RenderingContext,
 	texture: WebGLTexture,
 	width: number,
-	height: number
+	height: number,
+	useFloat: boolean
 ) {
 	gl.bindTexture(gl.TEXTURE_2D, texture);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -95,7 +96,7 @@ export function updateTextureFromEmpty(
 	gl.texImage2D(
 		gl.TEXTURE_2D,
 		0,
-		gl.RGBA16F,
+		useFloat ? gl.RGBA16F : gl.RGBA,
 		width,
 		height,
 		0,
@@ -108,7 +109,8 @@ export function updateTextureFromEmpty(
 export function createEmptyTexture(
 	gl: WebGL2RenderingContext,
 	width: number,
-	height: number
+	height: number,
+	useFloat: boolean
 ) {
 	const texture = gl.createTexture();
 	gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -119,7 +121,7 @@ export function createEmptyTexture(
 	gl.texImage2D(
 		gl.TEXTURE_2D,
 		0,
-		gl.RGBA16F,
+		useFloat ? gl.RGBA16F : gl.RGBA,
 		width,
 		height,
 		0,
