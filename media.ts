@@ -632,6 +632,8 @@ async function adaptiveVideoSettings(
 		// - https://github.com/webrtc-sdk/webrtc/blob/m144_release/call/adaptation/video_stream_adapter.cc
 		// - https://github.com/webrtc-sdk/webrtc/blob/6c1aa903241e69eb2eca64caad16779351bb1ab2/video/adaptation/video_stream_encoder_resource_manager.cc
 
+		// TODO: Test if any of this works
+
 		const analysis = analyzeAdaptiveData(stats, data);
 
 		if (!analysis.codecData) {
@@ -722,9 +724,31 @@ async function adaptiveVideoSettings(
 				data.skipNextInterval = true;
 			}
 
-			data.lastTarget = [width, height, framerate];
+			if (!data.lastTarget || data.lastTarget[2] != framerate) {
+				for (const transceiver of pc.getTransceivers()) {
+					if (transceiver.sender.track?.kind == "video") {
+						let parameters = transceiver.sender.getParameters();
 
-			// TODO
+						for (const encoding of parameters.encodings) {
+							if (encoding.maxFramerate) {
+								encoding.maxFramerate = framerate;
+							}
+						}
+
+						await transceiver.sender.setParameters(parameters);
+					}
+				}
+			}
+
+			if (
+				!data.lastTarget ||
+				data.lastTarget[0] != width ||
+				data.lastTarget[1] != height
+			) {
+				peerScaler.resize(width, height);
+			}
+
+			data.lastTarget = [width, height, framerate];
 		}
 	} else {
 		let framerateLower = 0;
