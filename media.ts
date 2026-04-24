@@ -687,6 +687,8 @@ function adaptiveVideoSettings(
 			width = data.lastTarget[0];
 			height = data.lastTarget[1];
 			framerate = data.lastTarget[2];
+		} else {
+			hasAdapted = true;
 		}
 
 		if (
