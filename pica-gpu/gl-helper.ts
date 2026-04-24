@@ -69,7 +69,6 @@ export function updateTextureFromImage(
 	height: number
 ) {
 	gl.bindTexture(gl.TEXTURE_2D, texture);
-	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 	const last = textureUploadSize.get(texture);
 	if (last && last.w === width && last.h === height) {
 		gl.texSubImage2D(
@@ -92,7 +91,6 @@ export function updateTextureFromImage(
 		);
 		textureUploadSize.set(texture, { w: width, h: height });
 	}
-	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
 }
 
 export function updateTextureFromEmpty(

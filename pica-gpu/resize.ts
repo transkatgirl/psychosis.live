@@ -304,6 +304,7 @@ export class Scaler {
 
 		this.gl.activeTexture(this.gl.TEXTURE0);
 		this.gl.disable(this.gl.BLEND);
+		this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true);
 	}
 	public process(frame: VideoFrame, preserveAspectRatio = true): DOMRectInit {
 		if (frame.displayWidth === 0 || frame.displayHeight === 0) {
@@ -424,6 +425,7 @@ export class Scaler {
 		this.gl.clear(this.gl.COLOR_BUFFER_BIT);
 	}
 	public destroy() {
+		this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, false);
 		this.gl.deleteTexture(this.sourceTexture);
 		this.gl.deleteTexture(this.horizontalTexture);
 		this.gl.deleteProgram(this.compiledHorizontal.program);
