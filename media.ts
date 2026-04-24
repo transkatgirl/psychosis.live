@@ -681,8 +681,8 @@ function adaptiveVideoSettings(
 		}
 
 		const defaultDimensions = adaptToPixelCount(
-			peerScaler.scaler.canvas.width,
-			peerScaler.scaler.canvas.height,
+			targets.width,
+			targets.height,
 			MIN_PIXELS
 		);
 
@@ -710,12 +710,15 @@ function adaptiveVideoSettings(
 		}
 
 		if (
-			analysis.qpAvg &&
+			analysis.qpAvg /*&&
 			(!analysis.framesAnalyzed ||
-				analysis.framesAnalyzed >= framerate * 2)
+				analysis.framesAnalyzed >= framerate * 2 ||
+				(analysis.frameDropRate && analysis.frameDropRate > 0.6))*/
 		) {
 			if (
-				(analysis.frameDropRate && analysis.frameDropRate > 0.6) ||
+				//(analysis.frameDropRate && analysis.frameDropRate > 0.6) ||
+				(analysis.framesAnalyzed &&
+					analysis.framesAnalyzed <= framerate) || // frameDropRate doesn't seem to work correctly yet
 				analysis.codecData.highQP < analysis.qpAvg
 			) {
 				[width, height, framerate] = adaptDown(
