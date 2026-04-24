@@ -860,7 +860,7 @@ const AV1_ADAPTIVE_DATA: CodecAdaptiveData = {
 
 const FHD_PIXELS = 1920 * 1080;
 const HD_PIXELS = 1280 * 720;
-const MIN_PIXELS = 320 * 180;
+const MIN_PIXELS = 320 * 180; // MUST throw an error if max_pixels < MIN_PIXELS
 
 function adaptUp(
 	width: number,
@@ -872,7 +872,7 @@ function adaptUp(
 	const fudgedPixels = Math.pow(Math.sqrt(width * height) + 4, 2);
 
 	const SMOOTH_FPS = Math.min(60, maxFramerate);
-	const MIN_FPS = Math.min(30, maxFramerate);
+	const MIN_PREFERRED_FPS = Math.min(30, maxFramerate);
 
 	if (fudgedPixels >= FHD_PIXELS && framerate < maxFramerate) {
 		return [width, height, Math.min(adjustedFramerate, maxFramerate)];
@@ -880,8 +880,8 @@ function adaptUp(
 	if (fudgedPixels >= HD_PIXELS && framerate < SMOOTH_FPS) {
 		return [width, height, Math.min(adjustedFramerate, SMOOTH_FPS)];
 	}
-	if (framerate < MIN_FPS) {
-		return [width, height, MIN_FPS];
+	if (framerate < MIN_PREFERRED_FPS) {
+		return [width, height, MIN_PREFERRED_FPS];
 	}
 
 	const adjustedPixels = (width * height * 5) / 3;
