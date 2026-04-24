@@ -907,7 +907,10 @@ function adaptDown(
 	if (width * height <= HD_PIXELS && framerate > 30) {
 		return [width, height, Math.max(adjustedFramerate, 30)];
 	}
-	if (width * height <= MIN_PIXELS && framerate >= 22) {
+	if (
+		width * height <= Math.pow(Math.sqrt(MIN_PIXELS) + 4, 2) &&
+		framerate >= 22
+	) {
 		return [width, height, 22];
 	}
 
