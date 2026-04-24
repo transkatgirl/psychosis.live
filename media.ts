@@ -871,18 +871,17 @@ function adaptUp(
 	const adjustedFramerate = Math.round((framerate * 3) / 2);
 	const fudgedPixels = Math.pow(Math.sqrt(width * height) + 4, 2);
 
-	if (
-		fudgedPixels >= FHD_PIXELS &&
-		maxFramerate &&
-		framerate < maxFramerate
-	) {
+	const SMOOTH_FPS = Math.min(60, maxFramerate);
+	const MIN_FPS = Math.min(30, maxFramerate);
+
+	if (fudgedPixels >= FHD_PIXELS && framerate < maxFramerate) {
 		return [width, height, Math.min(adjustedFramerate, maxFramerate)];
 	}
-	if (fudgedPixels >= HD_PIXELS && framerate < 60) {
-		return [width, height, Math.min(adjustedFramerate, 60)];
+	if (fudgedPixels >= HD_PIXELS && framerate < SMOOTH_FPS) {
+		return [width, height, Math.min(adjustedFramerate, SMOOTH_FPS)];
 	}
-	if (framerate < 30) {
-		return [width, height, 30];
+	if (framerate < MIN_FPS) {
+		return [width, height, MIN_FPS];
 	}
 
 	const adjustedPixels = (width * height * 5) / 3;
