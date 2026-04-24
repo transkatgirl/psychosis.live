@@ -4,8 +4,9 @@ import {
 	createFramebuffer,
 	createProgram,
 	createTextureFromImage,
+	createVAOForQuadBuffer,
+	updateTextureData,
 	updateTextureFromEmpty,
-	updateTextureFromImage,
 	useDefaultQuadBuffer,
 } from "./gl-helper";
 import {
@@ -152,6 +153,9 @@ export class Scaler {
 	sourceTexture: WebGLTexture;
 	horizontalTexture: WebGLTexture;
 
+	horizontalTextureWidth = 0;
+	horizontalTextureHeight = 0;
+
 	quadBuffer: WebGLBuffer;
 
 	horizontalFramebuffer: WebGLFramebuffer;
@@ -167,17 +171,17 @@ export class Scaler {
 		fragmentShader: WebGLShader;
 	};
 	horizontalLocations: {
-		image: WebGLUniformLocation;
 		textureWidth: WebGLUniformLocation;
 		scale: WebGLUniformLocation;
 		radius: WebGLUniformLocation;
 	};
 	verticalLocations: {
-		image: WebGLUniformLocation;
 		textureHeight: WebGLUniformLocation;
 		scale: WebGLUniformLocation;
 		radius: WebGLUniformLocation;
 	};
+	horizontalVAO: WebGLVertexArrayObject;
+	verticalVAO: WebGLVertexArrayObject;
 
 	public constructor(
 		canvas: OffscreenCanvas,
@@ -234,10 +238,6 @@ export class Scaler {
 		)!;
 
 		this.horizontalLocations = {
-			image: this.gl.getUniformLocation(
-				this.compiledHorizontal.program,
-				"u_image"
-			)!,
 			textureWidth: this.gl.getUniformLocation(
 				this.compiledHorizontal.program,
 				"u_textureWidth"
@@ -252,10 +252,6 @@ export class Scaler {
 			)!,
 		};
 		this.verticalLocations = {
-			image: this.gl.getUniformLocation(
-				this.compiledVertical.program,
-				"u_image"
-			)!,
 			textureHeight: this.gl.getUniformLocation(
 				this.compiledVertical.program,
 				"u_textureHeight"
@@ -270,19 +266,36 @@ export class Scaler {
 			)!,
 		};
 
-		useDefaultQuadBuffer(
+		this.horizontalVAO = createVAOForQuadBuffer(
 			this.gl,
 			this.compiledHorizontal.program,
 			this.quadBuffer,
 			"a_position",
 			"a_texCoord"
 		);
-		useDefaultQuadBuffer(
+		this.verticalVAO = createVAOForQuadBuffer(
 			this.gl,
 			this.compiledVertical.program,
 			this.quadBuffer,
 			"a_position",
 			"a_texCoord"
+		);
+
+		this.gl.useProgram(this.compiledHorizontal.program);
+		this.gl.uniform1i(
+			this.gl.getUniformLocation(
+				this.compiledHorizontal.program,
+				"u_image"
+			),
+			0
+		);
+		this.gl.useProgram(this.compiledVertical.program);
+		this.gl.uniform1i(
+			this.gl.getUniformLocation(
+				this.compiledVertical.program,
+				"u_image"
+			),
+			0
 		);
 
 		this.gl.disable(this.gl.BLEND);
@@ -329,27 +342,32 @@ export class Scaler {
 			offsetY = Math.round((this.canvas.height - targetHeight) / 2);
 		}
 
-		this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
-		this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+		updateTextureData(this.gl, this.sourceTexture, frame);
 
-		updateTextureFromImage(this.gl, this.sourceTexture, frame);
-		updateTextureFromEmpty(
-			this.gl,
-			this.horizontalTexture,
-			targetWidth,
-			srcHeight,
-			this.useFloatTextures
-		);
+		if (
+			this.horizontalTextureWidth !== targetWidth ||
+			this.horizontalTextureHeight !== srcHeight
+		) {
+			updateTextureFromEmpty(
+				this.gl,
+				this.horizontalTexture,
+				targetWidth,
+				srcHeight,
+				this.useFloatTextures
+			);
+			this.horizontalTextureWidth = targetWidth;
+			this.horizontalTextureHeight = srcHeight;
+		}
 
 		const radiusX = scaleX < 1 ? this.windowSize / scaleX : this.windowSize;
 		this.gl.useProgram(this.compiledHorizontal.program);
-		this.gl.uniform1i(this.horizontalLocations.image, 0);
 		this.gl.uniform1f(this.horizontalLocations.textureWidth, srcWidth);
 		this.gl.uniform1f(
 			this.horizontalLocations.scale,
 			this.windowSize / radiusX
 		);
 		this.gl.uniform1f(this.horizontalLocations.radius, radiusX);
+		this.gl.bindVertexArray(this.horizontalVAO);
 		this.gl.activeTexture(this.gl.TEXTURE0);
 		this.gl.bindTexture(this.gl.TEXTURE_2D, this.sourceTexture);
 		this.gl.viewport(0, 0, targetWidth, srcHeight);
@@ -361,18 +379,19 @@ export class Scaler {
 
 		const radiusY = scaleY < 1 ? this.windowSize / scaleY : this.windowSize;
 		this.gl.useProgram(this.compiledVertical.program);
-		this.gl.uniform1i(this.verticalLocations.image, 0);
 		this.gl.uniform1f(this.verticalLocations.textureHeight, srcHeight);
 		this.gl.uniform1f(
 			this.verticalLocations.scale,
 			this.windowSize / radiusY
 		);
 		this.gl.uniform1f(this.verticalLocations.radius, radiusY);
+		this.gl.bindVertexArray(this.verticalVAO);
 		this.gl.activeTexture(this.gl.TEXTURE0);
 		this.gl.bindTexture(this.gl.TEXTURE_2D, this.horizontalTexture);
 		this.gl.viewport(offsetX, offsetY, targetWidth, targetHeight);
 		this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
 		this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+		this.gl.bindVertexArray(null);
 
 		return {
 			x: offsetX,
@@ -396,5 +415,7 @@ export class Scaler {
 		this.gl.deleteShader(this.compiledVertical.fragmentShader);
 		this.gl.deleteFramebuffer(this.horizontalFramebuffer);
 		this.gl.deleteBuffer(this.quadBuffer);
+		this.gl.deleteVertexArray(this.horizontalVAO);
+		this.gl.deleteVertexArray(this.verticalVAO);
 	}
 }
