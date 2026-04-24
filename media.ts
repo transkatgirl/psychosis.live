@@ -390,20 +390,14 @@ interface AdaptiveDataAnalysis {
 function analyzeAdaptiveData(stats: RTCStatsReport, data: AdaptiveData) {
 	let analysis: AdaptiveDataAnalysis = {};
 
-	if (data.framesEncoded) {
-		data.framesEncodedOlder = data.framesEncoded;
-		data.framesEncoded = undefined;
+	if (!data.framesEncodedOlder) {
+		data.framesSentOlder = undefined;
+		data.qpSumOlder = undefined;
 	}
 
-	if (data.framesSent) {
-		data.framesSentOlder = data.framesSent;
-		data.framesSent = undefined;
-	}
-
-	if (data.qpSum) {
-		data.qpSumOlder = data.qpSum;
-		data.qpSum = undefined;
-	}
+	let framesEncoded;
+	let framesSent;
+	let qpSum;
 
 	stats.forEach((report) => {
 		if (report.type == "codec") {
@@ -422,40 +416,50 @@ function analyzeAdaptiveData(stats: RTCStatsReport, data: AdaptiveData) {
 		}
 		if (report.type == "outbound-rtp" && report.kind == "video") {
 			if (report.framesEncoded) {
+				if (data.framesEncoded) {
+					framesEncoded =
+						report.framesEncoded -
+						(data.framesEncodedOlder
+							? data.framesEncodedOlder
+							: data.framesEncoded);
+				}
+
+				data.framesEncodedOlder = data.framesEncoded;
 				data.framesEncoded = report.framesEncoded;
 			}
 			if (report.framesSent) {
+				if (data.framesSent) {
+					framesSent =
+						report.framesSent -
+						(data.framesSentOlder
+							? data.framesSentOlder
+							: data.framesSent);
+				}
+
+				data.framesSentOlder = data.framesSent;
 				data.framesSent = report.framesSent;
 			}
 			if (report.qpSum) {
+				if (data.qpSum) {
+					qpSum =
+						report.qpSum -
+						(data.qpSumOlder ? data.qpSumOlder : data.qpSum);
+				}
+
+				data.qpSumOlder = data.qpSum;
 				data.qpSum = report.qpSum;
 			}
 		}
 	});
 
-	if (data.framesEncoded) {
-		const framesEncoded = data.framesEncodedOlder
-			? data.framesEncodedOlder
-			: data.framesEncoded;
-
+	if (framesEncoded) {
 		analysis.framesAnalyzed = framesEncoded;
 
-		if (!data.framesEncodedOlder) {
-			data.framesSentOlder = undefined;
-			data.qpSumOlder = undefined;
-		}
-
-		if (data.framesSent) {
-			const framesSent = data.framesSentOlder
-				? data.framesSentOlder
-				: data.framesSent;
-
+		if (framesSent) {
 			analysis.frameDropRate = 1 - framesSent / framesEncoded;
 		}
 
-		if (data.qpSum) {
-			const qpSum = data.qpSumOlder ? data.qpSumOlder : data.qpSum;
-
+		if (qpSum) {
 			analysis.qpAvg = qpSum / framesEncoded;
 		}
 	}
@@ -668,6 +672,8 @@ function adaptiveVideoSettings(
 		if (data.skipNextInterval) {
 			data.skipNextInterval = false;
 			return;
+		} else if (data.skipNextInterval !== undefined) {
+			data.skipNextInterval = true;
 		}
 
 		const defaultDimensions = adaptToPixelCount(
@@ -713,6 +719,10 @@ function adaptiveVideoSettings(
 				}
 
 				hasAdapted = true;
+
+				if (data.skipNextInterval === undefined) {
+					data.skipNextInterval = true;
+				}
 			} else if (analysis.codecData.lowQP >= analysis.qpAvg) {
 				[width, height, framerate] = adaptUp(
 					width,
@@ -722,10 +732,6 @@ function adaptiveVideoSettings(
 				);
 
 				hasAdapted = true;
-
-				if (data.skipNextInterval === undefined) {
-					data.skipNextInterval = true;
-				}
 			}
 		}
 
@@ -736,16 +742,9 @@ function adaptiveVideoSettings(
 				Math.min(framerate, targets.framerate),
 			];
 
-			data.framesEncoded = undefined;
 			data.framesEncodedOlder = undefined;
-			data.framesSent = undefined;
 			data.framesSentOlder = undefined;
-			data.qpSum = undefined;
 			data.qpSumOlder = undefined;
-
-			if (data.skipNextInterval !== undefined) {
-				data.skipNextInterval = true;
-			}
 
 			if (!data.lastTarget || data.lastTarget[2] != framerate) {
 				for (const encoding of parameters.encodings) {
