@@ -388,7 +388,7 @@ interface AdaptiveDataAnalysis {
 	frameDropRate?: number;
 }
 
-function analyzeAdaptiveData(data: AdaptiveData) {}
+function analyzeAdaptiveData(stats: RTCStatsReport, data: AdaptiveData) {}
 
 export interface AdaptiveTargets {
 	audio?: AdaptiveAudioTargets;
@@ -858,6 +858,11 @@ const AV1_ADAPTIVE_DATA: CodecAdaptiveData = {
 
 // Adaptation functions are loosely inspired by https://github.com/webrtc-sdk/webrtc/blob/m144_release/call/adaptation/video_stream_adapter.cc
 
+const FHD_PIXELS = 1920 * 1080;
+const HD_PIXELS = 1280 * 720;
+const DEFAULT_PIXELS = 320 * 180;
+const MIN_PIXELS = 320 * 180;
+
 function adaptUp(
 	width: number,
 	height: number,
@@ -867,13 +872,13 @@ function adaptUp(
 	const adjustedFramerate = Math.round((framerate * 3) / 2);
 
 	if (
-		width * height > 1_960_000 &&
+		width * height >= FHD_PIXELS &&
 		maxFramerate &&
 		framerate < maxFramerate
 	) {
 		return [width, height, Math.min(adjustedFramerate, maxFramerate)];
 	}
-	if (width * height > 810_000 && framerate < 60) {
+	if (width * height >= HD_PIXELS && framerate < 60) {
 		return [width, height, Math.min(adjustedFramerate, 60)];
 	}
 	if (framerate < 30) {
@@ -897,10 +902,10 @@ function adaptDown(
 ): [number, number, number] {
 	const adjustedFramerate = Math.round((framerate * 2) / 3);
 
-	if (width * height <= 3_610_000 && framerate > 60) {
+	if (width * height <= FHD_PIXELS && framerate > 60) {
 		return [width, height, Math.max(adjustedFramerate, 60)];
 	}
-	if (width * height <= 810_000 && framerate > 30) {
+	if (width * height <= HD_PIXELS && framerate > 30) {
 		return [width, height, Math.max(adjustedFramerate, 30)];
 	}
 
@@ -911,32 +916,33 @@ function adaptDown(
 	const adjustedHeight =
 		Math.round(Math.sqrt(adjustedPixels * (height / width)) / 4) * 4;
 
-	if (
-		(adjustedPixels < 57_600 ||
-			adjustedWidth < 180 ||
-			adjustedHeight < 180) &&
-		framerate > 22
-	) {
-		return [width, height, 22];
+	if (adjustedPixels <= MIN_PIXELS && framerate > 22) {
+		const [adjustedWidth, adjustedHeight] = adaptToPixelCount(
+			width,
+			height,
+			MIN_PIXELS
+		);
+
+		return [adjustedWidth, adjustedHeight, 22];
 	}
 
 	return [adjustedWidth, adjustedHeight, framerate];
 }
 
-function adaptDefault(width: number, height: number): [number, number, number] {
-	while (width * height > 640 * 360) {
-		const adjustedPixels = (width * height * 3) / 5;
+function adaptToPixelCount(
+	width: number,
+	height: number,
+	pixels: number
+): [number, number] {
+	const adjustedWidth =
+		Math.round(Math.sqrt(pixels * (width / height)) / 4) * 4;
+	const adjustedHeight =
+		Math.round(Math.sqrt(pixels * (height / width)) / 4) * 4;
 
-		const adjustedWidth =
-			Math.round(Math.sqrt(adjustedPixels * (width / height)) / 4) * 4;
-		const adjustedHeight =
-			Math.round(Math.sqrt(adjustedPixels * (height / width)) / 4) * 4;
+	width = adjustedWidth;
+	height = adjustedHeight;
 
-		width = adjustedWidth;
-		height = adjustedHeight;
-	}
-
-	return [width, height, 30];
+	return [width, height];
 }
 
 export class MediaScaler {
