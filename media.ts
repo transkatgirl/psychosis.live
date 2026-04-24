@@ -869,15 +869,16 @@ function adaptUp(
 	maxFramerate: number
 ): [number, number, number] {
 	const adjustedFramerate = Math.round((framerate * 3) / 2);
+	const fudgedPixels = Math.pow(Math.sqrt(width * height) + 4, 2);
 
 	if (
-		width * height >= FHD_PIXELS &&
+		fudgedPixels >= FHD_PIXELS &&
 		maxFramerate &&
 		framerate < maxFramerate
 	) {
 		return [width, height, Math.min(adjustedFramerate, maxFramerate)];
 	}
-	if (width * height >= HD_PIXELS && framerate < 60) {
+	if (fudgedPixels >= HD_PIXELS && framerate < 60) {
 		return [width, height, Math.min(adjustedFramerate, 60)];
 	}
 	if (framerate < 30) {
@@ -900,35 +901,31 @@ function adaptDown(
 	framerate: number
 ): [number, number, number] {
 	const adjustedFramerate = Math.round((framerate * 2) / 3);
+	const fudgedPixels = Math.pow(Math.sqrt(width * height) - 4, 2);
 
-	if (width * height <= FHD_PIXELS && framerate > 60) {
+	if (fudgedPixels <= FHD_PIXELS && framerate > 60) {
 		return [width, height, Math.max(adjustedFramerate, 60)];
 	}
-	if (width * height <= HD_PIXELS && framerate > 30) {
+	if (fudgedPixels <= HD_PIXELS && framerate > 30) {
 		return [width, height, Math.max(adjustedFramerate, 30)];
 	}
-	if (
-		width * height <= Math.pow(Math.sqrt(MIN_PIXELS) + 4, 2) &&
-		framerate >= 22
-	) {
+	if (fudgedPixels <= MIN_PIXELS && framerate > 22) {
 		return [width, height, 22];
 	}
 
 	const adjustedPixels = (width * height * 3) / 5;
 
-	const adjustedWidth =
+	let adjustedWidth =
 		Math.round(Math.sqrt(adjustedPixels * (width / height)) / 4) * 4;
-	const adjustedHeight =
+	let adjustedHeight =
 		Math.round(Math.sqrt(adjustedPixels * (height / width)) / 4) * 4;
 
 	if (adjustedPixels < MIN_PIXELS) {
-		const [adjustedWidth, adjustedHeight] = adaptToPixelCount(
+		[adjustedWidth, adjustedHeight] = adaptToPixelCount(
 			width,
 			height,
 			MIN_PIXELS
 		);
-
-		return [adjustedWidth, adjustedHeight, framerate];
 	}
 
 	return [adjustedWidth, adjustedHeight, framerate];
