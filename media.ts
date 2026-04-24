@@ -703,10 +703,10 @@ function adaptiveVideoSettings(
 			(!analysis.framesAnalyzed ||
 				analysis.framesAnalyzed >= framerate * 2)
 		) {
-			// Make QP targets 25% more aggressive, as sharper upscalers don't conceal compression artifacts as much.
+			// Make QP targets 33% more aggressive, as sharper upscalers benefit more from a lower resolution + high quality stream than a higher resolution + low quality one.
 
 			const qpAdjustment =
-				(analysis.codecData.highQP - analysis.codecData.lowQP) * 0.25;
+				(analysis.codecData.highQP - analysis.codecData.lowQP) * 0.33;
 			analysis.qpAvg += qpAdjustment;
 
 			if (
