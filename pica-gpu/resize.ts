@@ -313,6 +313,8 @@ export class Scaler {
 			throw new Error("target canvas width or height is 0");
 		}
 
+		const gl = this.gl;
+
 		const srcWidth = frame.displayWidth;
 		const srcHeight = frame.displayHeight;
 
@@ -348,7 +350,7 @@ export class Scaler {
 		}
 
 		updateTextureFromImage(
-			this.gl,
+			gl,
 			this.sourceTexture,
 			frame,
 			srcWidth,
@@ -360,7 +362,7 @@ export class Scaler {
 			this.horizontalTextureHeight !== srcHeight
 		) {
 			updateTextureFromEmpty(
-				this.gl,
+				gl,
 				this.horizontalTexture,
 				targetWidth,
 				srcHeight,
@@ -371,48 +373,44 @@ export class Scaler {
 		}
 
 		const radiusX = scaleX < 1 ? this.windowSize / scaleX : this.windowSize;
-		this.gl.useProgram(this.compiledHorizontal.program);
+		gl.useProgram(this.compiledHorizontal.program);
 		if (srcWidth !== this.lastSourceWidth) {
-			this.gl.uniform1f(this.horizontalLocations.textureWidth, srcWidth);
+			gl.uniform1f(this.horizontalLocations.textureWidth, srcWidth);
 			this.lastSourceWidth = srcWidth;
 		}
 		if (radiusX !== this.lastRadiusX) {
-			this.gl.uniform1f(
+			gl.uniform1f(
 				this.horizontalLocations.scale,
 				this.windowSize / radiusX
 			);
-			this.gl.uniform1f(this.horizontalLocations.radius, radiusX);
+			gl.uniform1f(this.horizontalLocations.radius, radiusX);
 			this.lastRadiusX = radiusX;
 		}
-		this.gl.bindVertexArray(this.horizontalVAO);
-		this.gl.bindTexture(this.gl.TEXTURE_2D, this.sourceTexture);
-		this.gl.viewport(0, 0, targetWidth, srcHeight);
-		this.gl.bindFramebuffer(
-			this.gl.FRAMEBUFFER,
-			this.horizontalFramebuffer
-		);
-		this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+		gl.bindVertexArray(this.horizontalVAO);
+		gl.bindTexture(gl.TEXTURE_2D, this.sourceTexture);
+		gl.viewport(0, 0, targetWidth, srcHeight);
+		gl.bindFramebuffer(gl.FRAMEBUFFER, this.horizontalFramebuffer);
+		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
 		const radiusY = scaleY < 1 ? this.windowSize / scaleY : this.windowSize;
-		this.gl.useProgram(this.compiledVertical.program);
+		gl.useProgram(this.compiledVertical.program);
 		if (srcHeight !== this.lastSourceHeight) {
-			this.gl.uniform1f(this.verticalLocations.textureHeight, srcHeight);
+			gl.uniform1f(this.verticalLocations.textureHeight, srcHeight);
 			this.lastSourceHeight = srcHeight;
 		}
 		if (radiusY !== this.lastRadiusY) {
-			this.gl.uniform1f(
+			gl.uniform1f(
 				this.verticalLocations.scale,
 				this.windowSize / radiusY
 			);
-			this.gl.uniform1f(this.verticalLocations.radius, radiusY);
+			gl.uniform1f(this.verticalLocations.radius, radiusY);
 			this.lastRadiusY = radiusY;
 		}
-		this.gl.bindVertexArray(this.verticalVAO);
-		this.gl.bindTexture(this.gl.TEXTURE_2D, this.horizontalTexture);
-		this.gl.viewport(offsetX, offsetY, targetWidth, targetHeight);
-		this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
-		this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
-		this.gl.bindVertexArray(null);
+		gl.bindVertexArray(this.verticalVAO);
+		gl.bindTexture(gl.TEXTURE_2D, this.horizontalTexture);
+		gl.viewport(offsetX, offsetY, targetWidth, targetHeight);
+		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
 		return {
 			x: offsetX,
