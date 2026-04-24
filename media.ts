@@ -631,48 +631,101 @@ async function adaptiveVideoSettings(
 		// - https://github.com/webrtc-sdk/webrtc/blob/m144_release/modules/video_coding/utility/quality_scaler.cc
 		// - https://github.com/webrtc-sdk/webrtc/blob/m144_release/call/adaptation/video_stream_adapter.cc
 		// - https://github.com/webrtc-sdk/webrtc/blob/6c1aa903241e69eb2eca64caad16779351bb1ab2/video/adaptation/video_stream_encoder_resource_manager.cc
-		// TODO
-		/*const frameCount = 0; // TODO: set averaged frames
-		const frameDropRate = 0; // TODO: avg over 4s
-		const avgQP = 0; // TODO: avg over 4s
 
-		const codecData = AV1_ADAPTIVE_DATA; // TODO
-		let width = 0;
-		let height = 0;
-		let framerate = 0;
+		const analysis = analyzeAdaptiveData(stats, data);
 
-		if (frameCount < framerate * 2) {
+		if (!analysis.codecData) {
+			throw "Unsupported video codec";
+		}
+
+		if (targets.width * targets.height < MIN_PIXELS) {
+			throw "Invalid configuration";
+		}
+
+		if (data.skipNextInterval) {
+			data.skipNextInterval = false;
 			return;
 		}
 
-		// TODO: after first downscale, skip every other iteration
+		const defaultDimensions = adaptToPixelCount(
+			peerScaler.scaler.canvas.width,
+			peerScaler.scaler.canvas.height,
+			MIN_PIXELS
+		);
 
-		if (frameDropRate > 0.6 || codecData.highQP < avgQP) {
-			[width, height, framerate] = adaptDown(width, height, framerate);
+		let width = defaultDimensions[0];
+		let height = defaultDimensions[1];
+		let framerate = Math.min(30, targets.framerate);
+		let hasAdapted = false;
 
-			if (calculateHigherQP(codecData) > avgQP) {
+		if (data.lastTarget) {
+			width = data.lastTarget[0];
+			height = data.lastTarget[1];
+			framerate = data.lastTarget[2];
+		}
+
+		if (
+			analysis.qpAvg &&
+			(!analysis.framesAnalyzed ||
+				analysis.framesAnalyzed > framerate * 2)
+		) {
+			if (
+				(analysis.frameDropRate && analysis.frameDropRate > 0.6) ||
+				analysis.codecData.highQP < analysis.qpAvg
+			) {
 				[width, height, framerate] = adaptDown(
 					width,
 					height,
 					framerate
 				);
+
+				if (calculateHigherQP(analysis.codecData) > analysis.qpAvg) {
+					[width, height, framerate] = adaptDown(
+						width,
+						height,
+						framerate
+					);
+				}
+
+				hasAdapted = true;
+			} else if (analysis.codecData.lowQP >= analysis.qpAvg) {
+				[width, height, framerate] = adaptUp(
+					width,
+					height,
+					framerate,
+					targets.framerate
+				);
+
+				hasAdapted = true;
+
+				if (data.skipNextInterval === undefined) {
+					data.skipNextInterval = true;
+				}
 			}
-
-			// clear averages
-		} else if (codecData.lowQP >= avgQP) {
-			[width, height, framerate] = adaptUp(
-				width,
-				height,
-				framerate,
-				targets.framerate
-			);
-
-			// clear averages
 		}
 
-		width = Math.min(width, targets.width);
-		height = Math.min(height, targets.height);
-		framerate = Math.min(framerate, targets.framerate);*/
+		if (hasAdapted) {
+			[width, height, framerate] = [
+				Math.min(width, targets.width),
+				Math.min(height, targets.height),
+				Math.min(framerate, targets.framerate),
+			];
+
+			data.framesEncoded = undefined;
+			data.framesEncodedOlder = undefined;
+			data.framesSent = undefined;
+			data.framesSentOlder = undefined;
+			data.qpSum = undefined;
+			data.qpSumOlder = undefined;
+
+			if (data.skipNextInterval !== undefined) {
+				data.skipNextInterval = true;
+			}
+
+			data.lastTarget = [width, height, framerate];
+
+			// TODO
+		}
 	} else {
 		let framerateLower = 0;
 		let framerateUpper = Infinity;
@@ -915,22 +968,22 @@ const H264_ADAPTIVE_DATA: CodecAdaptiveData = {
 	highQP: 37,
 };
 
-// https://github.com/webrtc-sdk/webrtc/blob/6c1aa903241e69eb2eca64caad16779351bb1ab2/modules/video_coding/codecs/vp8/libvpx_vp8_encoder.cc#L91; Converted from range of [0, 127] to [0, 63]
+// https://github.com/webrtc-sdk/webrtc/blob/6c1aa903241e69eb2eca64caad16779351bb1ab2/modules/video_coding/codecs/vp8/libvpx_vp8_encoder.cc#L91
 const VP8_ADAPTIVE_DATA: CodecAdaptiveData = {
-	lowQP: 14.5,
-	highQP: 47.5,
+	lowQP: 39,
+	highQP: 95,
 };
 
-// https://github.com/webrtc-sdk/webrtc/blob/6c1aa903241e69eb2eca64caad16779351bb1ab2/modules/video_coding/codecs/vp9/libvpx_vp9_encoder.cc#L107; Converted from range of [0, 255] to [0, 63]
+// https://github.com/webrtc-sdk/webrtc/blob/6c1aa903241e69eb2eca64caad16779351bb1ab2/modules/video_coding/codecs/vp9/libvpx_vp9_encoder.cc#L107
 const VP9_ADAPTIVE_DATA: CodecAdaptiveData = {
-	lowQP: 37.25,
-	highQP: 51.25,
+	lowQP: 149,
+	highQP: 205,
 };
 
-// https://github.com/webrtc-sdk/webrtc/blob/6c1aa903241e69eb2eca64caad16779351bb1ab2/modules/video_coding/codecs/av1/libaom_av1_encoder.cc#L80; Converted from range of [0, 255] to [0, 63]
+// https://github.com/webrtc-sdk/webrtc/blob/6c1aa903241e69eb2eca64caad16779351bb1ab2/modules/video_coding/codecs/av1/libaom_av1_encoder.cc#L80
 const AV1_ADAPTIVE_DATA: CodecAdaptiveData = {
-	lowQP: 36.25,
-	highQP: 51.25,
+	lowQP: 145,
+	highQP: 205,
 };
 
 // Adaptation functions are loosely inspired by https://github.com/webrtc-sdk/webrtc/blob/m144_release/call/adaptation/video_stream_adapter.cc
