@@ -166,6 +166,18 @@ export class Scaler {
 		vertexShader: WebGLShader;
 		fragmentShader: WebGLShader;
 	};
+	horizontalLocations: {
+		image: WebGLUniformLocation;
+		textureWidth: WebGLUniformLocation;
+		scale: WebGLUniformLocation;
+		radius: WebGLUniformLocation;
+	};
+	verticalLocations: {
+		image: WebGLUniformLocation;
+		textureHeight: WebGLUniformLocation;
+		scale: WebGLUniformLocation;
+		radius: WebGLUniformLocation;
+	};
 
 	public constructor(
 		canvas: OffscreenCanvas,
@@ -196,7 +208,12 @@ export class Scaler {
 			1,
 			useFloatTextures
 		);
-		this.horizontalTexture = createEmptyTexture(gl, 1, 1, useFloatTextures);
+		this.horizontalTexture = createEmptyTexture(
+			this.gl,
+			1,
+			1,
+			useFloatTextures
+		);
 
 		this.quadBuffer = createDefaultQuadBuffer(this.gl);
 
@@ -215,6 +232,60 @@ export class Scaler {
 			vsSource,
 			generateVerticalShader(filter)
 		)!;
+
+		this.horizontalLocations = {
+			image: this.gl.getUniformLocation(
+				this.compiledHorizontal.program,
+				"u_image"
+			)!,
+			textureWidth: this.gl.getUniformLocation(
+				this.compiledHorizontal.program,
+				"u_textureWidth"
+			)!,
+			scale: this.gl.getUniformLocation(
+				this.compiledHorizontal.program,
+				"u_scale"
+			)!,
+			radius: this.gl.getUniformLocation(
+				this.compiledHorizontal.program,
+				"u_radius"
+			)!,
+		};
+		this.verticalLocations = {
+			image: this.gl.getUniformLocation(
+				this.compiledVertical.program,
+				"u_image"
+			)!,
+			textureHeight: this.gl.getUniformLocation(
+				this.compiledVertical.program,
+				"u_textureHeight"
+			)!,
+			scale: this.gl.getUniformLocation(
+				this.compiledVertical.program,
+				"u_scale"
+			)!,
+			radius: this.gl.getUniformLocation(
+				this.compiledVertical.program,
+				"u_radius"
+			)!,
+		};
+
+		useDefaultQuadBuffer(
+			this.gl,
+			this.compiledHorizontal.program,
+			this.quadBuffer,
+			"a_position",
+			"a_texCoord"
+		);
+		useDefaultQuadBuffer(
+			this.gl,
+			this.compiledVertical.program,
+			this.quadBuffer,
+			"a_position",
+			"a_texCoord"
+		);
+
+		this.gl.disable(this.gl.BLEND);
 	}
 	public process(frame: VideoFrame, preserveAspectRatio = true): DOMRectInit {
 		if (frame.displayWidth === 0 || frame.displayHeight === 0) {
@@ -259,7 +330,6 @@ export class Scaler {
 		}
 
 		this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
-		this.gl.clearColor(0, 0, 0, 1);
 		this.gl.clear(this.gl.COLOR_BUFFER_BIT);
 
 		updateTextureFromImage(this.gl, this.sourceTexture, frame);
@@ -271,44 +341,15 @@ export class Scaler {
 			this.useFloatTextures
 		);
 
-		this.gl.useProgram(this.compiledHorizontal.program);
-		useDefaultQuadBuffer(
-			this.gl,
-			this.compiledHorizontal.program,
-			this.quadBuffer,
-			"a_position",
-			"a_texCoord"
-		);
 		const radiusX = scaleX < 1 ? this.windowSize / scaleX : this.windowSize;
-		this.gl.disable(this.gl.BLEND);
-		this.gl.uniform1i(
-			this.gl.getUniformLocation(
-				this.compiledHorizontal.program,
-				"u_image"
-			),
-			0
-		);
+		this.gl.useProgram(this.compiledHorizontal.program);
+		this.gl.uniform1i(this.horizontalLocations.image, 0);
+		this.gl.uniform1f(this.horizontalLocations.textureWidth, srcWidth);
 		this.gl.uniform1f(
-			this.gl.getUniformLocation(
-				this.compiledHorizontal.program,
-				"u_textureWidth"
-			),
-			srcWidth
-		);
-		this.gl.uniform1f(
-			this.gl.getUniformLocation(
-				this.compiledHorizontal.program,
-				"u_scale"
-			),
+			this.horizontalLocations.scale,
 			this.windowSize / radiusX
 		);
-		this.gl.uniform1f(
-			this.gl.getUniformLocation(
-				this.compiledHorizontal.program,
-				"u_radius"
-			),
-			radiusX
-		);
+		this.gl.uniform1f(this.horizontalLocations.radius, radiusX);
 		this.gl.activeTexture(this.gl.TEXTURE0);
 		this.gl.bindTexture(this.gl.TEXTURE_2D, this.sourceTexture);
 		this.gl.viewport(0, 0, targetWidth, srcHeight);
@@ -318,43 +359,15 @@ export class Scaler {
 		);
 		this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
 
-		this.gl.useProgram(this.compiledVertical.program);
-		useDefaultQuadBuffer(
-			this.gl,
-			this.compiledVertical.program,
-			this.quadBuffer,
-			"a_position",
-			"a_texCoord"
-		);
 		const radiusY = scaleY < 1 ? this.windowSize / scaleY : this.windowSize;
-		this.gl.uniform1i(
-			this.gl.getUniformLocation(
-				this.compiledVertical.program,
-				"u_image"
-			),
-			0
-		);
+		this.gl.useProgram(this.compiledVertical.program);
+		this.gl.uniform1i(this.verticalLocations.image, 0);
+		this.gl.uniform1f(this.verticalLocations.textureHeight, srcHeight);
 		this.gl.uniform1f(
-			this.gl.getUniformLocation(
-				this.compiledVertical.program,
-				"u_textureHeight"
-			),
-			srcHeight
-		);
-		this.gl.uniform1f(
-			this.gl.getUniformLocation(
-				this.compiledVertical.program,
-				"u_scale"
-			),
+			this.verticalLocations.scale,
 			this.windowSize / radiusY
 		);
-		this.gl.uniform1f(
-			this.gl.getUniformLocation(
-				this.compiledVertical.program,
-				"u_radius"
-			),
-			radiusY
-		);
+		this.gl.uniform1f(this.verticalLocations.radius, radiusY);
 		this.gl.activeTexture(this.gl.TEXTURE0);
 		this.gl.bindTexture(this.gl.TEXTURE_2D, this.horizontalTexture);
 		this.gl.viewport(offsetX, offsetY, targetWidth, targetHeight);

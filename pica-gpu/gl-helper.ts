@@ -174,3 +174,17 @@ export function useDefaultQuadBuffer(
 	gl.enableVertexAttribArray(texLoc);
 	gl.vertexAttribPointer(texLoc, 2, gl.FLOAT, false, 4 * 4, 2 * 4);
 }
+
+export function createVAOForQuadBuffer(
+	gl: WebGL2RenderingContext,
+	program: WebGLProgram,
+	quadBuffer: WebGLBuffer,
+	position: string,
+	texCoord: string
+): WebGLVertexArrayObject {
+	const vao = gl.createVertexArray()!;
+	gl.bindVertexArray(vao);
+	useDefaultQuadBuffer(gl, program, quadBuffer, position, texCoord);
+	gl.bindVertexArray(null);
+	return vao;
+}
