@@ -703,6 +703,12 @@ function adaptiveVideoSettings(
 			(!analysis.framesAnalyzed ||
 				analysis.framesAnalyzed >= framerate * 2)
 		) {
+			// Make QP targets 25% more aggressive, as sharper upscalers don't conceal compression artifacts as much.
+
+			const qpAdjustment =
+				(analysis.codecData.highQP - analysis.codecData.lowQP) * 0.25;
+			analysis.qpAvg += qpAdjustment;
+
 			if (
 				(analysis.frameDropRate && analysis.frameDropRate > 0.6) ||
 				analysis.codecData.highQP < analysis.qpAvg
