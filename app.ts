@@ -598,10 +598,14 @@ async function launchSender(credentials: RoomCredentials) {
 
 		if (
 			params.get("overrideScaler") === "true" &&
-			params.get("displayMedia") !== "true" &&
-			width &&
-			height
+			params.get("displayMedia") !== "true"
 		) {
+			let width = stream.getVideoTracks()[0]?.getSettings()?.width;
+			let height = stream.getVideoTracks()[0]?.getSettings()?.height;
+
+			if (!width) width = 1280;
+			if (!height) height = 720;
+
 			degradationPreference =
 				"maintain-framerate-and-resolution" as RTCDegradationPreference;
 
