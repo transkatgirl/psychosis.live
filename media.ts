@@ -894,15 +894,14 @@ function adaptUp(
 	maxFramerate: number
 ): [number, number, number] {
 	const adjustedFramerate = Math.round((framerate * 3) / 2);
-	const fudgedUpPixels = Math.pow(Math.sqrt(width * height) + 4, 2);
 
 	const SMOOTH_FPS = Math.min(60, maxFramerate);
 	const MIN_PREFERRED_FPS = Math.min(30, maxFramerate);
 
-	if (fudgedUpPixels >= FHD_PIXELS && framerate < maxFramerate) {
+	if (width * height >= FHD_PIXELS && framerate < maxFramerate) {
 		return [width, height, Math.min(adjustedFramerate, maxFramerate)];
 	}
-	if (fudgedUpPixels >= HD_PIXELS && framerate < SMOOTH_FPS) {
+	if (width * height >= HD_PIXELS && framerate < SMOOTH_FPS) {
 		return [width, height, Math.min(adjustedFramerate, SMOOTH_FPS)];
 	}
 	if (framerate < MIN_PREFERRED_FPS) {
@@ -925,13 +924,12 @@ function adaptDown(
 	framerate: number
 ): [number, number, number] {
 	const adjustedFramerate = Math.round((framerate * 2) / 3);
-	const fudgedUpPixels = Math.pow(Math.sqrt(width * height) + 4, 2);
 	const fudgedDownPixels = Math.pow(Math.sqrt(width * height) - 4, 2);
 
-	if (fudgedUpPixels < FHD_PIXELS && framerate > 60) {
+	if (width * height < FHD_PIXELS && framerate > 60) {
 		return [width, height, Math.max(adjustedFramerate, 60)];
 	}
-	if (fudgedUpPixels < HD_PIXELS && framerate > 30) {
+	if (width * height < HD_PIXELS && framerate > 30) {
 		return [width, height, Math.max(adjustedFramerate, 30)];
 	}
 	if (fudgedDownPixels <= MIN_PIXELS && framerate > 22) {
