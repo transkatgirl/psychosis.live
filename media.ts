@@ -377,7 +377,7 @@ export interface AdaptiveData {
 	qpSumOlder?: number; // 2 scan intervals ago
 
 	skipNextInterval?: boolean;
-	lastTarget?: [number, number, number];
+	lastTarget?: [number, number];
 	lastAspectRatio?: number;
 }
 
@@ -680,30 +680,13 @@ function adaptiveVideoSettings(
 			data.skipNextInterval = true;
 		}
 
-		const defaultDimensions = adaptToPixelCount(
-			targets.width,
-			targets.height,
-			MIN_PIXELS
-		);
-
-		let width = defaultDimensions[0];
-		let height = defaultDimensions[1];
+		let pixels = MIN_PIXELS;
 		let framerate = Math.min(30, targets.framerate);
 		let hasAdapted = false;
 
 		if (data.lastTarget) {
-			width = data.lastTarget[0];
-			height = data.lastTarget[1];
-			if (data.lastAspectRatio !== targets.width / targets.height) {
-				[width, height] = adaptToRatioUnrounded(
-					width,
-					height,
-					targets.width / targets.height
-				);
-				data.lastAspectRatio = targets.width / targets.height;
-				hasAdapted = true;
-			}
-			framerate = data.lastTarget[2];
+			pixels = data.lastTarget[0];
+			framerate = data.lastTarget[1];
 		} else {
 			hasAdapted = true;
 			data.lastAspectRatio = targets.width / targets.height;
@@ -721,18 +704,10 @@ function adaptiveVideoSettings(
 					analysis.framesAnalyzed <= framerate) || // frameDropRate doesn't seem to work correctly yet
 				analysis.codecData.highQP < analysis.qpAvg
 			) {
-				[width, height, framerate] = adaptDown(
-					width,
-					height,
-					framerate
-				);
+				[pixels, framerate] = adaptDown(pixels, framerate);
 
 				if (calculateHigherQP(analysis.codecData) > analysis.qpAvg) {
-					[width, height, framerate] = adaptDown(
-						width,
-						height,
-						framerate
-					);
+					[pixels, framerate] = adaptDown(pixels, framerate);
 				}
 
 				hasAdapted = true;
@@ -741,9 +716,8 @@ function adaptiveVideoSettings(
 					data.skipNextInterval = true;
 				}
 			} else if (analysis.codecData.lowQP >= analysis.qpAvg) {
-				[width, height, framerate] = adaptUp(
-					width,
-					height,
+				[pixels, framerate] = adaptUp(
+					pixels,
 					framerate,
 					targets.framerate
 				);
@@ -755,9 +729,8 @@ function adaptiveVideoSettings(
 		}
 
 		if (hasAdapted) {
-			[width, height, framerate] = [
-				Math.min(width, targets.width),
-				Math.min(height, targets.height),
+			[pixels, framerate] = [
+				Math.min(pixels, targets.width * targets.height),
 				Math.min(framerate, targets.framerate),
 			];
 
@@ -765,7 +738,7 @@ function adaptiveVideoSettings(
 			data.framesSentOlder = undefined;
 			data.qpSumOlder = undefined;
 
-			if (!data.lastTarget || data.lastTarget[2] != framerate) {
+			if (!data.lastTarget || data.lastTarget[1] != framerate) {
 				for (const encoding of parameters.encodings) {
 					if (encoding.maxFramerate) {
 						const adjFramerate = Math.round(framerate);
@@ -776,23 +749,18 @@ function adaptiveVideoSettings(
 				}
 			}
 
-			if (
-				!data.lastTarget ||
-				data.lastTarget[0] != width ||
-				data.lastTarget[1] != height
-			) {
-				const [adjWidth, adjHeight] = readjustResolution(
-					width,
-					height,
-					targets.width / targets.height,
-					1
+			if (!data.lastTarget || data.lastTarget[0] != pixels) {
+				const [width, height] = adaptToPixelCount(
+					targets.width,
+					targets.height,
+					pixels
 				);
 
-				console.log("set video scaler resolution", adjWidth, adjHeight);
-				peerScaler.resize(adjWidth, adjHeight);
+				console.log("set video scaler resolution", width, height);
+				peerScaler.resize(width, height);
 			}
 
-			data.lastTarget = [width, height, framerate];
+			data.lastTarget = [pixels, framerate];
 		}
 	} else {
 		let framerateLower = 0;
@@ -887,63 +855,46 @@ const HD_PIXELS = 1280 * 720;
 const MIN_PIXELS = 320 * 180; // MUST throw an error if max_pixels < MIN_PIXELS
 
 function adaptUp(
-	width: number,
-	height: number,
+	pixels: number,
 	framerate: number,
 	maxFramerate: number
-): [number, number, number] {
+): [number, number] {
 	const adjustedFramerate = (framerate * 3) / 2;
 
 	const SMOOTH_FPS = Math.min(60, maxFramerate);
 	const MIN_PREFERRED_FPS = Math.min(30, maxFramerate);
 
-	if (width * height >= FHD_PIXELS && framerate < maxFramerate) {
-		return [width, height, Math.min(adjustedFramerate, maxFramerate)];
+	if (pixels >= FHD_PIXELS && framerate < maxFramerate) {
+		return [pixels, Math.min(adjustedFramerate, maxFramerate)];
 	}
-	if (width * height >= HD_PIXELS && framerate < SMOOTH_FPS) {
-		return [width, height, Math.min(adjustedFramerate, SMOOTH_FPS)];
+	if (pixels >= HD_PIXELS && framerate < SMOOTH_FPS) {
+		return [pixels, Math.min(adjustedFramerate, SMOOTH_FPS)];
 	}
 	if (framerate < MIN_PREFERRED_FPS) {
-		return [width, height, MIN_PREFERRED_FPS];
+		return [pixels, MIN_PREFERRED_FPS];
 	}
 
-	const adjustedPixels = (width * height * 5) / 3;
+	const adjustedPixels = (pixels * 5) / 3;
 
-	const adjustedWidth = Math.sqrt(adjustedPixels * (width / height));
-	const adjustedHeight = Math.sqrt(adjustedPixels * (height / width));
-	return [adjustedWidth, adjustedHeight, framerate];
+	return [adjustedPixels, framerate];
 }
 
-function adaptDown(
-	width: number,
-	height: number,
-	framerate: number
-): [number, number, number] {
+function adaptDown(pixels: number, framerate: number): [number, number] {
 	const adjustedFramerate = (framerate * 2) / 3;
 
-	if (width * height < FHD_PIXELS && framerate > 60) {
-		return [width, height, Math.max(adjustedFramerate, 60)];
+	if (pixels < FHD_PIXELS && framerate > 60) {
+		return [pixels, Math.max(adjustedFramerate, 60)];
 	}
-	if (width * height < HD_PIXELS && framerate > 30) {
-		return [width, height, Math.max(adjustedFramerate, 30)];
+	if (pixels < HD_PIXELS && framerate > 30) {
+		return [pixels, Math.max(adjustedFramerate, 30)];
 	}
-	if (Math.floor(width * height) <= MIN_PIXELS && framerate > 22) {
-		return [width, height, 22];
-	}
-
-	const adjustedPixels = (width * height * 3) / 5;
-
-	let adjustedWidth = Math.sqrt(adjustedPixels * (width / height));
-	let adjustedHeight = Math.sqrt(adjustedPixels * (height / width));
-	if (adjustedPixels < MIN_PIXELS) {
-		[adjustedWidth, adjustedHeight] = adaptToPixelCount(
-			width,
-			height,
-			MIN_PIXELS
-		);
+	if (pixels <= MIN_PIXELS && framerate > 22) {
+		return [pixels, 22];
 	}
 
-	return [adjustedWidth, adjustedHeight, framerate];
+	const adjustedPixels = Math.max((pixels * 3) / 5, MIN_PIXELS);
+
+	return [adjustedPixels, framerate];
 }
 
 function adaptToPixelCount(
@@ -951,51 +902,26 @@ function adaptToPixelCount(
 	height: number,
 	pixels: number
 ): [number, number] {
-	let adjustedWidth = Math.sqrt(pixels * (width / height));
-	let adjustedHeight = Math.sqrt(pixels * (height / width));
+	let adjustedWidth = Math.round(Math.sqrt(pixels * (width / height)));
+	let adjustedHeight = Math.round(Math.sqrt(pixels * (height / width)));
 
-	width = adjustedWidth;
-	height = adjustedHeight;
-
-	return [width, height];
+	return adaptToRatioExact(adjustedWidth, adjustedHeight, width / height);
 }
 
-function adaptToRatioUnrounded(
+function adaptToRatioExact(
 	width: number,
 	height: number,
 	ratio: number
 ): [number, number] {
-	const initialRatio = width / height;
-
-	const EPSILON = 1e-6;
-	if (Math.abs(ratio - initialRatio) > EPSILON) {
-		if (ratio > initialRatio) {
-			height = width / ratio;
+	while (Math.abs(width / height - ratio) >= 1e-10) {
+		if (width / height > ratio) {
+			width--;
 		} else {
-			width = height * ratio;
+			height--;
 		}
 	}
 
 	return [width, height];
-}
-
-function readjustResolution(
-	width: number,
-	height: number,
-	aspectRatio: number,
-	multiple: number
-): [number, number] {
-	[width, height] = adaptToRatioUnrounded(width, height, aspectRatio);
-	[width, height] = adaptToRatioUnrounded(
-		Math.round(width),
-		Math.round(height),
-		aspectRatio
-	);
-
-	return [
-		Math.round(width / multiple) * multiple,
-		Math.round(height / multiple) * multiple,
-	];
 }
 
 export class MediaScaler {
