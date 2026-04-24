@@ -661,8 +661,6 @@ function adaptiveVideoSettings(
 		// - https://github.com/webrtc-sdk/webrtc/blob/m144_release/call/adaptation/video_stream_adapter.cc
 		// - https://github.com/webrtc-sdk/webrtc/blob/6c1aa903241e69eb2eca64caad16779351bb1ab2/video/adaptation/video_stream_encoder_resource_manager.cc
 
-		// TODO: Test this!
-
 		const analysis = analyzeAdaptiveData(stats, data);
 
 		if (!analysis.codecData) {
@@ -693,8 +691,10 @@ function adaptiveVideoSettings(
 		let hasAdapted = false;
 
 		if (data.lastTarget) {
-			width = data.lastTarget[0];
-			height = data.lastTarget[1];
+			//width = data.lastTarget[0];
+			//height = data.lastTarget[1];
+			width = peerScaler.scaler.canvas.width;
+			height = peerScaler.scaler.canvas.height;
 			framerate = data.lastTarget[2];
 		} else {
 			hasAdapted = true;
