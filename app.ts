@@ -600,19 +600,28 @@ async function launchSender(credentials: RoomCredentials) {
 			params.get("overrideScaler") === "true" &&
 			params.get("displayMedia") !== "true"
 		) {
-			let width = stream.getVideoTracks()[0]?.getSettings()?.width;
-			let height = stream.getVideoTracks()[0]?.getSettings()?.height;
-
-			if (!width) width = 1280;
-			if (!height) height = 720;
-
 			degradationPreference =
 				"maintain-framerate-and-resolution" as RTCDegradationPreference;
 
 			let scaler = peerScalers[peerId];
 
 			if (!scaler) {
-				scaler = new MediaScaler(width, height);
+				if (!width || !height) {
+					let width = stream
+						.getVideoTracks()[0]
+						?.getSettings()?.width;
+					let height = stream
+						.getVideoTracks()[0]
+						?.getSettings()?.height;
+
+					if (!width) width = 1280;
+					if (!height) height = 720;
+
+					scaler = new MediaScaler(width, height);
+				} else {
+					scaler = new MediaScaler(width, height);
+				}
+
 				peerScalers[peerId] = scaler;
 			}
 
