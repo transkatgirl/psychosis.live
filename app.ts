@@ -187,7 +187,7 @@ function generateURL(role: Role, id: string, pass: string): string {
 		url.searchParams.set("videoContentHint", "motion");
 		url.searchParams.set("maxAudioBitrate", "-1");
 		url.searchParams.set("maxVideoBitrate", "-1");
-		url.searchParams.set("dynamicAudioBitrate", "true"); // TODO: use SDP munging to enable https://issues.webrtc.org/issues/41480988 when sending audio only(?)
+		url.searchParams.set("dynamicAudioBitrate", "true"); // TODO: use SDP munging to enable https://issues.webrtc.org/issues/41480988 when sending audio only
 		url.searchParams.set("dynamicVideoParams", "true");
 	}
 	if (role == Role.Receiver) {
@@ -250,7 +250,7 @@ async function launchSender(credentials: RoomCredentials) {
 	let mqttEndpoint = defaultMqttEndpoint;
 	let iceServers: any;
 	let codecOrderPreference: any;
-	let degradationPreference;
+	let degradationPreference: RTCDegradationPreference | undefined;
 	let maxVideoBitrate;
 	let maxAudioBitrate;
 	let maxFramerate;
@@ -282,9 +282,9 @@ async function launchSender(credentials: RoomCredentials) {
 		codecOrderPreference = undefined;
 	}
 
-	degradationPreference = params.get(
-		"degradationPreference"
-	) as RTCDegradationPreference | null;
+	degradationPreference = params.get("degradationPreference") as
+		| RTCDegradationPreference
+		| undefined;
 	if (degradationPreference === null) {
 		degradationPreference = undefined;
 	}
@@ -586,8 +586,6 @@ async function launchSender(credentials: RoomCredentials) {
 		document.body.appendChild(settings);
 	}
 
-	// TODO: When using overrideScaler, replace browser adaptive resolution algorithm with our own. Set sender degradationPreference to "maintain-framerate-and-resolution", and reimplement degradationPreference ourselves using JavaScript.
-
 	const peerScalers: Record<string, MediaScaler> = {};
 
 	const addTrack = async (
@@ -598,7 +596,15 @@ async function launchSender(credentials: RoomCredentials) {
 	) => {
 		let transceiver;
 
-		if (params.get("overrideScaler") === "true" && width && height) {
+		if (
+			params.get("overrideScaler") === "true" &&
+			params.get("displayMedia") !== "true" &&
+			width &&
+			height
+		) {
+			degradationPreference =
+				"maintain-framerate-and-resolution" as RTCDegradationPreference;
+
 			let scaler = peerScalers[peerId];
 
 			if (!scaler) {
@@ -739,72 +745,71 @@ async function launchSender(credentials: RoomCredentials) {
 			}
 		},
 		async (peers) => {
-			for (const [peerId, peer] of Object.entries(peers)) {
-				if (!peer.pc) continue;
+			if (params.get("displayMedia") !== "true") {
+				for (const [peerId, peer] of Object.entries(peers)) {
+					if (!peer.pc) continue;
 
-				let audioChannelCount = stream
-					.getAudioTracks()[0]
-					?.getSettings()?.channelCount;
+					let audioChannelCount = stream
+						.getAudioTracks()[0]
+						?.getSettings()?.channelCount;
 
-				if (!audioChannelCount) {
-					if (channelCount == 1) {
-						audioChannelCount = 1;
-					} else if (channelCount > 0) {
-						audioChannelCount = channelCount;
-					} else {
-						audioChannelCount = 2;
+					if (!audioChannelCount) {
+						if (channelCount == 1) {
+							audioChannelCount = 1;
+						} else if (channelCount > 0) {
+							audioChannelCount = channelCount;
+						} else {
+							audioChannelCount = 2;
+						}
 					}
+
+					let streamWidth = stream
+						.getVideoTracks()[0]
+						?.getSettings()?.width;
+					let streamHeight = stream
+						.getVideoTracks()[0]
+						?.getSettings()?.height;
+					let streamFramerate = stream
+						.getVideoTracks()[0]
+						?.getSettings()?.frameRate;
+
+					let targets: AdaptiveTargets = {};
+
+					if (params.get("dynamicAudioBitrate") === "true") {
+						targets.audio = {
+							channels: audioChannelCount,
+							bitrate: maxAudioBitrate,
+							linearDecrease:
+								params.get("linearDynamicAudioBitrate") ===
+								"true",
+						};
+					}
+
+					if (
+						params.get("dynamicVideoParams") === "true" &&
+						streamFramerate
+					) {
+						targets.video = {
+							width: streamWidth,
+							height: streamHeight,
+							framerate: streamFramerate,
+							bitrate: maxVideoBitrate,
+						};
+					}
+
+					if (!("peerData" in peer.metadata)) {
+						peer.metadata["peerData"] = {};
+					}
+
+					const peerData = peer.metadata["peerData"];
+					await adaptiveSettings(
+						peer.pc,
+						peerData,
+						targets,
+						peerScalers[peerId]
+					);
+					peer.metadata["peerData"] = peerData;
 				}
-
-				let streamWidth = stream
-					.getVideoTracks()[0]
-					?.getSettings()?.width;
-				let streamHeight = stream
-					.getVideoTracks()[0]
-					?.getSettings()?.height;
-				let streamFramerate = stream
-					.getVideoTracks()[0]
-					?.getSettings()?.frameRate;
-
-				let targets: AdaptiveTargets = {};
-
-				if (
-					params.get("displayMedia") !== "true" &&
-					params.get("dynamicAudioBitrate") === "true"
-				) {
-					targets.audio = {
-						channels: audioChannelCount,
-						bitrate: maxAudioBitrate,
-						linearDecrease:
-							params.get("linearDynamicAudioBitrate") === "true",
-					};
-				}
-
-				if (
-					params.get("displayMedia") !== "true" &&
-					params.get("dynamicVideoParams") === "true" &&
-					streamFramerate
-				) {
-					targets.video = {
-						width: streamWidth,
-						height: streamHeight,
-						framerate: streamFramerate,
-						bitrate: maxVideoBitrate,
-					};
-				}
-
-				if (!("peerData" in peer.metadata)) {
-					peer.metadata["peerData"] = {};
-				}
-
-				const peerData = peer.metadata["peerData"];
-				await adaptiveSettings(
-					peer.pc,
-					peerData,
-					targets,
-					peerScalers[peerId]
-				);
-				peer.metadata["peerData"] = peerData;
 			}
 
 			if (params.get("stats") === "true") {
