@@ -404,16 +404,16 @@ function analyzeAdaptiveData(stats: RTCStatsReport, data: AdaptiveData) {
 			// We manually adjust the QP targets to be more aggressive, as sharper upscalers benefit more from a lower resolution + high quality stream than a higher resolution + low quality one.
 
 			if (report.mimeType.toLowerCase() == "video/av1") {
-				analysis.codecData = adjustCodecData(AV1_ADAPTIVE_DATA, 0.75);
+				analysis.codecData = adjustCodecData(AV1_ADAPTIVE_DATA, 0.6);
 			}
 			if (report.mimeType.toLowerCase() == "video/vp9") {
-				analysis.codecData = adjustCodecData(VP9_ADAPTIVE_DATA, 0.7);
+				analysis.codecData = adjustCodecData(VP9_ADAPTIVE_DATA, 0.6);
 			}
 			if (report.mimeType.toLowerCase() == "video/vp8") {
-				analysis.codecData = adjustCodecData(VP8_ADAPTIVE_DATA, 0.5);
+				analysis.codecData = adjustCodecData(VP8_ADAPTIVE_DATA, 0.3);
 			}
 			if (report.mimeType.toLowerCase() == "video/h264") {
-				analysis.codecData = adjustCodecData(H264_ADAPTIVE_DATA, 0.5);
+				analysis.codecData = adjustCodecData(H264_ADAPTIVE_DATA, 0.3);
 			}
 		}
 		if (report.type == "outbound-rtp" && report.kind == "video") {
