@@ -388,7 +388,32 @@ interface AdaptiveDataAnalysis {
 	frameDropRate?: number;
 }
 
-function analyzeAdaptiveData(stats: RTCStatsReport, data: AdaptiveData) {}
+function analyzeAdaptiveData(stats: RTCStatsReport, data: AdaptiveData) {
+	let codecData: CodecAdaptiveData | undefined;
+
+	stats.forEach((report) => {
+		if (report.type == "codec") {
+			if (report.mimeType.toLowerCase() == "video/av1") {
+				codecData = AV1_ADAPTIVE_DATA;
+			}
+			if (report.mimeType.toLowerCase() == "video/vp9") {
+				codecData = VP9_ADAPTIVE_DATA;
+			}
+			if (report.mimeType.toLowerCase() == "video/vp8") {
+				codecData = VP8_ADAPTIVE_DATA;
+			}
+			if (report.mimeType.toLowerCase() == "video/h264") {
+				codecData = H264_ADAPTIVE_DATA;
+			}
+		}
+	});
+
+	if (!codecData) {
+		throw "Invalid video codec";
+	}
+
+	stats.forEach((report) => {});
+}
 
 export interface AdaptiveTargets {
 	audio?: AdaptiveAudioTargets;
@@ -902,10 +927,10 @@ function adaptDown(
 	const adjustedFramerate = Math.round((framerate * 2) / 3);
 	const fudgedPixels = Math.pow(Math.sqrt(width * height) - 4, 2);
 
-	if (fudgedPixels <= FHD_PIXELS && framerate > 60) {
+	if (fudgedPixels < FHD_PIXELS && framerate > 60) {
 		return [width, height, Math.max(adjustedFramerate, 60)];
 	}
-	if (fudgedPixels <= HD_PIXELS && framerate > 30) {
+	if (fudgedPixels < HD_PIXELS && framerate > 30) {
 		return [width, height, Math.max(adjustedFramerate, 30)];
 	}
 	if (fudgedPixels <= MIN_PIXELS && framerate > 22) {
