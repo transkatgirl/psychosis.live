@@ -655,13 +655,11 @@ function adaptiveVideoSettings(
 		// - https://github.com/webrtc-sdk/webrtc/blob/m144_release/call/adaptation/video_stream_adapter.cc
 		// - https://github.com/webrtc-sdk/webrtc/blob/6c1aa903241e69eb2eca64caad16779351bb1ab2/video/adaptation/video_stream_encoder_resource_manager.cc
 
-		// TODO: Test if any of this works
+		// TODO: Test this!
 
 		const analysis = analyzeAdaptiveData(stats, data);
 
-		if (!analysis.codecData) {
-			throw "Unsupported video codec";
-		}
+		if (!analysis.codecData) return;
 
 		if (targets.width * targets.height < MIN_PIXELS) {
 			throw "Invalid configuration";
