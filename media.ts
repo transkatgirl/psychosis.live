@@ -663,7 +663,10 @@ function adaptiveVideoSettings(
 
 		const analysis = analyzeAdaptiveData(stats, data);
 
-		if (!analysis.codecData) return;
+		if (!analysis.codecData) {
+			console.error("Unknown video codec");
+			return;
+		}
 
 		if (targets.width * targets.height < MIN_PIXELS) {
 			throw "Invalid configuration";
@@ -698,7 +701,7 @@ function adaptiveVideoSettings(
 		if (
 			analysis.qpAvg &&
 			(!analysis.framesAnalyzed ||
-				analysis.framesAnalyzed > framerate * 2)
+				analysis.framesAnalyzed >= framerate * 2)
 		) {
 			if (
 				(analysis.frameDropRate && analysis.frameDropRate > 0.6) ||
@@ -733,6 +736,8 @@ function adaptiveVideoSettings(
 
 				hasAdapted = true;
 			}
+		} else {
+			console.warn("insufficient analysis data");
 		}
 
 		if (hasAdapted) {

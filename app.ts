@@ -859,7 +859,10 @@ async function launchSender(credentials: RoomCredentials) {
 				);
 			}
 			return message;
-		}
+		},
+		(_, m) => m,
+		(_, m) => m,
+		2_000
 	);
 	let removedTracks: Record<string, MediaStreamTrack> = {};
 	stream.onaddtrack = async (event) => {
@@ -1136,7 +1139,8 @@ async function launchReceiver(credentials: RoomCredentials) {
 				message.sdp = mungeSDPOfferAnswer(message.sdp);
 			}
 			return message;
-		}
+		},
+		1_000
 	);
 
 	const resizeObserver = new ResizeObserver((entries) => {
