@@ -102,7 +102,7 @@ export function calculateReasonableMinimumAudioBitrateKbps(channels: number) {
 	);
 }
 
-export function calculateStickyDynamicAudioBitrateTarget(channels: number) {
+function calculateStickyDynamicAudioBitrateTarget(channels: number) {
 	// see above function for reference regarding how these targets were chosen
 	// returned values will be multiplied against 32 kbit/s to calculate the final value
 

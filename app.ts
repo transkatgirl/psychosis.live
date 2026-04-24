@@ -9,9 +9,7 @@ import {
 	adaptiveSettings,
 	buildSenderEncoding,
 	calculateReasonableAudioBitrateKbps,
-	calculateReasonableMinimumAudioBitrateKbps,
 	calculateReasonableVideoBitrateKbps,
-	calculateStickyDynamicAudioBitrateTarget,
 	MediaScaler,
 	mungeSDP,
 	mungeSDPOfferAnswer,
@@ -20,6 +18,10 @@ import {
 	setSenderSettings,
 	type AdaptiveTargets,
 } from "./media";
+
+window.addEventListener("error", (event) => {
+	window.alert("error: " + event.message);
+});
 
 const defaultMqttEndpoint = "wss://broker.emqx.io:8084/mqtt";
 const defaultIceServers: RTCIceServer[] = [
