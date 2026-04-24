@@ -347,7 +347,13 @@ export class Scaler {
 			offsetY = Math.round((this.canvas.height - targetHeight) / 2);
 		}
 
-		updateTextureFromImage(this.gl, this.sourceTexture, frame);
+		updateTextureFromImage(
+			this.gl,
+			this.sourceTexture,
+			frame,
+			srcWidth,
+			srcHeight
+		);
 
 		if (
 			this.horizontalTextureWidth !== targetWidth ||

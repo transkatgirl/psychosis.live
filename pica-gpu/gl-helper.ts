@@ -59,21 +59,39 @@ export function createTextureFromImage(
 	return texture;
 }
 
+const textureUploadSize = new WeakMap<WebGLTexture, { w: number; h: number }>();
+
 export function updateTextureFromImage(
 	gl: WebGL2RenderingContext,
 	texture: WebGLTexture,
-	image: TexImageSource
+	image: TexImageSource,
+	width: number,
+	height: number
 ) {
 	gl.bindTexture(gl.TEXTURE_2D, texture);
 	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-	gl.texImage2D(
-		gl.TEXTURE_2D,
-		0,
-		gl.SRGB8_ALPHA8,
-		gl.RGBA,
-		gl.UNSIGNED_BYTE,
-		image
-	);
+	const last = textureUploadSize.get(texture);
+	if (last && last.w === width && last.h === height) {
+		gl.texSubImage2D(
+			gl.TEXTURE_2D,
+			0,
+			0,
+			0,
+			gl.RGBA,
+			gl.UNSIGNED_BYTE,
+			image
+		);
+	} else {
+		gl.texImage2D(
+			gl.TEXTURE_2D,
+			0,
+			gl.SRGB8_ALPHA8,
+			gl.RGBA,
+			gl.UNSIGNED_BYTE,
+			image
+		);
+		textureUploadSize.set(texture, { w: width, h: height });
+	}
 	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
 }
 
