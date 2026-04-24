@@ -371,28 +371,23 @@ function sortCodecs(codecs: RTCRtpCodec[], preferredOrder: string[]) {
 export interface AdaptiveData {
 	framesEncoded?: number;
 	framesEncodedOlder?: number;
-	framesSent?: number;
-	framesSentOlder?: number;
 	qpSum?: number; // 1 scan interval ago
 	qpSumOlder?: number; // 2 scan intervals ago
 
 	skipNextInterval?: boolean;
 	lastTarget?: [number, number];
-	lastAspectRatio?: number;
 }
 
 interface AdaptiveDataAnalysis {
 	codecData?: CodecAdaptiveData;
 	framesAnalyzed?: number;
 	qpAvg?: number;
-	frameDropRate?: number;
 }
 
 function analyzeAdaptiveData(stats: RTCStatsReport, data: AdaptiveData) {
 	let analysis: AdaptiveDataAnalysis = {};
 
 	if (!data.framesEncodedOlder) {
-		data.framesSentOlder = undefined;
 		data.qpSumOlder = undefined;
 	}
 
@@ -430,18 +425,6 @@ function analyzeAdaptiveData(stats: RTCStatsReport, data: AdaptiveData) {
 				data.framesEncodedOlder = data.framesEncoded;
 				data.framesEncoded = report.framesEncoded;
 			}
-			if (report.framesSent) {
-				if (data.framesSent) {
-					framesSent =
-						report.framesSent -
-						(data.framesSentOlder
-							? data.framesSentOlder
-							: data.framesSent);
-				}
-
-				data.framesSentOlder = data.framesSent;
-				data.framesSent = report.framesSent;
-			}
 			if (report.qpSum) {
 				if (data.qpSum) {
 					qpSum =
@@ -457,10 +440,6 @@ function analyzeAdaptiveData(stats: RTCStatsReport, data: AdaptiveData) {
 
 	if (framesEncoded) {
 		analysis.framesAnalyzed = framesEncoded;
-
-		if (framesSent) {
-			analysis.frameDropRate = 1 - framesSent / framesEncoded;
-		}
 
 		if (qpSum) {
 			analysis.qpAvg = qpSum / framesEncoded;
@@ -689,19 +668,12 @@ function adaptiveVideoSettings(
 			framerate = data.lastTarget[1];
 		} else {
 			hasAdapted = true;
-			data.lastAspectRatio = targets.width / targets.height;
 		}
 
-		if (
-			analysis.qpAvg /*&&
-			(!analysis.framesAnalyzed ||
-				analysis.framesAnalyzed >= framerate * 2 ||
-				(analysis.frameDropRate && analysis.frameDropRate > 0.6))*/
-		) {
+		if (analysis.qpAvg) {
 			if (
-				//(analysis.frameDropRate && analysis.frameDropRate > 0.6) ||
 				(analysis.framesAnalyzed &&
-					analysis.framesAnalyzed <= framerate) || // frameDropRate doesn't seem to work correctly yet
+					analysis.framesAnalyzed <= framerate * 0.8) ||
 				analysis.codecData.highQP < analysis.qpAvg
 			) {
 				[pixels, framerate] = adaptDown(pixels, framerate);
@@ -715,7 +687,12 @@ function adaptiveVideoSettings(
 				if (data.skipNextInterval === undefined) {
 					data.skipNextInterval = true;
 				}
-			} else if (analysis.codecData.lowQP >= analysis.qpAvg) {
+			} else if (
+				analysis.codecData.lowQP >= analysis.qpAvg &&
+				(!analysis.framesAnalyzed ||
+					(analysis.framesAnalyzed &&
+						analysis.framesAnalyzed >= framerate * 2))
+			) {
 				[pixels, framerate] = adaptUp(
 					pixels,
 					framerate,
@@ -724,8 +701,6 @@ function adaptiveVideoSettings(
 
 				hasAdapted = true;
 			}
-		} else {
-			console.warn("insufficient analysis data");
 		}
 
 		if (hasAdapted) {
@@ -735,7 +710,6 @@ function adaptiveVideoSettings(
 			];
 
 			data.framesEncodedOlder = undefined;
-			data.framesSentOlder = undefined;
 			data.qpSumOlder = undefined;
 
 			if (!data.lastTarget || data.lastTarget[1] != framerate) {
