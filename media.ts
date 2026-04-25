@@ -652,6 +652,8 @@ function adaptiveVideoSettings(
 			throw "Invalid configuration";
 		}
 
+		let hasAdapted = false;
+
 		if (data.skipNextInterval) {
 			data.skipNextInterval = false;
 			if (
@@ -660,6 +662,7 @@ function adaptiveVideoSettings(
 				data.lastInputResolution[1] === targets.height
 			)
 				return;
+			hasAdapted = true;
 		} else if (data.skipNextInterval !== undefined) {
 			data.skipNextInterval = true;
 		}
@@ -668,7 +671,6 @@ function adaptiveVideoSettings(
 
 		let pixels = MIN_PIXELS;
 		let framerate = Math.min(30, targets.framerate);
-		let hasAdapted = false;
 
 		if (data.lastTarget) {
 			pixels = data.lastTarget[0];
