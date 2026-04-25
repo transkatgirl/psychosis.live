@@ -1,5 +1,5 @@
 import * as sdpTransform from "sdp-transform";
-import { Scaler } from "./pica-gpu";
+import { Scaler, type ResizeOptions } from "./pica-gpu";
 
 export function convertAudioBitrate(
 	bitrate: number,
@@ -916,7 +916,11 @@ export class MediaScaler {
 	scaler: Scaler;
 	processor: any;
 	generator: any;
-	public constructor(width: number, height: number) {
+	public constructor(
+		width: number,
+		height: number,
+		scaler: ResizeOptions["filter"]
+	) {
 		if (
 			!(
 				"MediaStreamTrackProcessor" in window &&
