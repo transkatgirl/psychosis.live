@@ -48,9 +48,9 @@ export function resize(
 		throw new Error("webgl2 context not found");
 	}
 	gl.clearColor(0, 0, 0, 1);
-	if (options.precise) {
-		gl.getExtension("EXT_color_buffer_half_float");
-	}
+	//if (options.precise) {
+	gl.getExtension("EXT_color_buffer_half_float");
+	//}
 
 	const targetWidth = Math.round(options.targetWidth);
 	const targetHeight = Math.round(options.targetHeight);
@@ -209,9 +209,9 @@ export class Scaler {
 
 		this.gl = gl;
 		this.gl.clearColor(0, 0, 0, 1);
-		if (precise) {
-			this.gl.getExtension("EXT_color_buffer_half_float");
-		}
+		//if (precise) {
+		this.gl.getExtension("EXT_color_buffer_half_float");
+		//}
 		this.precise = precise;
 
 		this.windowSize = getResizeWindow(filter);
