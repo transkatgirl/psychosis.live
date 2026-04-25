@@ -73,6 +73,10 @@ video {
 	padding: 0.3em;
 }
 
+.stats-overlay li {
+	margin-bottom: 0.6em;
+}
+
 .settings-overlay {
 	position: absolute;
 	bottom: 1lh;
