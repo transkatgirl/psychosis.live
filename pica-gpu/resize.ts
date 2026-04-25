@@ -68,7 +68,8 @@ export function resize(
 		gl,
 		targetWidth,
 		srcHeight,
-		options.precise
+		//options.precise
+		true
 	);
 	const horizontalFramebuffer = createFramebuffer(gl, horizontalTexture);
 	const compiledHorizontal = createProgram(
@@ -215,8 +216,14 @@ export class Scaler {
 
 		this.windowSize = getResizeWindow(filter);
 
-		this.sourceTexture = createEmptyTexture(this.gl, 1, 1, precise);
-		this.horizontalTexture = createEmptyTexture(this.gl, 1, 1, precise);
+		this.sourceTexture = createEmptyTexture(this.gl, 1, 1, false);
+		this.horizontalTexture = createEmptyTexture(
+			this.gl,
+			1,
+			1,
+			//precise
+			true
+		);
 
 		this.quadBuffer = createDefaultQuadBuffer(this.gl);
 		this.flippedQuadBuffer = createDefaultQuadBuffer(this.gl, true);
@@ -362,7 +369,8 @@ export class Scaler {
 				this.horizontalTexture,
 				targetWidth,
 				srcHeight,
-				this.precise
+				//this.precise
+				true
 			);
 			this.horizontalTextureWidth = targetWidth;
 			this.horizontalTextureHeight = srcHeight;
