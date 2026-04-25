@@ -29,10 +29,9 @@ bun build --compile --target=browser ./index.html --outdir=dist --minify-whitesp
 ```
 
 ## todo
-- [ ] override browser scalers with mks2013, similar to [meta's downscaler](https://engineering.fb.com/2024/03/20/video-engineering/mobile-rtc-video-av1-hd/)
-	- currently on-hold due to a weird browser canvas bug; consider making another chromium patch and/or hiding this behind a disabled-by-default toggle?
 - [ ] warn if scaler is causing performance issues
 - [ ] receiver performance monitoring using [VideoPlaybackQuality](https://developer.mozilla.org/en-US/docs/Web/API/VideoPlaybackQuality)
+- [ ] color code on-screen metrics
 
 ### low priority
 - [ ] add on-screen RMS+clipping warning volume meter
