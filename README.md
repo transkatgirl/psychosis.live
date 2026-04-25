@@ -29,11 +29,11 @@ bun build --compile --target=browser ./index.html --outdir=dist --minify-whitesp
 ```
 
 ## todo
-- [ ] warn if scaler is causing performance issues
-- [ ] receiver performance monitoring using [VideoPlaybackQuality](https://developer.mozilla.org/en-US/docs/Web/API/VideoPlaybackQuality)
 - [ ] color code on-screen metrics
 
 ### low priority
+- [ ] receiver performance monitoring using [VideoPlaybackQuality](https://developer.mozilla.org/en-US/docs/Web/API/VideoPlaybackQuality)
+- [ ] warn if `overrideScaler` is causing performance issues on sender or receiver
 - [ ] add on-screen RMS+clipping warning volume meter
 - [ ] display information (resolution, framerate, channel count, sample rate) about video/audio tracks in sender UI if showStats is enabled
 
