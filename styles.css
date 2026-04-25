@@ -62,11 +62,15 @@ video {
 }
 
 .stats-warn {
-	color: #fdd583;
+	border: 0.3em solid #fdd583;
+	border-radius: 0.15em;
+	padding: 0.3em;
 }
 
 .stats-alert {
-	color: #ff8577;
+	border: 0.3em solid #ff8577;
+	border-radius: 0.15em;
+	padding: 0.3em;
 }
 
 .settings-overlay {
