@@ -19,7 +19,7 @@ import {
 export interface ResizeOptions {
 	targetWidth: number;
 	targetHeight: number;
-	filter: "box" | "hamming" | "lanczos2" | "lanczos3" | "mks2013";
+	filter: "box" | "hamming" | "lanczos2" | "lanczos3" | "mks2013" | "mks2021";
 	precise: boolean;
 }
 

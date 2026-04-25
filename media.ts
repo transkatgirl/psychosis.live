@@ -928,7 +928,7 @@ export class MediaScaler {
 
 		this.scaler = new Scaler(
 			new OffscreenCanvas(Math.round(width), Math.round(height)),
-			"mks2013",
+			"mks2021",
 			false
 		);
 

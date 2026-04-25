@@ -113,10 +113,20 @@ const lanczos3Filter = `float resizeFilter(float x) {
 
 const mks2013Filter = `float resizeFilter(float x) {
 	x = abs(x);
-	if (x >= 2.5) { return 0.0; }
-	if (x >= 1.5) { return -0.125 * (x - 2.5) * (x - 2.5); }
-	if (x >= 0.5) { return 0.25 * (4.0 * x * x - 11.0 * x + 7.0); }
-	return 1.0625 - 1.75 * x * x;
+	if (x <= 0.5) return 1.0625 - 1.75 * x * x;
+	if (x <= 1.5) return (1.0 - x) * (1.75 - x);
+	if (x <= 2.5) return -0.125 * (x - 2.5) * (x - 2.5);
+	return 0.0;
+}`;
+
+const mks2021Filter = `float resizeFilter(float x) {
+	x = abs(x);
+	if (x <= 0.5) return (577.0/576.0) - (239.0/144.0) * x * x;
+	if (x <= 1.5) return (1.0/144.0) * (140.0 * x * x - 379.0 * x + 239.0);
+	if (x <= 2.5) return -(1.0/144.0) * (24.0 * x * x - 113.0 * x + 130.0);
+	if (x <= 3.5) return (1.0/144.0) * (4.0 * x * x - 27.0 * x + 45.0);
+	if (x <= 4.5) return -(1.0/1152.0) * (2.0 * x - 9.0) * (2.0 * x - 9.0);
+	return 0.0;
 }`;
 
 const filters = {
@@ -125,6 +135,7 @@ const filters = {
 	lanczos2: lanczos2Filter,
 	lanczos3: lanczos3Filter,
 	mks2013: mks2013Filter,
+	mks2021: mks2021Filter,
 };
 
 const windows = {
@@ -133,6 +144,7 @@ const windows = {
 	lanczos2: 2.0,
 	lanczos3: 3.0,
 	mks2013: 2.5,
+	mks2021: 4.5,
 };
 
 export function generateHorizontalShader(
