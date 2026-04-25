@@ -42,7 +42,6 @@ export function createTextureFromImage(
 ) {
 	const texture = gl.createTexture();
 	gl.bindTexture(gl.TEXTURE_2D, texture);
-	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
@@ -55,7 +54,6 @@ export function createTextureFromImage(
 		gl.UNSIGNED_BYTE,
 		image
 	);
-	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
 	return texture;
 }
 
@@ -156,13 +154,17 @@ export function createFramebuffer(
 	return fb;
 }
 
-export function createDefaultQuadBuffer(gl: WebGL2RenderingContext) {
+export function createDefaultQuadBuffer(
+	gl: WebGL2RenderingContext,
+	flipY = false
+) {
 	const quadBuffer = gl.createBuffer();
 	gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
-	const quadVertices = new Float32Array([
-		// x, y, u, v
-		-1, -1, 0, 0, 1, -1, 1, 0, -1, 1, 0, 1, 1, 1, 1, 1,
-	]);
+	const quadVertices = new Float32Array(
+		flipY
+			? [-1, -1, 0, 1, 1, -1, 1, 1, -1, 1, 0, 0, 1, 1, 1, 0]
+			: [-1, -1, 0, 0, 1, -1, 1, 0, -1, 1, 0, 1, 1, 1, 1, 1]
+	);
 	gl.bufferData(gl.ARRAY_BUFFER, quadVertices, gl.STATIC_DRAW);
 	return quadBuffer;
 }
