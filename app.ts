@@ -1694,10 +1694,10 @@ async function statsOverlay(
 		}
 
 		if (
-			(targetVideoBitrate && targetVideoBitrate < 256) ||
+			(targetVideoBitrate && targetVideoBitrate < 320) ||
 			(jitterBufferDelay &&
 				incomingBandwidth &&
-				incomingBandwidth < 320) ||
+				incomingBandwidth < 416) ||
 			(roundTripTime && roundTripTime > 500) ||
 			(jitter && jitter > 500) ||
 			(lossFraction &&
