@@ -62,7 +62,7 @@ video {
 }
 
 .stats-warn {
-	border: 0.25em solid #fdd583;
+	border: 0.2em solid #fdd583;
 	border-radius: 0.15em;
 	padding: 0.25lh;
 }
