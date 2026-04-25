@@ -838,7 +838,7 @@ function adjustCodecData(
 
 const FHD_PIXELS = 1920 * 1080;
 const HD_PIXELS = 1280 * 720;
-const MIN_PIXELS = 320 * 180; // MUST throw an error if max_pixels < MIN_PIXELS
+export const MIN_PIXELS = 320 * 180; // MUST throw an error if max_pixels < MIN_PIXELS
 
 function adaptUp(
 	pixels: number,
@@ -883,7 +883,7 @@ function adaptDown(pixels: number, framerate: number): [number, number] {
 	return [adjustedPixels, framerate];
 }
 
-function adaptToPixelCount(
+export function adaptToPixelCount(
 	width: number,
 	height: number,
 	pixels: number
@@ -894,7 +894,7 @@ function adaptToPixelCount(
 	return adaptToRatioExact(adjustedWidth, adjustedHeight, width / height);
 }
 
-function adaptToRatioExact(
+export function adaptToRatioExact(
 	width: number,
 	height: number,
 	ratio: number

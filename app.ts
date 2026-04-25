@@ -7,10 +7,12 @@ import {
 import { generateRandomString, selfId, setSelfId } from "./room/core";
 import {
 	adaptiveSettings,
+	adaptToPixelCount,
 	buildSenderEncoding,
 	calculateReasonableAudioBitrateKbps,
 	calculateReasonableVideoBitrateKbps,
 	MediaScaler,
+	MIN_PIXELS,
 	mungeSDP,
 	mungeSDPOfferAnswer,
 	setCodecPreferences,
@@ -608,21 +610,38 @@ async function launchSender(credentials: RoomCredentials) {
 			let scaler = peerScalers[peerId];
 
 			if (!scaler) {
+				let scalerWidth;
+				let scalerHeight;
+
 				if (!width || !height) {
-					let width = stream
+					scalerWidth = stream
 						.getVideoTracks()[0]
 						?.getSettings()?.width;
-					let height = stream
+					scalerHeight = stream
 						.getVideoTracks()[0]
 						?.getSettings()?.height;
-
-					if (!width) width = 1280;
-					if (!height) height = 720;
-
-					scaler = new MediaScaler(width, height, "mks2013", false);
 				} else {
-					scaler = new MediaScaler(width, height, "mks2013", false);
-				} // sharper filters are better for downscaling + mks2013 is less computationally intensive than mks2021
+					scalerWidth = width;
+					scalerHeight = height;
+				}
+
+				if (!scalerWidth) scalerWidth = 1280;
+				if (!scalerHeight) scalerHeight = 720;
+
+				if (params.get("dynamicVideoParams") === "true") {
+					[scalerWidth, scalerHeight] = adaptToPixelCount(
+						scalerWidth,
+						scalerHeight,
+						MIN_PIXELS
+					);
+				}
+
+				scaler = new MediaScaler(
+					scalerWidth,
+					scalerHeight,
+					"mks2013", // sharper filters are better for downscaling + mks2013 is less computationally intensive than mks2021
+					false
+				);
 
 				peerScalers[peerId] = scaler;
 			}
