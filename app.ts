@@ -1451,6 +1451,7 @@ async function statsOverlay(
 	if (!((globalThis as any).room as Room).room.client.connected) {
 		const entry = document.createElement("li");
 		entry.innerText = "Disconnected from signaling server";
+		entry.classList.add("stats-alert");
 
 		peerList.appendChild(entry);
 	}
@@ -1690,6 +1691,38 @@ async function statsOverlay(
 			if (lossFraction !== undefined) {
 				label = label + ` Loss: ${lossFraction}%`;
 			}
+		}
+
+		if (
+			(targetVideoBitrate && targetVideoBitrate < 256) ||
+			(jitterBufferDelay &&
+				incomingBandwidth &&
+				incomingBandwidth < 320) ||
+			(roundTripTime && roundTripTime > 500) ||
+			(jitter && jitter > 500) ||
+			(lossFraction &&
+				lossFraction >= 2 &&
+				roundTripTime &&
+				roundTripTime + (jitter ? jitter : 0) / 2 > 333) ||
+			(lossFraction && lossFraction >= 10) ||
+			(desync && desync > 333) ||
+			peer.pc.connectionState != "connected"
+		) {
+			peerEntry.classList.add("stats-alert");
+		} else if (
+			(targetVideoBitrate && targetVideoBitrate < 704) ||
+			(jitterBufferDelay &&
+				incomingBandwidth &&
+				incomingBandwidth < 768) ||
+			(roundTripTime && roundTripTime > 250) ||
+			(jitter && jitter > 125) ||
+			(roundTripTime &&
+				roundTripTime + (jitter ? jitter : 0) / 2 > 333) ||
+			(lossFraction && lossFraction >= 2) ||
+			(desync && desync > (1 / 15) * 1000) ||
+			((targetAudioBitrate || targetVideoBitrate) && cpuLimited)
+		) {
+			peerEntry.classList.add("stats-warn");
 		}
 
 		peerEntry.innerText = label;

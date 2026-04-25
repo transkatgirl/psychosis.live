@@ -61,6 +61,14 @@ video {
 	-moz-user-select: none;
 }
 
+.stats-warn {
+	color: orange;
+}
+
+.stats-alert {
+	color: red;
+}
+
 .settings-overlay {
 	position: absolute;
 	bottom: 1lh;
