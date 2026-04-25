@@ -20,7 +20,7 @@ export interface ResizeOptions {
 	targetWidth: number;
 	targetHeight: number;
 	filter: "box" | "hamming" | "lanczos2" | "lanczos3" | "mks2013";
-	useFloatTextures: boolean;
+	precise: boolean;
 }
 
 export function resize(
@@ -48,7 +48,9 @@ export function resize(
 		throw new Error("webgl2 context not found");
 	}
 	gl.clearColor(0, 0, 0, 1);
-	gl.getExtension("EXT_color_buffer_half_float");
+	if (options.precise) {
+		gl.getExtension("EXT_color_buffer_half_float");
+	}
 
 	const targetWidth = Math.round(options.targetWidth);
 	const targetHeight = Math.round(options.targetHeight);
@@ -66,13 +68,13 @@ export function resize(
 		gl,
 		targetWidth,
 		srcHeight,
-		options.useFloatTextures
+		options.precise
 	);
 	const horizontalFramebuffer = createFramebuffer(gl, horizontalTexture);
 	const compiledHorizontal = createProgram(
 		gl,
 		vsSource,
-		generateHorizontalShader(options.filter)
+		generateHorizontalShader(options.filter, options.precise)
 	);
 	const horizontalProgram = compiledHorizontal.program;
 	gl.useProgram(horizontalProgram);
@@ -104,7 +106,7 @@ export function resize(
 	const compiledVertical = createProgram(
 		gl,
 		vsSource,
-		generateVerticalShader(options.filter)
+		generateVerticalShader(options.filter, options.precise)
 	);
 	const verticalProgram = compiledVertical.program;
 	gl.useProgram(verticalProgram);
@@ -148,7 +150,7 @@ export function resize(
 export class Scaler {
 	public canvas: OffscreenCanvas;
 	gl: WebGL2RenderingContext;
-	useFloatTextures: boolean;
+	precise: boolean;
 
 	windowSize: number;
 
@@ -193,7 +195,7 @@ export class Scaler {
 	public constructor(
 		canvas: OffscreenCanvas,
 		filter: ResizeOptions["filter"],
-		useFloatTextures: boolean
+		precise: boolean
 	) {
 		this.canvas = canvas;
 
@@ -206,25 +208,15 @@ export class Scaler {
 
 		this.gl = gl;
 		this.gl.clearColor(0, 0, 0, 1);
-		if (useFloatTextures) {
+		if (precise) {
 			this.gl.getExtension("EXT_color_buffer_half_float");
 		}
-		this.useFloatTextures = useFloatTextures;
+		this.precise = precise;
 
 		this.windowSize = getResizeWindow(filter);
 
-		this.sourceTexture = createEmptyTexture(
-			this.gl,
-			1,
-			1,
-			useFloatTextures
-		);
-		this.horizontalTexture = createEmptyTexture(
-			this.gl,
-			1,
-			1,
-			useFloatTextures
-		);
+		this.sourceTexture = createEmptyTexture(this.gl, 1, 1, precise);
+		this.horizontalTexture = createEmptyTexture(this.gl, 1, 1, precise);
 
 		this.quadBuffer = createDefaultQuadBuffer(this.gl);
 		this.flippedQuadBuffer = createDefaultQuadBuffer(this.gl, true);
@@ -237,12 +229,12 @@ export class Scaler {
 		this.compiledHorizontal = createProgram(
 			this.gl,
 			vsSource,
-			generateHorizontalShader(filter)
+			generateHorizontalShader(filter, precise)
 		);
 		this.compiledVertical = createProgram(
 			this.gl,
 			vsSource,
-			generateVerticalShader(filter)
+			generateVerticalShader(filter, precise)
 		);
 
 		this.horizontalLocations = {
@@ -370,7 +362,7 @@ export class Scaler {
 				this.horizontalTexture,
 				targetWidth,
 				srcHeight,
-				this.useFloatTextures
+				this.precise
 			);
 			this.horizontalTextureWidth = targetWidth;
 			this.horizontalTextureHeight = srcHeight;

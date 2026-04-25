@@ -136,18 +136,35 @@ const windows = {
 };
 
 export function generateHorizontalShader(
-	filterFunction: ResizeOptions["filter"]
+	filterFunction: ResizeOptions["filter"],
+	precise: boolean
 ) {
-	return fsHorizontal.replace(
-		"/* FILTER_FUNCTION */",
-		filters[filterFunction]
-	);
+	if (precise) {
+		return fsHorizontal.replace(
+			"/* FILTER_FUNCTION */",
+			filters[filterFunction]
+		);
+	} else {
+		return fsHorizontal
+			.replace("precision highp float;", "precision mediump float;")
+			.replace("/* FILTER_FUNCTION */", filters[filterFunction]);
+	}
 }
 
 export function generateVerticalShader(
-	filterFunction: ResizeOptions["filter"]
+	filterFunction: ResizeOptions["filter"],
+	precise: boolean
 ) {
-	return fsVertical.replace("/* FILTER_FUNCTION */", filters[filterFunction]);
+	if (precise) {
+		return fsVertical.replace(
+			"/* FILTER_FUNCTION */",
+			filters[filterFunction]
+		);
+	} else {
+		return fsVertical
+			.replace("precision highp float;", "precision mediump float;")
+			.replace("/* FILTER_FUNCTION */", filters[filterFunction]);
+	}
 }
 
 export function getResizeWindow(filterFunction: ResizeOptions["filter"]) {
