@@ -1433,13 +1433,13 @@ async function statsOverlay(
 	}
 
 	for (const [peerId, peer] of Object.entries(peers)) {
-		if (peer.pc?.connectionState === "new") {
+		if (!peer.pc || peer.pc?.connectionState === "new") {
 			continue;
 		}
 
 		const peerEntry = document.createElement("li");
 
-		const peerStats = await peer.pc?.getStats();
+		const peerStats = Array.from(await peer.pc.getStats());
 
 		let targetVideoBitrate: number | undefined;
 		let targetAudioBitrate: number | undefined;
@@ -1454,7 +1454,7 @@ async function statsOverlay(
 		let jitter: number | undefined;
 		let lossFraction: number | undefined;
 
-		peerStats?.forEach((report) => {
+		peerStats.forEach(([_, report]) => {
 			const lastReport = peer.metadata[report.type + "_" + report.id];
 
 			if (report.type === "outbound-rtp") {

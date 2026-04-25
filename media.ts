@@ -384,7 +384,7 @@ interface AdaptiveDataAnalysis {
 	qpAvg?: number;
 }
 
-function analyzeAdaptiveData(stats: RTCStatsReport, data: AdaptiveData) {
+function analyzeAdaptiveData(stats: [string, any][], data: AdaptiveData) {
 	let analysis: AdaptiveDataAnalysis = {};
 
 	if (!data.framesEncodedOlder) {
@@ -392,10 +392,9 @@ function analyzeAdaptiveData(stats: RTCStatsReport, data: AdaptiveData) {
 	}
 
 	let framesEncoded;
-	let framesSent;
 	let qpSum;
 
-	stats.forEach((report) => {
+	stats.forEach(([_, report]) => {
 		if (report.type == "codec") {
 			// We manually adjust the QP targets to be more aggressive, as sharper upscalers benefit more from a lower resolution + high quality stream than a higher resolution + low quality one.
 
@@ -473,7 +472,7 @@ export async function adaptiveSettings(
 	targets: AdaptiveTargets,
 	peerScaler?: MediaScaler // See adaptiveVideoSettings
 ) {
-	const stats = await pc.getStats();
+	const stats = Array.from(await pc.getStats());
 
 	let audioParameters;
 	let videoParameters;
@@ -507,7 +506,7 @@ export async function adaptiveSettings(
 }
 
 function adaptiveAudioBitrate(
-	stats: RTCStatsReport,
+	stats: [string, any][],
 	parameters: RTCRtpSendParameters,
 	targets: AdaptiveAudioTargets
 ) {
@@ -525,7 +524,7 @@ function adaptiveAudioBitrate(
 	let bitrateUpper = Infinity;
 	let usingOpus = false;
 
-	stats.forEach((report) => {
+	stats.forEach(([_, report]) => {
 		if (
 			report.type == "outbound-rtp" &&
 			report.kind == "video" &&
@@ -612,7 +611,7 @@ function adaptiveAudioBitrate(
 
 // Needs to be called every 2s (or 2.5s for behavior closer to libwebrtc)
 function adaptiveVideoSettings(
-	stats: RTCStatsReport,
+	stats: [string, any][],
 	parameters: RTCRtpSendParameters,
 	data: AdaptiveData,
 	targets: AdaptiveVideoTargets,
@@ -743,7 +742,7 @@ function adaptiveVideoSettings(
 		let framerateLower = 0;
 		let framerateUpper = Infinity;
 
-		stats.forEach((report) => {
+		stats.forEach(([_, report]) => {
 			if (
 				report.type == "outbound-rtp" &&
 				report.kind == "video" &&
