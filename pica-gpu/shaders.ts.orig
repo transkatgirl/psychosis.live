@@ -79,7 +79,8 @@ void main(){
 		sum += weight;
 	}
 	vec4 linearColor = color / sum;
-	outColor = vec4(linearToSrgb(clamp(linearColor.rgb, 0.0, 1.0)), linearColor.a);
+	/* outColor = vec4(linearToSrgb(clamp(linearColor.rgb, 0.0, 1.0)), linearColor.a); */
+	outColor = vec4(clamp(linearColor.rgb, 0.0, 1.0), linearColor.a);
 }`;
 
 const boxFilter = `float resizeFilter(float x) {

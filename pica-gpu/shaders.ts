@@ -18,25 +18,24 @@ layout(location = 0) out highp vec4 outColor;
 
 void main()
 {
-    highp float _65 = v_texCoord.y * u_textureHeight;
-    int _80 = int(floor(_65 - u_radius));
-    int _84 = int(ceil(_65 + u_radius));
-    highp vec4 _188;
-    highp float _189;
-    _189 = 0.0;
-    _188 = vec4(0.0);
-    for (mediump int _187 = _80; _187 <= _84; )
+    highp float _36 = v_texCoord.y * u_textureHeight;
+    int _51 = int(floor(_36 - u_radius));
+    int _55 = int(ceil(_36 + u_radius));
+    highp vec4 _141;
+    highp float _142;
+    _142 = 0.0;
+    _141 = vec4(0.0);
+    for (mediump int _140 = _51; _140 <= _55; )
     {
-        float _103 = float(_187) + 0.5;
-        highp float _168 = float(abs((_103 - _65) * u_scale) <= 0.5);
-        _189 += _168;
-        _188 += (texture(u_image, vec2(v_texCoord.x, _103 / u_textureHeight)) * _168);
-        _187++;
+        float _74 = float(_140) + 0.5;
+        highp float _138 = float(abs((_74 - _36) * u_scale) <= 0.5);
+        _142 += _138;
+        _141 += (texture(u_image, vec2(v_texCoord.x, _74 / u_textureHeight)) * _138);
+        _140++;
         continue;
     }
-    highp vec4 _144 = _188 / vec4(_189);
-    highp vec3 _151 = clamp(_144.xyz, vec3(0.0), vec3(1.0));
-    outColor = vec4(mix(_151 * 12.9200000762939453125, (pow(_151, vec3(0.4166666567325592041015625)) * 1.05499994754791259765625) - vec3(0.054999999701976776123046875), step(vec3(0.003130800090730190277099609375), _151)), _144.w);
+    highp vec4 _115 = _141 / vec4(_142);
+    outColor = vec4(clamp(_115.xyz, vec3(0.0), vec3(1.0)), _115.w);
 }`,
 	hamming: `#version 300 es
 precision mediump float;
@@ -52,42 +51,41 @@ layout(location = 0) out highp vec4 outColor;
 
 void main()
 {
-    highp float _87 = v_texCoord.y * u_textureHeight;
-    int _102 = int(floor(_87 - u_radius));
-    int _106 = int(ceil(_87 + u_radius));
-    highp vec4 _240;
-    highp float _241;
-    _241 = 0.0;
-    _240 = vec4(0.0);
-    highp vec4 _156;
-    highp float _159;
-    for (mediump int _239 = _102; _239 <= _106; _241 = _159, _240 = _156, _239++)
+    highp float _58 = v_texCoord.y * u_textureHeight;
+    int _73 = int(floor(_58 - u_radius));
+    int _77 = int(ceil(_58 + u_radius));
+    highp vec4 _193;
+    highp float _194;
+    _194 = 0.0;
+    _193 = vec4(0.0);
+    highp vec4 _127;
+    highp float _130;
+    for (mediump int _192 = _73; _192 <= _77; _194 = _130, _193 = _127, _192++)
     {
-        float _126 = float(_239) + 0.5;
-        highp float _242;
+        float _97 = float(_192) + 0.5;
+        highp float _195;
         do
         {
-            highp float _199 = abs((_126 - _87) * u_scale);
-            if (_199 >= 1.0)
+            highp float _169 = abs((_97 - _58) * u_scale);
+            if (_169 >= 1.0)
             {
-                _242 = 0.0;
+                _195 = 0.0;
                 break;
             }
-            if (_199 < 1.1920928955078125e-07)
+            if (_169 < 1.1920928955078125e-07)
             {
-                _242 = 1.0;
+                _195 = 1.0;
                 break;
             }
-            highp float _209 = _199 * 3.1415927410125732421875;
-            _242 = (sin(_209) / _209) * (0.540000021457672119140625 + (0.4600000083446502685546875 * cos(_209)));
+            highp float _179 = _169 * 3.1415927410125732421875;
+            _195 = (sin(_179) / _179) * (0.540000021457672119140625 + (0.4600000083446502685546875 * cos(_179)));
             break;
         } while(false);
-        _156 = _240 + (texture(u_image, vec2(v_texCoord.x, _126 / u_textureHeight)) * _242);
-        _159 = _241 + _242;
+        _127 = _193 + (texture(u_image, vec2(v_texCoord.x, _97 / u_textureHeight)) * _195);
+        _130 = _194 + _195;
     }
-    highp vec4 _167 = _240 / vec4(_241);
-    highp vec3 _174 = clamp(_167.xyz, vec3(0.0), vec3(1.0));
-    outColor = vec4(mix(_174 * 12.9200000762939453125, (pow(_174, vec3(0.4166666567325592041015625)) * 1.05499994754791259765625) - vec3(0.054999999701976776123046875), step(vec3(0.003130800090730190277099609375), _174)), _167.w);
+    highp vec4 _138 = _193 / vec4(_194);
+    outColor = vec4(clamp(_138.xyz, vec3(0.0), vec3(1.0)), _138.w);
 }`,
 	lanczos2: `#version 300 es
 precision mediump float;
@@ -103,43 +101,42 @@ layout(location = 0) out highp vec4 outColor;
 
 void main()
 {
-    highp float _88 = v_texCoord.y * u_textureHeight;
-    int _103 = int(floor(_88 - u_radius));
-    int _107 = int(ceil(_88 + u_radius));
-    highp vec4 _243;
-    highp float _244;
-    _244 = 0.0;
-    _243 = vec4(0.0);
-    highp vec4 _157;
-    highp float _160;
-    for (mediump int _242 = _103; _242 <= _107; _244 = _160, _243 = _157, _242++)
+    highp float _59 = v_texCoord.y * u_textureHeight;
+    int _74 = int(floor(_59 - u_radius));
+    int _78 = int(ceil(_59 + u_radius));
+    highp vec4 _196;
+    highp float _197;
+    _197 = 0.0;
+    _196 = vec4(0.0);
+    highp vec4 _128;
+    highp float _131;
+    for (mediump int _195 = _74; _195 <= _78; _197 = _131, _196 = _128, _195++)
     {
-        float _127 = float(_242) + 0.5;
-        highp float _245;
+        float _98 = float(_195) + 0.5;
+        highp float _198;
         do
         {
-            highp float _200 = abs((_127 - _88) * u_scale);
-            if (_200 >= 2.0)
+            highp float _170 = abs((_98 - _59) * u_scale);
+            if (_170 >= 2.0)
             {
-                _245 = 0.0;
+                _198 = 0.0;
                 break;
             }
-            if (_200 < 1.1920928955078125e-07)
+            if (_170 < 1.1920928955078125e-07)
             {
-                _245 = 1.0;
+                _198 = 1.0;
                 break;
             }
-            highp float _210 = _200 * 3.1415927410125732421875;
-            highp float _216 = _200 * 1.57079637050628662109375;
-            _245 = (sin(_210) / _210) * (sin(_216) / _216);
+            highp float _180 = _170 * 3.1415927410125732421875;
+            highp float _186 = _170 * 1.57079637050628662109375;
+            _198 = (sin(_180) / _180) * (sin(_186) / _186);
             break;
         } while(false);
-        _157 = _243 + (texture(u_image, vec2(v_texCoord.x, _127 / u_textureHeight)) * _245);
-        _160 = _244 + _245;
+        _128 = _196 + (texture(u_image, vec2(v_texCoord.x, _98 / u_textureHeight)) * _198);
+        _131 = _197 + _198;
     }
-    highp vec4 _168 = _243 / vec4(_244);
-    highp vec3 _175 = clamp(_168.xyz, vec3(0.0), vec3(1.0));
-    outColor = vec4(mix(_175 * 12.9200000762939453125, (pow(_175, vec3(0.4166666567325592041015625)) * 1.05499994754791259765625) - vec3(0.054999999701976776123046875), step(vec3(0.003130800090730190277099609375), _175)), _168.w);
+    highp vec4 _139 = _196 / vec4(_197);
+    outColor = vec4(clamp(_139.xyz, vec3(0.0), vec3(1.0)), _139.w);
 }`,
 	lanczos3: `#version 300 es
 precision mediump float;
@@ -155,43 +152,42 @@ layout(location = 0) out highp vec4 outColor;
 
 void main()
 {
-    highp float _88 = v_texCoord.y * u_textureHeight;
-    int _103 = int(floor(_88 - u_radius));
-    int _107 = int(ceil(_88 + u_radius));
-    highp vec4 _243;
-    highp float _244;
-    _244 = 0.0;
-    _243 = vec4(0.0);
-    highp vec4 _157;
-    highp float _160;
-    for (mediump int _242 = _103; _242 <= _107; _244 = _160, _243 = _157, _242++)
+    highp float _59 = v_texCoord.y * u_textureHeight;
+    int _74 = int(floor(_59 - u_radius));
+    int _78 = int(ceil(_59 + u_radius));
+    highp vec4 _196;
+    highp float _197;
+    _197 = 0.0;
+    _196 = vec4(0.0);
+    highp vec4 _128;
+    highp float _131;
+    for (mediump int _195 = _74; _195 <= _78; _197 = _131, _196 = _128, _195++)
     {
-        float _127 = float(_242) + 0.5;
-        highp float _245;
+        float _98 = float(_195) + 0.5;
+        highp float _198;
         do
         {
-            highp float _200 = abs((_127 - _88) * u_scale);
-            if (_200 >= 3.0)
+            highp float _170 = abs((_98 - _59) * u_scale);
+            if (_170 >= 3.0)
             {
-                _245 = 0.0;
+                _198 = 0.0;
                 break;
             }
-            if (_200 < 1.1920928955078125e-07)
+            if (_170 < 1.1920928955078125e-07)
             {
-                _245 = 1.0;
+                _198 = 1.0;
                 break;
             }
-            highp float _210 = _200 * 3.1415927410125732421875;
-            highp float _216 = _200 * 1.0471975803375244140625;
-            _245 = (sin(_210) / _210) * (sin(_216) / _216);
+            highp float _180 = _170 * 3.1415927410125732421875;
+            highp float _186 = _170 * 1.0471975803375244140625;
+            _198 = (sin(_180) / _180) * (sin(_186) / _186);
             break;
         } while(false);
-        _157 = _243 + (texture(u_image, vec2(v_texCoord.x, _127 / u_textureHeight)) * _245);
-        _160 = _244 + _245;
+        _128 = _196 + (texture(u_image, vec2(v_texCoord.x, _98 / u_textureHeight)) * _198);
+        _131 = _197 + _198;
     }
-    highp vec4 _168 = _243 / vec4(_244);
-    highp vec3 _175 = clamp(_168.xyz, vec3(0.0), vec3(1.0));
-    outColor = vec4(mix(_175 * 12.9200000762939453125, (pow(_175, vec3(0.4166666567325592041015625)) * 1.05499994754791259765625) - vec3(0.054999999701976776123046875), step(vec3(0.003130800090730190277099609375), _175)), _168.w);
+    highp vec4 _139 = _196 / vec4(_197);
+    outColor = vec4(clamp(_139.xyz, vec3(0.0), vec3(1.0)), _139.w);
 }`,
 	mks2013: `#version 300 es
 precision mediump float;
@@ -207,47 +203,46 @@ layout(location = 0) out highp vec4 outColor;
 
 void main()
 {
-    highp float _105 = v_texCoord.y * u_textureHeight;
-    int _120 = int(floor(_105 - u_radius));
-    int _124 = int(ceil(_105 + u_radius));
-    highp vec4 _271;
-    highp float _272;
-    _272 = 0.0;
-    _271 = vec4(0.0);
-    highp vec4 _173;
-    highp float _176;
-    for (mediump int _270 = _120; _270 <= _124; _272 = _176, _271 = _173, _270++)
+    highp float _76 = v_texCoord.y * u_textureHeight;
+    int _91 = int(floor(_76 - u_radius));
+    int _95 = int(ceil(_76 + u_radius));
+    highp vec4 _224;
+    highp float _225;
+    _225 = 0.0;
+    _224 = vec4(0.0);
+    highp vec4 _144;
+    highp float _147;
+    for (mediump int _223 = _91; _223 <= _95; _225 = _147, _224 = _144, _223++)
     {
-        float _143 = float(_270) + 0.5;
-        highp float _273;
+        float _114 = float(_223) + 0.5;
+        highp float _226;
         do
         {
-            highp float _217 = abs((_143 - _105) * u_scale);
-            if (_217 <= 0.5)
+            highp float _187 = abs((_114 - _76) * u_scale);
+            if (_187 <= 0.5)
             {
-                _273 = 1.0625 - ((1.75 * _217) * _217);
+                _226 = 1.0625 - ((1.75 * _187) * _187);
                 break;
             }
-            if (_217 <= 1.5)
+            if (_187 <= 1.5)
             {
-                _273 = 0.25 * ((_217 * ((4.0 * _217) - 11.0)) + 7.0);
+                _226 = 0.25 * ((_187 * ((4.0 * _187) - 11.0)) + 7.0);
                 break;
             }
-            if (_217 <= 2.5)
+            if (_187 <= 2.5)
             {
-                highp float _244 = _217 - 2.5;
-                _273 = ((-0.125) * _244) * _244;
+                highp float _214 = _187 - 2.5;
+                _226 = ((-0.125) * _214) * _214;
                 break;
             }
-            _273 = 0.0;
+            _226 = 0.0;
             break;
         } while(false);
-        _173 = _271 + (texture(u_image, vec2(v_texCoord.x, _143 / u_textureHeight)) * _273);
-        _176 = _272 + _273;
+        _144 = _224 + (texture(u_image, vec2(v_texCoord.x, _114 / u_textureHeight)) * _226);
+        _147 = _225 + _226;
     }
-    highp vec4 _184 = _271 / vec4(_272);
-    highp vec3 _192 = clamp(_184.xyz, vec3(0.0), vec3(1.0));
-    outColor = vec4(mix(_192 * 12.9200000762939453125, (pow(_192, vec3(0.4166666567325592041015625)) * 1.05499994754791259765625) - vec3(0.054999999701976776123046875), step(vec3(0.003130800090730190277099609375), _192)), _184.w);
+    highp vec4 _155 = _224 / vec4(_225);
+    outColor = vec4(clamp(_155.xyz, vec3(0.0), vec3(1.0)), _155.w);
 }`,
 	mks2021: `#version 300 es
 precision mediump float;
@@ -263,57 +258,56 @@ layout(location = 0) out highp vec4 outColor;
 
 void main()
 {
-    highp float _146 = v_texCoord.y * u_textureHeight;
-    int _161 = int(floor(_146 - u_radius));
-    int _165 = int(ceil(_146 + u_radius));
-    highp vec4 _340;
-    highp float _341;
-    _341 = 0.0;
-    _340 = vec4(0.0);
-    highp vec4 _214;
-    highp float _217;
-    for (mediump int _339 = _161; _339 <= _165; _341 = _217, _340 = _214, _339++)
+    highp float _117 = v_texCoord.y * u_textureHeight;
+    int _132 = int(floor(_117 - u_radius));
+    int _136 = int(ceil(_117 + u_radius));
+    highp vec4 _293;
+    highp float _294;
+    _294 = 0.0;
+    _293 = vec4(0.0);
+    highp vec4 _185;
+    highp float _188;
+    for (mediump int _292 = _132; _292 <= _136; _294 = _188, _293 = _185, _292++)
     {
-        float _184 = float(_339) + 0.5;
-        highp float _342;
+        float _155 = float(_292) + 0.5;
+        highp float _295;
         do
         {
-            highp float _258 = abs((_184 - _146) * u_scale);
-            if (_258 <= 0.5)
+            highp float _228 = abs((_155 - _117) * u_scale);
+            if (_228 <= 0.5)
             {
-                _342 = 1.001736164093017578125 - ((1.65972220897674560546875 * _258) * _258);
+                _295 = 1.001736164093017578125 - ((1.65972220897674560546875 * _228) * _228);
                 break;
             }
-            if (_258 <= 1.5)
+            if (_228 <= 1.5)
             {
-                _342 = 0.0069444444961845874786376953125 * ((_258 * ((140.0 * _258) - 379.0)) + 239.0);
+                _295 = 0.0069444444961845874786376953125 * ((_228 * ((140.0 * _228) - 379.0)) + 239.0);
                 break;
             }
-            if (_258 <= 2.5)
+            if (_228 <= 2.5)
             {
-                _342 = (-0.0069444444961845874786376953125) * ((_258 * ((24.0 * _258) - 113.0)) + 130.0);
+                _295 = (-0.0069444444961845874786376953125) * ((_228 * ((24.0 * _228) - 113.0)) + 130.0);
                 break;
             }
-            if (_258 <= 3.5)
+            if (_228 <= 3.5)
             {
-                _342 = 0.0069444444961845874786376953125 * ((_258 * ((4.0 * _258) - 27.0)) + 45.0);
+                _295 = 0.0069444444961845874786376953125 * ((_228 * ((4.0 * _228) - 27.0)) + 45.0);
                 break;
             }
-            if (_258 <= 4.5)
+            if (_228 <= 4.5)
             {
-                highp float _312 = (2.0 * _258) - 9.0;
-                _342 = ((-0.0008680555620230734348297119140625) * _312) * _312;
+                highp float _282 = (2.0 * _228) - 9.0;
+                _295 = ((-0.0008680555620230734348297119140625) * _282) * _282;
                 break;
             }
-            _342 = 0.0;
+            _295 = 0.0;
             break;
         } while(false);
-        _214 = _340 + (texture(u_image, vec2(v_texCoord.x, _184 / u_textureHeight)) * _342);
-        _217 = _341 + _342;
+        _185 = _293 + (texture(u_image, vec2(v_texCoord.x, _155 / u_textureHeight)) * _295);
+        _188 = _294 + _295;
     }
-    highp vec4 _225 = _340 / vec4(_341);
-    highp vec3 _233 = clamp(_225.xyz, vec3(0.0), vec3(1.0));
-    outColor = vec4(mix(_233 * 12.9200000762939453125, (pow(_233, vec3(0.4166666567325592041015625)) * 1.05499994754791259765625) - vec3(0.054999999701976776123046875), step(vec3(0.003130800090730190277099609375), _233)), _225.w);
+    highp vec4 _196 = _293 / vec4(_294);
+    outColor = vec4(clamp(_196.xyz, vec3(0.0), vec3(1.0)), _196.w);
 }`,
 };
 

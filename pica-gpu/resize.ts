@@ -40,7 +40,7 @@ export function resize(
 		throw new Error("target canvas width or height is 0");
 	}
 	const gl = to.getContext("webgl2", {
-		alpha: false,
+		//alpha: false,
 		premultipliedAlpha: false,
 		preserveDrawingBuffer: false,
 	});
@@ -51,6 +51,9 @@ export function resize(
 	if (options.precise) {
 		gl.getExtension("EXT_color_buffer_half_float");
 	}
+
+	// @ts-ignore
+	gl.drawingBufferStorage(gl.SRGB8_ALPHA8, to.width, to.height);
 
 	const targetWidth = Math.round(options.targetWidth);
 	const targetHeight = Math.round(options.targetHeight);
@@ -200,7 +203,7 @@ export class Scaler {
 		this.canvas = canvas;
 
 		const gl = this.canvas.getContext("webgl2", {
-			alpha: false,
+			//alpha: false,
 			premultipliedAlpha: false,
 			preserveDrawingBuffer: false,
 		});
@@ -212,6 +215,13 @@ export class Scaler {
 			this.gl.getExtension("EXT_color_buffer_half_float");
 		}
 		this.precise = precise;
+
+		// @ts-ignore
+		this.gl.drawingBufferStorage(
+			this.gl.SRGB8_ALPHA8,
+			canvas.width,
+			canvas.height
+		);
 
 		this.windowSize = getResizeWindow(filter);
 
@@ -418,6 +428,12 @@ export class Scaler {
 	public clear() {
 		this.gl.clearColor(0, 0, 0, 1);
 		this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+		// @ts-ignore
+		this.gl.drawingBufferStorage(
+			this.gl.SRGB8_ALPHA8,
+			this.canvas.width,
+			this.canvas.height
+		);
 	}
 	public destroy() {
 		this.gl.deleteTexture(this.sourceTexture);
