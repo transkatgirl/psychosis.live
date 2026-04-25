@@ -932,8 +932,8 @@ export class MediaScaler {
 
 		this.scaler = new Scaler(
 			new OffscreenCanvas(Math.round(width), Math.round(height)),
-			"mks2021",
-			false
+			scaler,
+			true
 		);
 
 		this.stream = new MediaStream();
