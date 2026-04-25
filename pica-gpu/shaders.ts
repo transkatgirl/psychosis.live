@@ -114,7 +114,7 @@ const lanczos3Filter = `float resizeFilter(float x) {
 const mks2013Filter = `float resizeFilter(float x) {
 	x = abs(x);
 	if (x <= 0.5) return 1.0625 - 1.75 * x * x;
-	if (x <= 1.5) return (1.0 - x) * (1.75 - x);
+	if (x <= 1.5) return 0.25 * (4.0 * x * x - 11.0 * x + 7.0);
 	if (x <= 2.5) return -0.125 * (x - 2.5) * (x - 2.5);
 	return 0.0;
 }`;
