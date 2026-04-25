@@ -1710,10 +1710,10 @@ async function statsOverlay(
 		) {
 			peerEntry.classList.add("stats-alert");
 		} else if (
-			(targetVideoBitrate && targetVideoBitrate < 704) ||
+			(targetVideoBitrate && targetVideoBitrate < 1024) ||
 			(jitterBufferDelay &&
 				incomingBandwidth &&
-				incomingBandwidth < 768) ||
+				incomingBandwidth < 1184) ||
 			(roundTripTime && roundTripTime > 250) ||
 			(jitter && jitter > 125) ||
 			(roundTripTime &&
