@@ -768,10 +768,12 @@ async function launchSender(credentials: RoomCredentials) {
 						.getAudioTracks()[0]
 						?.getSettings()?.channelCount;
 
+					if (channelCount == 1) {
+						audioChannelCount = 1;
+					}
+
 					if (!audioChannelCount) {
-						if (channelCount == 1) {
-							audioChannelCount = 1;
-						} else if (channelCount > 0) {
+						if (channelCount > 0) {
 							audioChannelCount = channelCount;
 						} else {
 							audioChannelCount = 2;
