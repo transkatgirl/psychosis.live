@@ -73,7 +73,7 @@ export function resize(
 	const horizontalFramebuffer = createFramebuffer(gl, horizontalTexture);
 	const compiledHorizontal = createProgram(
 		gl,
-		vsSource,
+		options.precise ? vsSource : vsSource.replace("highp", "mediump"),
 		generateHorizontalShader(options.filter, options.precise)
 	);
 	const horizontalProgram = compiledHorizontal.program;
@@ -105,7 +105,7 @@ export function resize(
 
 	const compiledVertical = createProgram(
 		gl,
-		vsSource,
+		options.precise ? vsSource : vsSource.replace("highp", "mediump"),
 		generateVerticalShader(options.filter, options.precise)
 	);
 	const verticalProgram = compiledVertical.program;
@@ -228,12 +228,12 @@ export class Scaler {
 
 		this.compiledHorizontal = createProgram(
 			this.gl,
-			vsSource,
+			precise ? vsSource : vsSource.replace("highp", "mediump"),
 			generateHorizontalShader(filter, precise)
 		);
 		this.compiledVertical = createProgram(
 			this.gl,
-			vsSource,
+			precise ? vsSource : vsSource.replace("highp", "mediump"),
 			generateVerticalShader(filter, precise)
 		);
 
