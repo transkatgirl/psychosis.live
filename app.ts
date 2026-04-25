@@ -1719,7 +1719,7 @@ async function statsOverlay(
 			(roundTripTime &&
 				roundTripTime + (jitter ? jitter : 0) / 2 > 333) ||
 			(lossFraction && lossFraction >= 2) ||
-			(desync && desync > (1 / 15) * 1000) ||
+			(desync && desync > 100) ||
 			((targetAudioBitrate || targetVideoBitrate) && cpuLimited)
 		) {
 			peerEntry.classList.add("stats-warn");
