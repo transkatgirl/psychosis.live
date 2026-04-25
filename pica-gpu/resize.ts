@@ -48,9 +48,9 @@ export function resize(
 		throw new Error("webgl2 context not found");
 	}
 	gl.clearColor(0, 0, 0, 1);
-	//if (options.precise) {
-	gl.getExtension("EXT_color_buffer_half_float");
-	//}
+	if (options.precise) {
+		gl.getExtension("EXT_color_buffer_half_float");
+	}
 
 	const targetWidth = Math.round(options.targetWidth);
 	const targetHeight = Math.round(options.targetHeight);
@@ -68,8 +68,7 @@ export function resize(
 		gl,
 		targetWidth,
 		srcHeight,
-		//options.precise
-		true
+		options.precise
 	);
 	const horizontalFramebuffer = createFramebuffer(gl, horizontalTexture);
 	const compiledHorizontal = createProgram(
@@ -209,21 +208,15 @@ export class Scaler {
 
 		this.gl = gl;
 		this.gl.clearColor(0, 0, 0, 1);
-		//if (precise) {
-		this.gl.getExtension("EXT_color_buffer_half_float");
-		//}
+		if (precise) {
+			this.gl.getExtension("EXT_color_buffer_half_float");
+		}
 		this.precise = precise;
 
 		this.windowSize = getResizeWindow(filter);
 
 		this.sourceTexture = createEmptyTexture(this.gl, 1, 1, false);
-		this.horizontalTexture = createEmptyTexture(
-			this.gl,
-			1,
-			1,
-			//precise
-			true
-		);
+		this.horizontalTexture = createEmptyTexture(this.gl, 1, 1, precise);
 
 		this.quadBuffer = createDefaultQuadBuffer(this.gl);
 		this.flippedQuadBuffer = createDefaultQuadBuffer(this.gl, true);
@@ -369,8 +362,7 @@ export class Scaler {
 				this.horizontalTexture,
 				targetWidth,
 				srcHeight,
-				//this.precise
-				true
+				this.precise
 			);
 			this.horizontalTextureWidth = targetWidth;
 			this.horizontalTextureHeight = srcHeight;
