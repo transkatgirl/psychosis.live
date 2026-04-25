@@ -376,6 +376,7 @@ export interface AdaptiveData {
 
 	skipNextInterval?: boolean;
 	lastTarget?: [number, number];
+	lastInputResolution?: [number, number];
 }
 
 interface AdaptiveDataAnalysis {
@@ -653,10 +654,17 @@ function adaptiveVideoSettings(
 
 		if (data.skipNextInterval) {
 			data.skipNextInterval = false;
-			return;
+			if (
+				data.lastInputResolution &&
+				data.lastInputResolution[0] === targets.width &&
+				data.lastInputResolution[1] === targets.height
+			)
+				return;
 		} else if (data.skipNextInterval !== undefined) {
 			data.skipNextInterval = true;
 		}
+
+		data.lastInputResolution = [targets.width, targets.height];
 
 		let pixels = MIN_PIXELS;
 		let framerate = Math.min(30, targets.framerate);
