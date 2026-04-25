@@ -62,11 +62,11 @@ video {
 }
 
 .stats-warn {
-	color: orange;
+	color: #fdd583;
 }
 
 .stats-alert {
-	color: red;
+	color: #ff8577;
 }
 
 .settings-overlay {
