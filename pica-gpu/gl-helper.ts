@@ -38,7 +38,8 @@ export function createProgram(
 
 export function createTextureFromImage(
 	gl: WebGL2RenderingContext,
-	image: TexImageSource
+	image: TexImageSource,
+	linear: boolean
 ) {
 	const texture = gl.createTexture();
 	gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -49,7 +50,7 @@ export function createTextureFromImage(
 	gl.texImage2D(
 		gl.TEXTURE_2D,
 		0,
-		gl.SRGB8_ALPHA8,
+		linear ? gl.SRGB8_ALPHA8 : gl.RGBA,
 		gl.RGBA,
 		gl.UNSIGNED_BYTE,
 		image
@@ -64,7 +65,8 @@ export function updateTextureFromImage(
 	texture: WebGLTexture,
 	image: TexImageSource,
 	width: number,
-	height: number
+	height: number,
+	linear: boolean
 ) {
 	gl.bindTexture(gl.TEXTURE_2D, texture);
 	const last = textureUploadSize.get(texture);
@@ -82,7 +84,7 @@ export function updateTextureFromImage(
 		gl.texImage2D(
 			gl.TEXTURE_2D,
 			0,
-			gl.SRGB8_ALPHA8,
+			linear ? gl.SRGB8_ALPHA8 : gl.RGBA,
 			gl.RGBA,
 			gl.UNSIGNED_BYTE,
 			image

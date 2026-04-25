@@ -21,6 +21,7 @@ export interface ResizeOptions {
 	targetHeight: number;
 	filter: "box" | "hamming" | "lanczos2" | "lanczos3" | "mks2013" | "mks2021";
 	precise: boolean;
+	linear: boolean;
 }
 
 export function resize(
@@ -52,8 +53,10 @@ export function resize(
 		gl.getExtension("EXT_color_buffer_half_float");
 	}
 
-	// @ts-ignore
-	gl.drawingBufferStorage(gl.SRGB8_ALPHA8, to.width, to.height);
+	if (options.linear) {
+		// @ts-ignore
+		gl.drawingBufferStorage(gl.SRGB8_ALPHA8, to.width, to.height);
+	}
 
 	const targetWidth = Math.round(options.targetWidth);
 	const targetHeight = Math.round(options.targetHeight);
@@ -63,7 +66,7 @@ export function resize(
 	const scaleX = targetWidth / srcWidth;
 	const scaleY = targetHeight / srcHeight;
 	const windowSize = getResizeWindow(options.filter);
-	const sourceTexture = createTextureFromImage(gl, from);
+	const sourceTexture = createTextureFromImage(gl, from, options.linear);
 	const quadBuffer = createDefaultQuadBuffer(gl);
 	const flippedQuadBuffer = createDefaultQuadBuffer(gl, true);
 
@@ -154,6 +157,7 @@ export class Scaler {
 	public canvas: OffscreenCanvas;
 	gl: WebGL2RenderingContext;
 	precise: boolean;
+	linear: boolean;
 
 	windowSize: number;
 
@@ -198,7 +202,8 @@ export class Scaler {
 	public constructor(
 		canvas: OffscreenCanvas,
 		filter: ResizeOptions["filter"],
-		precise: boolean
+		precise: boolean = true,
+		linear: boolean = true
 	) {
 		this.canvas = canvas;
 
@@ -215,13 +220,16 @@ export class Scaler {
 			this.gl.getExtension("EXT_color_buffer_half_float");
 		}
 		this.precise = precise;
+		this.linear = linear;
 
-		// @ts-ignore
-		this.gl.drawingBufferStorage(
-			this.gl.SRGB8_ALPHA8,
-			canvas.width,
-			canvas.height
-		);
+		if (linear) {
+			// @ts-ignore
+			this.gl.drawingBufferStorage(
+				this.gl.SRGB8_ALPHA8,
+				canvas.width,
+				canvas.height
+			);
+		}
 
 		this.windowSize = getResizeWindow(filter);
 
@@ -360,7 +368,8 @@ export class Scaler {
 			this.sourceTexture,
 			frame,
 			srcWidth,
-			srcHeight
+			srcHeight,
+			this.linear
 		);
 
 		if (
@@ -428,12 +437,14 @@ export class Scaler {
 	public clear() {
 		this.gl.clearColor(0, 0, 0, 1);
 		this.gl.clear(this.gl.COLOR_BUFFER_BIT);
-		// @ts-ignore
-		this.gl.drawingBufferStorage(
-			this.gl.SRGB8_ALPHA8,
-			this.canvas.width,
-			this.canvas.height
-		);
+		if (this.linear) {
+			// @ts-ignore
+			this.gl.drawingBufferStorage(
+				this.gl.SRGB8_ALPHA8,
+				this.canvas.width,
+				this.canvas.height
+			);
+		}
 	}
 	public destroy() {
 		this.gl.deleteTexture(this.sourceTexture);

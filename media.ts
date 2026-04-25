@@ -920,7 +920,8 @@ export class MediaScaler {
 		width: number,
 		height: number,
 		scaler: ResizeOptions["filter"],
-		precise: boolean
+		precise: boolean,
+		linear: boolean
 	) {
 		if (
 			!(
@@ -934,7 +935,8 @@ export class MediaScaler {
 		this.scaler = new Scaler(
 			new OffscreenCanvas(Math.round(width), Math.round(height)),
 			scaler,
-			precise
+			precise,
+			linear
 		);
 
 		this.stream = new MediaStream();
