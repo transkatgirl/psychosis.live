@@ -639,8 +639,8 @@ async function launchSender(credentials: RoomCredentials) {
 				scaler = new MediaScaler(
 					scalerWidth,
 					scalerHeight,
-					"mks2013", // sharper filters are better for downscaling + mks2013 is less computationally intensive than mks2021
-					false
+					"mks2013", // sharper filters are better for downscaling
+					true
 				);
 
 				peerScalers[peerId] = scaler;
