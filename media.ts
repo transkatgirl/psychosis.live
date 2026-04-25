@@ -394,7 +394,7 @@ function analyzeAdaptiveData(stats: [string, any][], data: AdaptiveData) {
 	let framesEncoded;
 	let qpSum;
 
-	stats.forEach(([_, report]) => {
+	for (const [_, report] of stats) {
 		if (report.type == "codec") {
 			// We manually adjust the QP targets to be more aggressive, as sharper upscalers benefit more from a lower resolution + high quality stream than a higher resolution + low quality one.
 
@@ -435,7 +435,7 @@ function analyzeAdaptiveData(stats: [string, any][], data: AdaptiveData) {
 				data.qpSum = report.qpSum;
 			}
 		}
-	});
+	}
 
 	if (framesEncoded) {
 		analysis.framesAnalyzed = framesEncoded;
@@ -524,7 +524,7 @@ function adaptiveAudioBitrate(
 	let bitrateUpper = Infinity;
 	let usingOpus = false;
 
-	stats.forEach(([_, report]) => {
+	for (const [_, report] of stats) {
 		if (
 			report.type == "outbound-rtp" &&
 			report.kind == "video" &&
@@ -579,7 +579,7 @@ function adaptiveAudioBitrate(
 		) {
 			usingOpus = true;
 		}
-	});
+	}
 
 	if (!usingOpus || bitrateLower == 0 || bitrateUpper == Infinity) {
 		for (const encoding of parameters.encodings) {
@@ -742,7 +742,7 @@ function adaptiveVideoSettings(
 		let framerateLower = 0;
 		let framerateUpper = Infinity;
 
-		stats.forEach(([_, report]) => {
+		for (const [_, report] of stats) {
 			if (
 				report.type == "outbound-rtp" &&
 				report.kind == "video" &&
@@ -759,7 +759,7 @@ function adaptiveVideoSettings(
 					targets.framerate
 				);
 			}
-		});
+		}
 
 		if (framerateLower != 0 && framerateUpper != Infinity) {
 			for (const encoding of parameters.encodings) {

@@ -1454,7 +1454,7 @@ async function statsOverlay(
 		let jitter: number | undefined;
 		let lossFraction: number | undefined;
 
-		peerStats.forEach(([_, report]) => {
+		for (const [_, report] of peerStats) {
 			const lastReport = peer.metadata[report.type + "_" + report.id];
 
 			if (report.type === "outbound-rtp") {
@@ -1588,7 +1588,7 @@ async function statsOverlay(
 			}
 
 			peer.metadata[report.type + "_" + report.id] = report;
-		});
+		}
 
 		if (targetVideoBitrate) {
 			targetVideoBitrate = Math.round(targetVideoBitrate / 1000);
