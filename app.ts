@@ -648,7 +648,7 @@ async function launchSender(credentials: RoomCredentials) {
 					scalingFilter
 						? (scalingFilter as ResizeOptions["filter"])
 						: "mks2013", // sharper filters are better for downscaling
-					!(params.get("reducedQualityScaling") !== "true")
+					params.get("reducedQualityScaling") !== "true"
 				);
 
 				peerScalers[peerId] = scaler;
@@ -1119,10 +1119,7 @@ async function launchReceiver(credentials: RoomCredentials) {
 								scalingFilter
 									? (scalingFilter as ResizeOptions["filter"])
 									: "mks2021", // blurrier filters are better for upscaling
-								!(
-									params.get("reducedQualityScaling") !==
-									"true"
-								)
+								params.get("reducedQualityScaling") !== "true"
 							);
 
 							for (const track of stream.getTracks()) {
