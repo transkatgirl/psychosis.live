@@ -622,7 +622,7 @@ async function launchSender(credentials: RoomCredentials) {
 					scaler = new MediaScaler(width, height, "mks2013", false);
 				} else {
 					scaler = new MediaScaler(width, height, "mks2013", false);
-				} // mks2013 is significantly faster than mks2021 and better retains details at low resolutions, so it's used on the sender. however, to prevent oversharpening, mks2021 is used on the receiver.
+				} // sharper filters are better for downscaling + mks2013 is less computationally intensive than mks2021
 
 				peerScalers[peerId] = scaler;
 			}
@@ -1084,7 +1084,7 @@ async function launchReceiver(credentials: RoomCredentials) {
 							const scaler = new MediaScaler(
 								video.clientWidth,
 								video.clientHeight,
-								"mks2021", // mks2021 is used on the receiver to prevent excessive sharpening,
+								"mks2021", // blurrier filters are better for upscaling
 								true
 							);
 
