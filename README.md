@@ -23,13 +23,13 @@ bun build --compile --target=browser ./index.html --outdir=dist --minify-whitesp
 - [ ] display information (resolution, framerate, channel count, sample rate) about video/audio tracks in sender UI if showStats is enabled
 
 ### far future ideas
-- [ ] update WebRTC Opus to 1.6
+- [ ] wait for browsers to support Opus 1.6 in WebRTC (alternatively, patch chromium & libwebrtc to support it)
 	- [ ] get [DRED](https://opus-codec.org/demo/opus-1.5/) working
 	- [ ] get [DeepPLC](https://opus-codec.org/demo/opus-1.5/) working
 	- [ ] get [NoLACE](https://opus-codec.org/demo/opus-1.5/) working
 	- [ ] get [BWE](https://opus-codec.org/demo/opus-1.6/) working
-- [ ] make native app implementation
-	- [ ] tweak WebRTC congestion control algorithm for this specific use case
+- [ ] make native app implementation if browsers keep taking too long to fix bugs in getUserMedia() and enumerateDevices()
+	- [ ] better support external cameras and microphones
 - [ ] implement remote monitoring of peer metrics (viewing receiver metrics on sender and sender metrics on receiver)
 - [ ] switch to MoQ when it's ready
 	- [ ] implement QUIC multipath draft
