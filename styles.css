@@ -103,6 +103,10 @@ video {
 	-moz-user-select: none;
 }
 
+.settings-overlay > * {
+	zoom: 1.1;
+}
+
 .stats-overlay ul {
 	list-style: none;
 	padding: 0 1em;
