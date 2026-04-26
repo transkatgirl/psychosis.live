@@ -990,32 +990,32 @@ export class MediaScaler {
 					);
 					frame.close();
 
+					let outFrame;
+
 					self.promise = scaler.sync();
 					await self.promise;
-					self.promise = undefined;
 
 					if (preserveAspectRatio && enforceAspectRatio) {
-						controller.enqueue(
-							new VideoFrame(scaler.canvas, {
-								timestamp: frame.timestamp,
-								duration: frame.duration
-									? frame.duration
-									: undefined,
-								alpha: "discard",
-								visibleRect,
-							})
-						);
+						outFrame = new VideoFrame(scaler.canvas, {
+							timestamp: frame.timestamp,
+							duration: frame.duration
+								? frame.duration
+								: undefined,
+							alpha: "discard",
+							visibleRect,
+						});
 					} else {
-						controller.enqueue(
-							new VideoFrame(scaler.canvas, {
-								timestamp: frame.timestamp,
-								duration: frame.duration
-									? frame.duration
-									: undefined,
-								alpha: "discard",
-							})
-						);
+						outFrame = new VideoFrame(scaler.canvas, {
+							timestamp: frame.timestamp,
+							duration: frame.duration
+								? frame.duration
+								: undefined,
+							alpha: "discard",
+						});
 					}
+
+					self.promise = undefined;
+					controller.enqueue(outFrame);
 				},
 				flush(controller) {
 					controller.terminate();

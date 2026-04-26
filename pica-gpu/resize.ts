@@ -465,7 +465,7 @@ export class Scaler {
 		if (sync) {
 			while (signal === gl.TIMEOUT_EXPIRED) {
 				await new Promise(function (resolve) {
-					setTimeout(resolve, 1);
+					setTimeout(resolve, 0);
 				});
 
 				signal = gl.clientWaitSync(sync, 0, 0);
