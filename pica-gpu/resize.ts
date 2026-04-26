@@ -145,7 +145,7 @@ export function resize(
 	const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
 	gl.flush();
 	if (sync) {
-		gl.clientWaitSync(sync, 0, gl.TIMEOUT_IGNORED);
+		gl.clientWaitSync(sync, 0, 0);
 		gl.deleteSync(sync);
 	}
 
