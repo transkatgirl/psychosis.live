@@ -2,7 +2,7 @@
 
 > You have to be insane to think you can livestream from *there*.
 
-A simple WebRTC-based streaming tool for resiliently sending end-to-end encrypted video feeds from a browser to OBS.
+A WebRTC-based streaming tool for sending end-to-end encrypted video feeds from a browser to OBS.
 
 This tool aims to be as resilient as possible to low-quality and/or unreliable connections, with the goal of pushing single-uplink livestreaming right up to the edge of what's possible.
 
