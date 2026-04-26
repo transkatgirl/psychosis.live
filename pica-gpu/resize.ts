@@ -142,7 +142,12 @@ export function resize(
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
+	const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
 	gl.flush();
+	if (sync) {
+		gl.clientWaitSync(sync, 0, gl.TIMEOUT_IGNORED);
+		gl.deleteSync(sync);
+	}
 
 	gl.deleteTexture(sourceTexture);
 	gl.deleteTexture(horizontalTexture);
@@ -433,7 +438,12 @@ export class Scaler {
 		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
+		const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
 		gl.flush();
+		if (sync) {
+			gl.clientWaitSync(sync, 0, 0);
+			gl.deleteSync(sync);
+		}
 
 		return {
 			x: offsetX,
