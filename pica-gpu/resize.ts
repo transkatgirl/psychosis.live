@@ -454,26 +454,6 @@ export class Scaler {
 			height: targetHeight,
 		};
 	}
-	public async sync() {
-		const gl = this.gl;
-
-		let signal: number = gl.TIMEOUT_EXPIRED;
-
-		const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
-		gl.flush();
-
-		if (sync) {
-			while (signal === gl.TIMEOUT_EXPIRED) {
-				await new Promise(function (resolve) {
-					setTimeout(resolve, 1);
-				});
-
-				signal = gl.clientWaitSync(sync, 0, 0);
-			}
-		}
-
-		gl.deleteSync(sync);
-	}
 	public destroy() {
 		this.gl.deleteTexture(this.sourceTexture);
 		this.gl.deleteTexture(this.horizontalTexture);

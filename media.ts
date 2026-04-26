@@ -916,8 +916,6 @@ export class MediaScaler {
 	scaler: Scaler;
 	processor: any;
 	generator: any;
-	promise: Promise<void> | undefined;
-	lastInit: VideoFrameInit | undefined;
 	requestedResolution: [number, number] | undefined;
 	public constructor(
 		width: number,
@@ -974,16 +972,15 @@ export class MediaScaler {
 			const scaler = this.scaler;
 			const self = this;
 
+			let lastInit: VideoFrameInit | undefined;
+
 			const transformer = new TransformStream({
 				async transform(frame: VideoFrame, controller) {
-					if (self.promise) await self.promise;
-					self.promise = undefined;
-
-					if (self.lastInit) {
+					if (lastInit) {
 						controller.enqueue(
-							new VideoFrame(scaler.canvas, self.lastInit)
+							new VideoFrame(scaler.canvas, lastInit)
 						);
-						self.lastInit = undefined;
+						lastInit = undefined;
 					}
 
 					if (self.requestedResolution) {
@@ -991,7 +988,7 @@ export class MediaScaler {
 						scaler.canvas.height = self.requestedResolution[1];
 					}
 
-					self.lastInit = {
+					lastInit = {
 						timestamp: frame.timestamp,
 						duration: frame.duration ? frame.duration : undefined,
 						alpha: "discard",
@@ -999,10 +996,8 @@ export class MediaScaler {
 					};
 					frame.close();
 					if (!preserveAspectRatio || !enforceAspectRatio) {
-						self.lastInit.visibleRect = undefined;
+						lastInit.visibleRect = undefined;
 					}
-
-					self.promise = scaler.sync();
 				},
 				flush(controller) {
 					controller.terminate();
