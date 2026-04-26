@@ -913,14 +913,16 @@ export function adaptToRatioExact(
 export class MediaScaler {
 	public stream: MediaStream;
 	videoId: string | undefined;
-	scaler: Scaler;
+	scaler: Scaler | undefined;
+	canvas: OffscreenCanvas | undefined;
+	canvasSmooth: boolean = false;
 	processor: any;
 	generator: any;
 	requestedResolution: [number, number] | undefined;
 	public constructor(
 		width: number,
 		height: number,
-		scaler: ResizeOptions["filter"],
+		scaler: ResizeOptions["filter"] | "browser" | "browser_smooth",
 		precise: boolean,
 		linear: boolean
 	) {
@@ -933,12 +935,20 @@ export class MediaScaler {
 			throw "Insertable Streams unsupported";
 		}
 
-		this.scaler = new Scaler(
-			new OffscreenCanvas(Math.round(width), Math.round(height)),
-			scaler,
-			precise,
-			linear
-		);
+		if (scaler === "browser" || scaler === "browser_smooth") {
+			this.canvas = new OffscreenCanvas(
+				Math.round(width),
+				Math.round(height)
+			);
+			this.canvasSmooth = scaler === "browser_smooth";
+		} else {
+			this.scaler = new Scaler(
+				new OffscreenCanvas(Math.round(width), Math.round(height)),
+				scaler,
+				precise,
+				linear
+			);
+		}
 
 		this.stream = new MediaStream();
 	}
@@ -948,11 +958,7 @@ export class MediaScaler {
 	public resize(width: number, height: number) {
 		this.requestedResolution = [Math.round(width), Math.round(height)];
 	}
-	public addTrack(
-		track: MediaStreamTrack,
-		preserveAspectRatio = true,
-		enforceAspectRatio = true
-	) {
+	public addTrack(track: MediaStreamTrack, preserveAspectRatio = true) {
 		if (track.kind == "video") {
 			if (this.videoId)
 				throw "Scaler already has an attached video track.";
@@ -970,43 +976,121 @@ export class MediaScaler {
 			});
 
 			const scaler = this.scaler;
+			const canvas = this.canvas;
 			const self = this;
 
-			let lastInit: VideoFrameInit | undefined;
+			let transformer;
 
-			const transformer = new TransformStream({
-				transform(frame: VideoFrame, controller) {
-					if (lastInit) {
-						// If the renderer is running behind, the canvas (and resulting output frame) may be outdated by up to 1 frame (but not more, as scaler.process() forces the render queue to flush).
-						// This is fine for now, but if want to add performance monitoring in the future, we'll need to fix this.
+			if (scaler) {
+				let lastInit: VideoFrameInit | undefined;
+
+				transformer = new TransformStream({
+					transform(frame: VideoFrame, controller) {
+						if (lastInit) {
+							// If the renderer is running behind, the canvas (and resulting output frame) may be outdated by up to 1 frame (but not more, as scaler.process() forces the render queue to flush).
+							// This is fine for now, but if want to add performance monitoring in the future, we'll need to fix this.
+
+							controller.enqueue(
+								new VideoFrame(scaler.canvas, lastInit)
+							);
+							lastInit = undefined;
+						}
+
+						if (self.requestedResolution) {
+							scaler.canvas.width = self.requestedResolution[0];
+							scaler.canvas.height = self.requestedResolution[1];
+							self.requestedResolution = undefined;
+						}
+
+						lastInit = {
+							timestamp: frame.timestamp,
+							duration: frame.duration
+								? frame.duration
+								: undefined,
+							alpha: "discard",
+							visibleRect: scaler.process(
+								frame,
+								preserveAspectRatio
+							),
+						};
+						frame.close();
+
+						if (!preserveAspectRatio) {
+							lastInit.visibleRect = undefined;
+						}
+					},
+					flush(controller) {
+						controller.terminate();
+					},
+				});
+			} else if (canvas) {
+				let ctx = canvas.getContext("2d");
+
+				transformer = new TransformStream({
+					transform(frame: VideoFrame, controller) {
+						if (self.requestedResolution) {
+							canvas.width = self.requestedResolution[0];
+							canvas.height = self.requestedResolution[1];
+							self.requestedResolution = undefined;
+
+							ctx!.clearRect(0, 0, canvas.width, canvas.height);
+						}
+
+						let targetWidth = canvas.width;
+						let targetHeight = canvas.height;
+
+						const srcAspectRatio =
+							frame.displayWidth / frame.displayHeight;
+						const canvasAspectRatio = canvas.width / canvas.height;
+
+						if (preserveAspectRatio) {
+							const EPSILON = 1e-6;
+							if (
+								Math.abs(srcAspectRatio - canvasAspectRatio) >
+								EPSILON
+							) {
+								if (srcAspectRatio > canvasAspectRatio) {
+									targetHeight = Math.round(
+										canvas.width / srcAspectRatio
+									);
+								} else {
+									targetWidth = Math.round(
+										canvas.height * srcAspectRatio
+									);
+								}
+							}
+						}
+
+						if (self.canvasSmooth) {
+							ctx!.imageSmoothingEnabled = true;
+							ctx!.imageSmoothingQuality = "high";
+						}
+						ctx!.drawImage(frame, 0, 0, targetWidth, targetHeight);
+						frame.close();
 
 						controller.enqueue(
-							new VideoFrame(scaler.canvas, lastInit)
+							new VideoFrame(canvas, {
+								timestamp: frame.timestamp,
+								duration: frame.duration
+									? frame.duration
+									: undefined,
+								alpha: "discard",
+								visibleRect: {
+									x: 0,
+									y: 0,
+									width: targetWidth,
+									height: targetHeight,
+								},
+							})
 						);
-						lastInit = undefined;
-					}
-
-					if (self.requestedResolution) {
-						scaler.canvas.width = self.requestedResolution[0];
-						scaler.canvas.height = self.requestedResolution[1];
-					}
-
-					lastInit = {
-						timestamp: frame.timestamp,
-						duration: frame.duration ? frame.duration : undefined,
-						alpha: "discard",
-						visibleRect: scaler.process(frame, preserveAspectRatio),
-					};
-					frame.close();
-
-					if (!preserveAspectRatio || !enforceAspectRatio) {
-						lastInit.visibleRect = undefined;
-					}
-				},
-				flush(controller) {
-					controller.terminate();
-				},
-			});
+					},
+					flush(controller) {
+						controller.terminate();
+					},
+				});
+			} else {
+				throw "Invalid state";
+			}
 
 			(this.processor.readable as ReadableStream<VideoFrame>)
 				.pipeThrough(transformer)
@@ -1049,7 +1133,9 @@ export class MediaScaler {
 			this.removeTrack(track);
 		}
 
-		this.scaler.destroy();
+		if (this.scaler) {
+			this.scaler.destroy();
+		}
 	}
 }
 
