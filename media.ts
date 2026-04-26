@@ -922,7 +922,7 @@ export class MediaScaler {
 	public constructor(
 		width: number,
 		height: number,
-		scaler: ResizeOptions["filter"] | "browser" | "browser_smooth",
+		scaler: ResizeOptions["filter"] | "browser" | "browser_nosmooth",
 		precise: boolean,
 		linear: boolean
 	) {
@@ -935,12 +935,12 @@ export class MediaScaler {
 			throw "Insertable Streams unsupported";
 		}
 
-		if (scaler === "browser" || scaler === "browser_smooth") {
+		if (scaler === "browser" || scaler === "browser_nosmooth") {
 			this.canvas = new OffscreenCanvas(
 				Math.round(width),
 				Math.round(height)
 			);
-			this.canvasSmooth = scaler === "browser_smooth";
+			this.canvasSmooth = scaler === "browser";
 		} else {
 			this.scaler = new Scaler(
 				new OffscreenCanvas(Math.round(width), Math.round(height)),
@@ -1067,6 +1067,8 @@ export class MediaScaler {
 						if (self.canvasSmooth) {
 							ctx!.imageSmoothingEnabled = true;
 							ctx!.imageSmoothingQuality = "high";
+						} else {
+							ctx!.imageSmoothingEnabled = false;
 						}
 						ctx!.drawImage(frame, 0, 0, targetWidth, targetHeight);
 						frame.close();
