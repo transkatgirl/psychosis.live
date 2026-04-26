@@ -29,7 +29,6 @@ bun build --compile --target=browser ./index.html --outdir=dist --minify-whitesp
 	- [ ] get [NoLACE](https://opus-codec.org/demo/opus-1.5/) working
 	- [ ] get [BWE](https://opus-codec.org/demo/opus-1.6/) working
 - [ ] make native app implementation if browsers keep taking too long to fix bugs in getUserMedia() and enumerateDevices()
-	- [ ] better support external cameras and microphones
 - [ ] implement remote monitoring of peer metrics (viewing receiver metrics on sender and sender metrics on receiver)
 - [ ] switch to MoQ when it's ready
 	- [ ] implement QUIC multipath draft
