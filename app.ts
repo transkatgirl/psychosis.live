@@ -23,10 +23,6 @@ import {
 } from "./media";
 import type { ResizeOptions } from "./pica-gpu";
 
-window.addEventListener("error", (event) => {
-	window.alert("error: " + event.message);
-});
-
 const defaultMqttEndpoint = "wss://broker.emqx.io:8084/mqtt";
 const defaultIceServers: RTCIceServer[] = [
 	{ urls: "stun:stun.l.google.com:19302" },
@@ -39,6 +35,17 @@ const defaultIceServers: RTCIceServer[] = [
 
 const fragment = new URL(window.location.href).hash.substring(1);
 const params: URLSearchParams = new URL(window.location.href).searchParams;
+
+if (params.get("stats") === "true") {
+	window.addEventListener("error", (event) => {
+		if (
+			event.message !==
+			"ResizeObserver loop completed with undelivered notifications."
+		) {
+			window.alert("error: " + event.message);
+		}
+	});
+}
 
 enum Role {
 	Sender = "sender",
