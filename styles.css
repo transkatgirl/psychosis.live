@@ -101,10 +101,8 @@ video {
 	user-select: none;
 	-webkit-user-select: none;
 	-moz-user-select: none;
-}
-
-.settings-overlay > * {
-	zoom: 1.1;
+	transform: scale(1.1);
+	transform-origin: bottom right;
 }
 
 .stats-overlay ul {
