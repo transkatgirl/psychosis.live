@@ -977,7 +977,7 @@ export class MediaScaler {
 			const transformer = new TransformStream({
 				transform(frame: VideoFrame, controller) {
 					if (lastInit) {
-						// If the renderer is running behind, the canvas (and resulting output frame) may be outdated by up to 1 frame (the processing pipeline forces the render queue to flush).
+						// If the renderer is running behind, the canvas (and resulting output frame) may be outdated by up to 1 frame (but not more, as scaler.process() forces the render queue to flush).
 						// This is fine for now, but if want to add performance monitoring in the future, we'll need to fix this.
 
 						controller.enqueue(
