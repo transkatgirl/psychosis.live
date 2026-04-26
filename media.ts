@@ -975,7 +975,7 @@ export class MediaScaler {
 			let lastInit: VideoFrameInit | undefined;
 
 			const transformer = new TransformStream({
-				async transform(frame: VideoFrame, controller) {
+				transform(frame: VideoFrame, controller) {
 					if (lastInit) {
 						controller.enqueue(
 							new VideoFrame(scaler.canvas, lastInit)
@@ -995,6 +995,7 @@ export class MediaScaler {
 						visibleRect: scaler.process(frame, preserveAspectRatio),
 					};
 					frame.close();
+
 					if (!preserveAspectRatio || !enforceAspectRatio) {
 						lastInit.visibleRect = undefined;
 					}
