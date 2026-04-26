@@ -1052,3 +1052,23 @@ export class MediaScaler {
 		this.scaler.destroy();
 	}
 }
+
+// Copied from https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/WebGL_best_practices#resizeobserver_and_device-pixel-content-box
+
+export function getDevicePixelSize(
+	elem: HTMLElement
+): Promise<[number, number]> {
+	return new Promise((resolve) => {
+		const observer = new ResizeObserver(([cur]) => {
+			if (!cur) {
+				throw new Error(
+					`device-pixel-content-box not observed for elem ${elem}`
+				);
+			}
+			const devSize = cur.devicePixelContentBoxSize;
+			resolve([devSize[0]!.inlineSize, devSize[0]!.blockSize]);
+			observer.disconnect();
+		});
+		observer.observe(elem, { box: "device-pixel-content-box" });
+	});
+}

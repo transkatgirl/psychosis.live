@@ -11,6 +11,7 @@ import {
 	buildSenderEncoding,
 	calculateReasonableAudioBitrateKbps,
 	calculateReasonableVideoBitrateKbps,
+	getDevicePixelSize,
 	MediaScaler,
 	MIN_PIXELS,
 	mungeSDP,
@@ -572,6 +573,12 @@ async function launchSender(credentials: RoomCredentials) {
 	video.autoplay = true;
 	video.muted = true;
 	video.controls = true;
+	// @ts-ignore
+	video.controlsList.add("nofullscreen");
+	// @ts-ignore
+	video.controlsList.add("nodownload");
+	// @ts-ignore
+	video.controlsList.add("noplaybackrate");
 	video.playsInline = true;
 	video.srcObject = stream;
 	video.classList.add("preview");
@@ -1045,12 +1052,13 @@ async function launchReceiver(credentials: RoomCredentials) {
 	videoContainer.classList.add("gallery");
 	document.body.appendChild(videoContainer);
 
-	const updateScalers = () => {
+	const updateScalers = async () => {
 		for (const [peerId, video] of Object.entries(peerVideos)) {
+			const size = await getDevicePixelSize(video);
 			const scaler = peerScalers[peerId];
 
 			if (scaler) {
-				scaler.resize(video.clientWidth, video.clientHeight);
+				scaler.resize(size[0], size[1]);
 			}
 		}
 	};
@@ -1077,7 +1085,7 @@ async function launchReceiver(credentials: RoomCredentials) {
 		(peerId, peer) => {
 			if (!peer.pc) return;
 
-			peer.pc.ontrack = (event) => {
+			peer.pc.ontrack = async (event) => {
 				if (codecOrderPreference) {
 					setCodecPreferences(
 						event.transceiver,
@@ -1095,6 +1103,16 @@ async function launchReceiver(credentials: RoomCredentials) {
 						video.controls = false;
 					} else {
 						video.controls = true;
+						if (params.get("overrideScaler") === "true") {
+							// @ts-ignore
+							video.controlsList.add("nofullscreen");
+							// @ts-ignore
+							video.controlsList.add("noremoteplayback");
+						}
+						// @ts-ignore
+						video.controlsList.add("nodownload");
+						// @ts-ignore
+						video.controlsList.add("noplaybackrate");
 					}
 					video.playsInline = true;
 					video.id = peerId;
@@ -1114,9 +1132,10 @@ async function launchReceiver(credentials: RoomCredentials) {
 						peerStreams[peerId] = stream;
 
 						if (video.srcObject === null) {
+							const size = await getDevicePixelSize(video);
 							const scaler = new MediaScaler(
-								video.clientWidth,
-								video.clientHeight,
+								size[0],
+								size[1],
 								scalingFilter
 									? (scalingFilter as ResizeOptions["filter"])
 									: "mks2021", // blurrier filters are better for upscaling
