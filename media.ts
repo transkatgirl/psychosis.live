@@ -982,7 +982,7 @@ export class MediaScaler {
 
 			const transformer = new TransformStream({
 				async transform(frame: VideoFrame, controller) {
-					if (self.promise) return;
+					if (self.promise) await self.promise;
 
 					const visibleRect = scaler.process(
 						frame,
@@ -990,32 +990,33 @@ export class MediaScaler {
 					);
 					frame.close();
 
-					let outFrame;
+					self.promise = scaler.sync().then(() => {
+						if (preserveAspectRatio && enforceAspectRatio) {
+							controller.enqueue(
+								new VideoFrame(scaler.canvas, {
+									timestamp: frame.timestamp,
+									duration: frame.duration
+										? frame.duration
+										: undefined,
+									alpha: "discard",
+									visibleRect,
+								})
+							);
+						} else {
+							controller.enqueue(
+								new VideoFrame(scaler.canvas, {
+									timestamp: frame.timestamp,
+									duration: frame.duration
+										? frame.duration
+										: undefined,
+									alpha: "discard",
+								})
+							);
+						}
+					});
 
-					self.promise = scaler.sync();
 					await self.promise;
-
-					if (preserveAspectRatio && enforceAspectRatio) {
-						outFrame = new VideoFrame(scaler.canvas, {
-							timestamp: frame.timestamp,
-							duration: frame.duration
-								? frame.duration
-								: undefined,
-							alpha: "discard",
-							visibleRect,
-						});
-					} else {
-						outFrame = new VideoFrame(scaler.canvas, {
-							timestamp: frame.timestamp,
-							duration: frame.duration
-								? frame.duration
-								: undefined,
-							alpha: "discard",
-						});
-					}
-
 					self.promise = undefined;
-					controller.enqueue(outFrame);
 				},
 				flush(controller) {
 					controller.terminate();
