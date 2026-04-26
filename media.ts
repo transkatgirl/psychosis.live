@@ -918,6 +918,7 @@ export class MediaScaler {
 	generator: any;
 	promise: Promise<void> | undefined;
 	lastInit: VideoFrameInit | undefined;
+	requestedResolution: [number, number] | undefined;
 	public constructor(
 		width: number,
 		height: number,
@@ -947,16 +948,7 @@ export class MediaScaler {
 		return this.videoId;
 	}
 	public resize(width: number, height: number) {
-		if (this.promise) {
-			this.promise.finally(() => {
-				this.lastInit = undefined;
-				this.scaler.canvas.width = Math.round(width);
-				this.scaler.canvas.height = Math.round(height);
-			});
-		} else {
-			this.scaler.canvas.width = Math.round(width);
-			this.scaler.canvas.height = Math.round(height);
-		}
+		this.requestedResolution = [Math.round(width), Math.round(height)];
 	}
 	public addTrack(
 		track: MediaStreamTrack,
@@ -992,6 +984,11 @@ export class MediaScaler {
 							new VideoFrame(scaler.canvas, self.lastInit)
 						);
 						self.lastInit = undefined;
+					}
+
+					if (self.requestedResolution) {
+						scaler.canvas.width = self.requestedResolution[0];
+						scaler.canvas.height = self.requestedResolution[1];
 					}
 
 					self.lastInit = {
