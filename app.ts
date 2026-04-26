@@ -581,11 +581,14 @@ async function launchSender(credentials: RoomCredentials) {
 	video.muted = true;
 	video.controls = true;
 	// @ts-ignore
-	video.controlsList.add("nofullscreen");
-	// @ts-ignore
-	video.controlsList.add("nodownload");
-	// @ts-ignore
-	video.controlsList.add("noplaybackrate");
+	if (video.controlsList) {
+		// @ts-ignore
+		video.controlsList.add("nofullscreen");
+		// @ts-ignore
+		video.controlsList.add("nodownload");
+		// @ts-ignore
+		video.controlsList.add("noplaybackrate");
+	}
 	video.playsInline = true;
 	video.srcObject = stream;
 	video.classList.add("preview");
@@ -1110,16 +1113,19 @@ async function launchReceiver(credentials: RoomCredentials) {
 						video.controls = false;
 					} else {
 						video.controls = true;
-						if (params.get("overrideScaler") === "true") {
+						// @ts-ignore
+						if (video.controlsList) {
+							if (params.get("overrideScaler") === "true") {
+								// @ts-ignore
+								video.controlsList.add("nofullscreen");
+								// @ts-ignore
+								video.controlsList.add("noremoteplayback");
+							}
 							// @ts-ignore
-							video.controlsList.add("nofullscreen");
+							video.controlsList.add("nodownload");
 							// @ts-ignore
-							video.controlsList.add("noremoteplayback");
+							video.controlsList.add("noplaybackrate");
 						}
-						// @ts-ignore
-						video.controlsList.add("nodownload");
-						// @ts-ignore
-						video.controlsList.add("noplaybackrate");
 					}
 					video.playsInline = true;
 					video.id = peerId;
