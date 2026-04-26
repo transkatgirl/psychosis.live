@@ -916,6 +916,7 @@ export class MediaScaler {
 	scaler: Scaler;
 	processor: any;
 	generator: any;
+	promise: Promise<void> | undefined;
 	public constructor(
 		width: number,
 		height: number,
@@ -945,9 +946,15 @@ export class MediaScaler {
 		return this.videoId;
 	}
 	public resize(width: number, height: number) {
-		this.scaler.canvas.width = Math.round(width);
-		this.scaler.canvas.height = Math.round(height);
-		this.scaler.clear();
+		if (this.promise) {
+			this.promise.finally(() => {
+				this.scaler.canvas.width = Math.round(width);
+				this.scaler.canvas.height = Math.round(height);
+			});
+		} else {
+			this.scaler.canvas.width = Math.round(width);
+			this.scaler.canvas.height = Math.round(height);
+		}
 	}
 	public addTrack(
 		track: MediaStreamTrack,
@@ -971,14 +978,21 @@ export class MediaScaler {
 			});
 
 			const scaler = this.scaler;
+			const self = this;
 
 			const transformer = new TransformStream({
-				transform(frame: VideoFrame, controller) {
+				async transform(frame: VideoFrame, controller) {
+					if (self.promise) return;
+
 					const visibleRect = scaler.process(
 						frame,
 						preserveAspectRatio
 					);
 					frame.close();
+
+					self.promise = scaler.sync();
+					await self.promise;
+					self.promise = undefined;
 
 					if (preserveAspectRatio && enforceAspectRatio) {
 						controller.enqueue(

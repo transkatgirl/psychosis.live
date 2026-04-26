@@ -142,13 +142,6 @@ export function resize(
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
-	const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
-	gl.flush();
-	if (sync) {
-		gl.clientWaitSync(sync, 0, 0);
-		gl.deleteSync(sync);
-	}
-
 	gl.deleteTexture(sourceTexture);
 	gl.deleteTexture(horizontalTexture);
 	gl.deleteProgram(compiledHorizontal.program);
@@ -343,6 +336,22 @@ export class Scaler {
 		const srcWidth = frame.displayWidth;
 		const srcHeight = frame.displayHeight;
 
+		if (
+			srcWidth != this.lastSourceWidth ||
+			srcHeight != this.lastSourceHeight
+		) {
+			gl.clearColor(0, 0, 0, 1);
+			gl.clear(gl.COLOR_BUFFER_BIT);
+			if (this.linear) {
+				// @ts-ignore
+				gl.drawingBufferStorage(
+					gl.SRGB8_ALPHA8,
+					this.canvas.width,
+					this.canvas.height
+				);
+			}
+		}
+
 		const srcAspectRatio = srcWidth / srcHeight;
 		const canvasAspectRatio = this.canvas.width / this.canvas.height;
 
@@ -438,13 +447,6 @@ export class Scaler {
 		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
-		const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
-		gl.flush();
-		if (sync) {
-			gl.clientWaitSync(sync, 0, 0);
-			gl.deleteSync(sync);
-		}
-
 		return {
 			x: offsetX,
 			y: offsetY,
@@ -452,17 +454,25 @@ export class Scaler {
 			height: targetHeight,
 		};
 	}
-	public clear() {
-		this.gl.clearColor(0, 0, 0, 1);
-		this.gl.clear(this.gl.COLOR_BUFFER_BIT);
-		if (this.linear) {
-			// @ts-ignore
-			this.gl.drawingBufferStorage(
-				this.gl.SRGB8_ALPHA8,
-				this.canvas.width,
-				this.canvas.height
-			);
+	public async sync() {
+		const gl = this.gl;
+
+		let signal: number = gl.TIMEOUT_EXPIRED;
+
+		const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+		gl.flush();
+
+		if (sync) {
+			while (signal === gl.TIMEOUT_EXPIRED) {
+				await new Promise(function (resolve) {
+					setTimeout(resolve, 1);
+				});
+
+				signal = gl.clientWaitSync(sync, 0, 0);
+			}
 		}
+
+		gl.deleteSync(sync);
 	}
 	public destroy() {
 		this.gl.deleteTexture(this.sourceTexture);
