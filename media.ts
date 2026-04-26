@@ -1024,7 +1024,10 @@ export class MediaScaler {
 					},
 				});
 			} else if (canvas) {
-				let ctx = canvas.getContext("2d");
+				let ctx = canvas.getContext("2d", {
+					alpha: false,
+					desynchronized: true,
+				});
 
 				transformer = new TransformStream({
 					transform(frame: VideoFrame, controller) {
