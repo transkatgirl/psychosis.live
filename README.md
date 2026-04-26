@@ -1,24 +1,10 @@
 # psychosis.live
 
-A simple WebRTC-based streaming tool which lets you send end-to-end encrypted video feeds from a browser to OBS. This tool is primarily designed for mobile streaming, and is intended to be very resilient to poor quality connections.
+> You have to be insane to think you can livestream from *there*.
 
-The goal of this tool is to let you stream anything from anywhere with an internet connection. However, to keep things practical, the following is essentially required for a *usable* experience (assuming default settings & mono audio):
-- Sender:
-	- Download speed > 50 kbit/s
-		- Download speed > 100 kbit/s recommended
-	- Upload speed > 150 kbit/s
-		- Upload speed > 300 kbit/s recommended
-- Receiver:
-	- Download speed > 150 kbit/s
-		- Download speed > 400 kbit/s recommended
-	- Upload speed > 50 kbit/s
-		- Upload speed > 100 kbit/s recommended
-- Packet loss < 10%
-	- Packet loss < 2% recommended
-	- Packet loss of 10% - 25% *may* be usable if there is high enough bandwidth and low enough latency
-	- If packet loss is bursty rather than constant, resiliency can be improved by increasing the `jitterBufferTarget` at the expense of worse adaptation to changes in network conditions
-- Round-trip time < 400ms (if packet loss > 0%) between sender and receiver
-	- Latencies of up to 2500ms can be supported by increasing the `jitterBufferTarget` at the expense of worse adaptation to changes in network conditions
+A simple WebRTC-based streaming tool for resiliently sending end-to-end encrypted video feeds from a browser to OBS.
+
+This tool aims to be as resilient as possible to low-quality and/or unreliable connections, with the goal of pushing single-uplink livestreaming right up to the edge of what's possible.
 
 Further documentation is available on the application's website.
 

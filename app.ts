@@ -70,7 +70,7 @@ function helperMenu() {
 	document.title = "psychosis.live";
 
 	document.body.innerHTML =
-		'<h1>psychosis.live</h1><p>This tool allows you to stream <em>end-to-end encrypted</em> video from your browser into OBS over practically any internet connection, allowing you to stream anything from almost anywhere.</p><p>Unlike similar tools, such as <a href="https://vdo.ninja">VDO.Ninja</a>, psychosis.live focuses on <em>both</em> preserving watchability over poor connections and delivering the highest quality possible over good connections.</p><p>It is strongly recommended that you <b>use Google Chrome on both sides of the connection</b> for the best possible experience, as WebRTC implementations vary significantly between browsers.</p>';
+		"<h1>psychosis.live</h1><blockquote><p>You have to be insane to think you can livestream from <em>there</em>.</p></blockquote><p>This is a tool for resiliently streaming <em>end-to-end encrypted</em> video from your browser into OBS.</p><p>This tool aims to be as resilient as possible to low-quality and/or unreliable connections, with the goal of pushing single-uplink livestreaming right up to the edge of what's possible.</p><p>It is strongly recommended that you <b>use Google Chrome on both sides of the connection</b> for the best possible experience, as WebRTC implementations vary significantly between browsers.</p>";
 
 	const roomLabel = document.createElement("label");
 	roomLabel.htmlFor = "room";

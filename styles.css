@@ -7,6 +7,14 @@ body:not(#app) {
 	margin: 1lh;
 }
 
+blockquote p::before {
+	content: "\201C";
+}
+
+blockquote p::after {
+	content: "\201D";
+}
+
 .gallery {
 	display: grid;
 	grid-template-columns: 1fr;
