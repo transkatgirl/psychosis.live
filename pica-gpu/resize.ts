@@ -142,6 +142,8 @@ export function resize(
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
+	gl.flush();
+
 	gl.deleteTexture(sourceTexture);
 	gl.deleteTexture(horizontalTexture);
 	gl.deleteProgram(compiledHorizontal.program);
@@ -446,6 +448,8 @@ export class Scaler {
 		gl.viewport(offsetX, offsetY, targetWidth, targetHeight);
 		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+		gl.flush();
 
 		return {
 			x: offsetX,
