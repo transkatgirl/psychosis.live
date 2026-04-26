@@ -917,6 +917,7 @@ export class MediaScaler {
 	processor: any;
 	generator: any;
 	promise: Promise<void> | undefined;
+	lastInit: VideoFrameInit | undefined;
 	public constructor(
 		width: number,
 		height: number,
@@ -948,6 +949,7 @@ export class MediaScaler {
 	public resize(width: number, height: number) {
 		if (this.promise) {
 			this.promise.finally(() => {
+				this.lastInit = undefined;
 				this.scaler.canvas.width = Math.round(width);
 				this.scaler.canvas.height = Math.round(height);
 			});
@@ -983,40 +985,27 @@ export class MediaScaler {
 			const transformer = new TransformStream({
 				async transform(frame: VideoFrame, controller) {
 					if (self.promise) await self.promise;
-
-					const visibleRect = scaler.process(
-						frame,
-						preserveAspectRatio
-					);
-					frame.close();
-
-					self.promise = scaler.sync().then(() => {
-						if (preserveAspectRatio && enforceAspectRatio) {
-							controller.enqueue(
-								new VideoFrame(scaler.canvas, {
-									timestamp: frame.timestamp,
-									duration: frame.duration
-										? frame.duration
-										: undefined,
-									alpha: "discard",
-									visibleRect,
-								})
-							);
-						} else {
-							controller.enqueue(
-								new VideoFrame(scaler.canvas, {
-									timestamp: frame.timestamp,
-									duration: frame.duration
-										? frame.duration
-										: undefined,
-									alpha: "discard",
-								})
-							);
-						}
-					});
-
-					await self.promise;
 					self.promise = undefined;
+
+					if (self.lastInit) {
+						controller.enqueue(
+							new VideoFrame(scaler.canvas, self.lastInit)
+						);
+						self.lastInit = undefined;
+					}
+
+					self.lastInit = {
+						timestamp: frame.timestamp,
+						duration: frame.duration ? frame.duration : undefined,
+						alpha: "discard",
+						visibleRect: scaler.process(frame, preserveAspectRatio),
+					};
+					frame.close();
+					if (!preserveAspectRatio || !enforceAspectRatio) {
+						self.lastInit.visibleRect = undefined;
+					}
+
+					self.promise = scaler.sync();
 				},
 				flush(controller) {
 					controller.terminate();
