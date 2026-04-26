@@ -6,7 +6,9 @@ A WebRTC-based streaming tool for sending end-to-end encrypted video feeds from 
 
 This tool aims to be as resilient as possible to low-quality and/or unreliable connections, with the goal of pushing single-uplink livestreaming right up to the edge of what's possible.
 
-Further documentation is available on the application's website.
+Further documentation is available on the application's website. Make sure to read the known issues, especially if you plan on using a mobile browser.
+
+(Keep in mind that this is only one part of an IRL streaming setup. transkatgirl's [stream-tool.html](https://github.com/transkatgirl/transkatgirl.github.io/blob/main/stream-tool.html) is a good example of an IRL streaming sender using psychosis.live & socialstreamninja)
 
 ## Building
 ```bash
