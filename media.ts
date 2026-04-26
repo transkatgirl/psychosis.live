@@ -962,7 +962,7 @@ export class MediaScaler {
 			// @ts-ignore
 			this.processor = new MediaStreamTrackProcessor({
 				track,
-				maxBufferSize: 2,
+				maxBufferSize: 1,
 			});
 			// @ts-ignore
 			this.generator = new MediaStreamTrackGenerator({
