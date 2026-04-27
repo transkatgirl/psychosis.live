@@ -983,17 +983,21 @@ export class MediaScaler {
 
 			if (scaler) {
 				let lastInit: VideoFrameInit | undefined;
+				let locked = false;
 
 				transformer = new TransformStream({
-					transform(frame: VideoFrame, controller) {
-						if (lastInit) {
-							// TODO: Fix A/V desync!
+					async transform(frame: VideoFrame, controller) {
+						if (locked) return;
+						locked = true;
 
+						if (lastInit) {
 							controller.enqueue(
 								new VideoFrame(scaler.canvas, lastInit)
 							);
 							lastInit = undefined;
 						}
+
+						await scaler.sync();
 
 						if (self.requestedResolution) {
 							scaler.canvas.width = self.requestedResolution[0];
@@ -1017,6 +1021,8 @@ export class MediaScaler {
 						if (!preserveAspectRatio) {
 							lastInit.visibleRect = undefined;
 						}
+
+						locked = false;
 					},
 					flush(controller) {
 						controller.terminate();

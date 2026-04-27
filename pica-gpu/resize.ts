@@ -160,6 +160,8 @@ export function resize(
 export class Scaler {
 	public canvas: OffscreenCanvas;
 	gl: WebGL2RenderingContext;
+	syncHandle: WebGLSync | null = null;
+
 	precise: boolean;
 	linear: boolean;
 
@@ -335,6 +337,11 @@ export class Scaler {
 
 		const gl = this.gl;
 
+		if (this.syncHandle) {
+			gl.deleteSync(this.syncHandle);
+			this.syncHandle = null;
+		}
+
 		const srcWidth = frame.displayWidth;
 		const srcHeight = frame.displayHeight;
 
@@ -449,6 +456,7 @@ export class Scaler {
 		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
+		this.syncHandle = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
 		gl.flush();
 
 		return {
@@ -458,7 +466,30 @@ export class Scaler {
 			height: targetHeight,
 		};
 	}
+	public async sync() {
+		if (!this.syncHandle) return;
+
+		const gl = this.gl;
+
+		let signal: number = gl.clientWaitSync(this.syncHandle, 0, 0);
+
+		while (signal === gl.TIMEOUT_EXPIRED) {
+			await new Promise(function (resolve) {
+				setTimeout(resolve, 1);
+			});
+
+			signal = gl.clientWaitSync(this.syncHandle, 0, 0);
+		}
+
+		gl.deleteSync(this.syncHandle);
+		this.syncHandle = null;
+	}
 	public destroy() {
+		if (this.syncHandle) {
+			this.gl.deleteSync(this.syncHandle);
+			this.syncHandle = null;
+		}
+
 		this.gl.deleteTexture(this.sourceTexture);
 		this.gl.deleteTexture(this.horizontalTexture);
 		this.gl.deleteProgram(this.compiledHorizontal.program);
