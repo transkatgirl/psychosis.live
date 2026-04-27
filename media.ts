@@ -990,14 +990,14 @@ export class MediaScaler {
 						if (locked) return;
 						locked = true;
 
+						await scaler.sync();
+
 						if (lastInit) {
 							controller.enqueue(
 								new VideoFrame(scaler.canvas, lastInit)
 							);
 							lastInit = undefined;
 						}
-
-						await scaler.sync();
 
 						if (self.requestedResolution) {
 							scaler.canvas.width = self.requestedResolution[0];
