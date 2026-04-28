@@ -987,7 +987,7 @@ export class MediaScaler {
 
 			if (scaler) {
 				transformer = new TransformStream({
-					async transform(frame: VideoFrame, controller) {
+					transform(frame: VideoFrame, controller) {
 						if (self.requestedResolution) {
 							self.scalerSize = self.requestedResolution;
 							self.requestedResolution = undefined;
@@ -1000,7 +1000,6 @@ export class MediaScaler {
 								height: self.scalerSize![1] as number,
 							})
 						);
-						frame.close();
 					},
 					flush(controller) {
 						controller.terminate();

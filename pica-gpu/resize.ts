@@ -297,12 +297,13 @@ export class Scaler {
 			this.lastTargetHeight = targetHeight;
 		}
 
-		let pixelCount = targetWidth * targetHeight * 4;
-
-		if (pixelCount != this.lastPixelCount) {
-			this.pixels = new Uint8Array(pixelCount);
-			this.lastPixelCount = pixelCount;
-		}
+		let outputFrameInit: VideoFrameBufferInit = {
+			timestamp: frame.timestamp,
+			duration: frame.duration ? frame.duration : undefined,
+			codedWidth: targetWidth,
+			codedHeight: targetHeight,
+			format: "RGBA",
+		};
 
 		const radiusX = scaleX < 1 ? this.windowSize / scaleX : this.windowSize;
 		gl.useProgram(this.compiledHorizontal.program);
@@ -333,6 +334,7 @@ export class Scaler {
 			gl.RGBA,
 			gl.UNSIGNED_BYTE
 		);
+		frame.close();
 		gl.viewport(0, 0, targetWidth, srcHeight);
 		gl.bindFramebuffer(gl.FRAMEBUFFER, this.horizontalFramebuffer);
 		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -361,6 +363,13 @@ export class Scaler {
 		gl.bindFramebuffer(gl.FRAMEBUFFER, this.outputFramebuffer);
 		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
+		let pixelCount = targetWidth * targetHeight * 4;
+
+		if (pixelCount != this.lastPixelCount) {
+			this.pixels = new Uint8Array(pixelCount);
+			this.lastPixelCount = pixelCount;
+		}
+
 		gl.readPixels(
 			0,
 			0,
@@ -371,13 +380,7 @@ export class Scaler {
 			this.pixels
 		);
 
-		return new VideoFrame(this.pixels, {
-			timestamp: frame.timestamp,
-			duration: frame.duration ? frame.duration : undefined,
-			codedWidth: targetWidth,
-			codedHeight: targetHeight,
-			format: "RGBA",
-		});
+		return new VideoFrame(this.pixels, outputFrameInit);
 	}
 	public destroy() {
 		this.gl.deleteTexture(this.sourceTexture);
