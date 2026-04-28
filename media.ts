@@ -1,6 +1,8 @@
 import * as sdpTransform from "sdp-transform";
 import { Scaler, type ScalerCreationOptions } from "./pica-gpu";
 
+// Note: >2 channel audio isn't supported yet (in WebRTC, it's a weird propretary thing that only Chromium supports afaik), but support may be added in the future
+
 export function convertAudioBitrate(
 	bitrate: number,
 	originalChannelCount: number,
