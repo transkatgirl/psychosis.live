@@ -22,14 +22,16 @@ bun build --compile --target=browser ./index.html --outdir=dist --minify-whitesp
 - [ ] receiver performance monitoring using [VideoPlaybackQuality](https://developer.mozilla.org/en-US/docs/Web/API/VideoPlaybackQuality)
 - [ ] add on-screen RMS+clipping warning volume meter
 - [ ] display information (resolution, framerate, channel count, sample rate) about video/audio tracks in sender/receiver UI if showStats is enabled
+- [ ] implement remote monitoring of peer metrics (viewing receiver metrics on sender and sender metrics on receiver)
+- [ ] further optimize webgl-based scaler
 
 ### far future ideas
-- [ ] wait for browsers to support Opus 1.6 in WebRTC (alternatively, patch chromium & libwebrtc to support it)
+- [ ] if Chromium takes too long to fix bugs in getUserMedia() and enumerateDevices(), submit patches to upstream
+- [ ] wait for libwebrtc to support Opus 1.6 or submit patches to support it
 	- [ ] get [DRED](https://opus-codec.org/demo/opus-1.5/) working
 	- [ ] get [DeepPLC](https://opus-codec.org/demo/opus-1.5/) working
 	- [ ] get [NoLACE](https://opus-codec.org/demo/opus-1.5/) working
 	- [ ] get [BWE](https://opus-codec.org/demo/opus-1.6/) working
-- [ ] make native app implementation if browsers keep taking too long to fix bugs in getUserMedia() and enumerateDevices()
-- [ ] implement remote monitoring of peer metrics (viewing receiver metrics on sender and sender metrics on receiver)
+	- [ ] update Chromium to use latest libwebrtc w/ Opus 1.6 support
 - [ ] switch to MoQ when it's ready
 	- [ ] implement QUIC multipath draft
