@@ -232,17 +232,6 @@ export class Scaler {
 		this.gl.disable(this.gl.BLEND);
 	}
 	public process(frame: VideoFrame, options: FrameOptions) {
-		/*
-
-		Breakdown of approximate time spent per frame (evaluated on an Apple M4 Pro):
-			- 10-20% = fragment shader
-			- 80-90% = all other WebGL calls
-				- 40-70% of that time is spent *just* copying data to and from the GPU
-
-		(Above timings are assuming input & output resolutions are kept constant)
-
-		*/
-
 		if (frame.displayWidth === 0 || frame.displayHeight === 0) {
 			throw new Error("source image width or height is 0");
 		}
@@ -408,7 +397,7 @@ export class Scaler {
 		if (this.frameInit && this.sync) {
 			const gl = this.gl;
 
-			gl.clientWaitSync(this.sync, gl.SYNC_FLUSH_COMMANDS_BIT, 0); // Necessary to surpress a Chromium warning; we're okay with stalling the graphics pipeline to ensure correct frame timing
+			gl.clientWaitSync(this.sync, gl.SYNC_FLUSH_COMMANDS_BIT, 0); // Necessary to surpress a Chromium warning; we're okay with stalling the graphics pipeline once in a rare while to ensure correct frame timing
 
 			gl.bindBuffer(gl.PIXEL_PACK_BUFFER, this.pbo);
 			gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, this.pixels);
