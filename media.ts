@@ -1032,8 +1032,6 @@ export class MediaScaler {
 							canvas.width = self.requestedResolution[0];
 							canvas.height = self.requestedResolution[1];
 							self.requestedResolution = undefined;
-
-							ctx!.clearRect(0, 0, canvas.width, canvas.height);
 						}
 
 						let targetWidth = canvas.width;
@@ -1071,12 +1069,11 @@ export class MediaScaler {
 						frame.close();
 
 						controller.enqueue(
-							new VideoFrame(canvas, {
+							new VideoFrame(canvas.transferToImageBitmap(), {
 								timestamp: frame.timestamp,
 								duration: frame.duration
 									? frame.duration
 									: undefined,
-								alpha: "discard",
 								visibleRect: {
 									x: 0,
 									y: 0,
