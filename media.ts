@@ -1001,20 +1001,20 @@ export class MediaScaler {
 							}
 
 							if (strictSync) {
-								scaler.process(frame, {
-									preserveAspectRatio,
-									width: self.scalerSize![0] as number,
-									height: self.scalerSize![1] as number,
-								});
-
-								controller.enqueue(scaler.read()!);
+								controller.enqueue(
+									scaler.processImmediate(frame, {
+										preserveAspectRatio,
+										width: self.scalerSize![0] as number,
+										height: self.scalerSize![1] as number,
+									})
+								);
 							} else {
 								let output = scaler.read();
 								if (output) {
 									controller.enqueue(output);
 								}
 
-								scaler.process(frame, {
+								scaler.processBuffered(frame, {
 									preserveAspectRatio,
 									width: self.scalerSize![0] as number,
 									height: self.scalerSize![1] as number,

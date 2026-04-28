@@ -235,7 +235,7 @@ export class Scaler {
 		this.gl.activeTexture(this.gl.TEXTURE0);
 		this.gl.disable(this.gl.BLEND);
 	}
-	public process(frame: VideoFrame, options: FrameOptions) {
+	handleFrame(frame: VideoFrame, options: FrameOptions): [number, number] {
 		if (frame.displayWidth === 0 || frame.displayHeight === 0) {
 			throw new Error("source image width or height is 0");
 		}
@@ -369,9 +369,51 @@ export class Scaler {
 		gl.viewport(0, 0, targetWidth, targetHeight);
 		gl.bindFramebuffer(gl.FRAMEBUFFER, this.outputFramebuffer);
 		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+		return [targetWidth, targetHeight];
+	}
+	public processImmediate(frame: VideoFrame, options: FrameOptions) {
+		const [width, height] = this.handleFrame(frame, options);
+
+		const gl = this.gl;
+
+		const pixelCount = width * height * 4;
+
+		if (pixelCount != this.lastPixelCount) {
+			gl.bindBuffer(gl.PIXEL_PACK_BUFFER, this.pbo);
+			gl.bufferData(gl.PIXEL_PACK_BUFFER, pixelCount, gl.DYNAMIC_READ);
+			gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+
+			this.pixels = new Uint8Array(pixelCount);
+			this.lastPixelCount = pixelCount;
+		}
+
+		if (this.sync) {
+			gl.deleteSync(this.sync);
+			gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+			this.sync = undefined;
+		}
+
+		gl.readPixels(
+			0,
+			0,
+			width,
+			height,
+			gl.RGBA,
+			gl.UNSIGNED_BYTE,
+			this.pixels
+		);
+
+		return new VideoFrame(this.pixels, this.frameInit!);
+	}
+	public processBuffered(frame: VideoFrame, options: FrameOptions) {
+		const [width, height] = this.handleFrame(frame, options);
+
+		const gl = this.gl;
+
 		gl.bindBuffer(gl.PIXEL_PACK_BUFFER, this.pbo);
 
-		const pixelCount = targetWidth * targetHeight * 4;
+		const pixelCount = width * height * 4;
 
 		if (pixelCount != this.lastPixelCount) {
 			gl.bufferData(gl.PIXEL_PACK_BUFFER, pixelCount, gl.DYNAMIC_READ);
@@ -380,15 +422,7 @@ export class Scaler {
 			this.lastPixelCount = pixelCount;
 		}
 
-		gl.readPixels(
-			0,
-			0,
-			targetWidth,
-			targetHeight,
-			gl.RGBA,
-			gl.UNSIGNED_BYTE,
-			0
-		);
+		gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, 0);
 
 		if (this.sync) {
 			gl.deleteSync(this.sync);
