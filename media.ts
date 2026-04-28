@@ -964,7 +964,11 @@ export class MediaScaler {
 	public resize(width: number, height: number) {
 		this.requestedResolution = [Math.round(width), Math.round(height)];
 	}
-	public addTrack(track: MediaStreamTrack, preserveAspectRatio = true) {
+	public addTrack(
+		track: MediaStreamTrack,
+		strictSync: boolean,
+		preserveAspectRatio = true
+	) {
 		if (track.kind == "video") {
 			if (this.videoId)
 				throw "Scaler already has an attached video track.";
@@ -996,16 +1000,26 @@ export class MediaScaler {
 								self.requestedResolution = undefined;
 							}
 
-							let output = scaler.read();
-							if (output) {
-								controller.enqueue(output);
-							}
+							if (strictSync) {
+								scaler.process(frame, {
+									preserveAspectRatio,
+									width: self.scalerSize![0] as number,
+									height: self.scalerSize![1] as number,
+								});
 
-							scaler.process(frame, {
-								preserveAspectRatio,
-								width: self.scalerSize![0] as number,
-								height: self.scalerSize![1] as number,
-							});
+								controller.enqueue(scaler.read()!);
+							} else {
+								let output = scaler.read();
+								if (output) {
+									controller.enqueue(output);
+								}
+
+								scaler.process(frame, {
+									preserveAspectRatio,
+									width: self.scalerSize![0] as number,
+									height: self.scalerSize![1] as number,
+								});
+							}
 						},
 						flush(controller) {
 							controller.terminate();
