@@ -231,8 +231,6 @@ export class Scaler {
 	public process(frame: VideoFrame, options: FrameOptions): VideoFrame {
 		/*
 
-		Regarding possibilities for further optimization:
-
 		Breakdown of approximate time spent per frame (evaluated on an Apple M4 Pro):
 			- 10-20% = fragment shader
 			- 80-90% = all other WebGL calls
