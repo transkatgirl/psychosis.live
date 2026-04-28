@@ -665,7 +665,6 @@ async function launchSender(credentials: RoomCredentials) {
 					scalingFilter
 						? (scalingFilter as ScalerCreationOptions["filter"])
 						: "mks2013", // sharper filters are better for downscaling
-					params.get("reducedQualityScaling") !== "true",
 					params.get("reducedQualityScaling") !== "true"
 				);
 
@@ -1152,7 +1151,6 @@ async function launchReceiver(credentials: RoomCredentials) {
 								scalingFilter
 									? (scalingFilter as ScalerCreationOptions["filter"])
 									: "mks2021", // blurrier filters are better for upscaling
-								params.get("reducedQualityScaling") !== "true",
 								params.get("reducedQualityScaling") !== "true"
 							);
 

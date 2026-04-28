@@ -930,8 +930,7 @@ export class MediaScaler {
 			| ScalerCreationOptions["filter"]
 			| "browser"
 			| "browser_nosmooth",
-		precise: boolean,
-		linear: boolean
+		precise: boolean
 	) {
 		if (
 			!(
@@ -952,7 +951,7 @@ export class MediaScaler {
 			this.scaler = new Scaler({
 				filter: scaler,
 				precise,
-				linear,
+				linear: precise, // Quantization artifacts are far more visually distracting than slightly incorrect pixel blending
 			});
 			this.scalerSize = [Math.round(width), Math.round(height)];
 		}
