@@ -67,11 +67,13 @@ export class Scaler {
 	};
 	horizontalLocations: {
 		textureWidth: WebGLUniformLocation;
+		invTextureWidth: WebGLUniformLocation;
 		scale: WebGLUniformLocation;
 		radius: WebGLUniformLocation;
 	};
 	verticalLocations: {
 		textureHeight: WebGLUniformLocation;
+		invTextureHeight: WebGLUniformLocation;
 		scale: WebGLUniformLocation;
 		radius: WebGLUniformLocation;
 	};
@@ -159,6 +161,10 @@ export class Scaler {
 				this.compiledHorizontal.program,
 				"u_textureWidth"
 			)!,
+			invTextureWidth: this.gl.getUniformLocation(
+				this.compiledHorizontal.program,
+				"u_invTextureWidth"
+			)!,
 			scale: this.gl.getUniformLocation(
 				this.compiledHorizontal.program,
 				"u_scale"
@@ -172,6 +178,10 @@ export class Scaler {
 			textureHeight: this.gl.getUniformLocation(
 				this.compiledVertical.program,
 				"u_textureHeight"
+			)!,
+			invTextureHeight: this.gl.getUniformLocation(
+				this.compiledVertical.program,
+				"u_invTextureHeight"
 			)!,
 			scale: this.gl.getUniformLocation(
 				this.compiledVertical.program,
@@ -298,6 +308,11 @@ export class Scaler {
 		gl.useProgram(this.compiledHorizontal.program);
 		if (srcWidth !== this.lastSourceWidth) {
 			gl.uniform1f(this.horizontalLocations.textureWidth, srcWidth);
+			gl.uniform1f(
+				this.horizontalLocations.invTextureWidth,
+				1 / srcWidth
+			);
+			this.lastSourceWidth = srcWidth;
 		}
 		if (radiusX !== this.lastRadiusX) {
 			gl.uniform1f(
@@ -326,6 +341,11 @@ export class Scaler {
 		gl.useProgram(this.compiledVertical.program);
 		if (srcHeight !== this.lastSourceHeight) {
 			gl.uniform1f(this.verticalLocations.textureHeight, srcHeight);
+			gl.uniform1f(
+				this.verticalLocations.invTextureHeight,
+				1 / srcHeight
+			);
+			this.lastSourceHeight = srcHeight;
 		}
 		if (radiusY !== this.lastRadiusY) {
 			gl.uniform1f(
@@ -339,16 +359,6 @@ export class Scaler {
 		gl.bindTexture(gl.TEXTURE_2D, this.horizontalTexture);
 		gl.viewport(0, 0, targetWidth, targetHeight);
 		gl.bindFramebuffer(gl.FRAMEBUFFER, this.outputFramebuffer);
-		if (
-			srcWidth !== this.lastSourceWidth ||
-			srcHeight !== this.lastSourceHeight
-		) {
-			gl.clearColor(0, 0, 0, 1);
-			gl.clear(gl.COLOR_BUFFER_BIT);
-
-			this.lastSourceWidth = srcWidth;
-			this.lastSourceHeight = srcHeight;
-		}
 		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
 		gl.readPixels(

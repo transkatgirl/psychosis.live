@@ -17,6 +17,7 @@ out vec4 outColor;
 
 uniform sampler2D u_image;
 uniform float u_textureWidth;
+uniform float u_invTextureWidth;
 uniform float u_scale;
 uniform float u_radius;
 
@@ -34,7 +35,7 @@ void main(){
 	float sum = 0.0;
 	vec4 color = vec4(0.0);
 	for(int i = start; i <= end; i++){
-		float texX = (float(i) + 0.5) / u_textureWidth;
+		float texX = (float(i) + 0.5) * u_invTextureWidth;
 		float weight = resizeFilter(((float(i) + 0.5) - srcX) * u_scale);
 		vec4 sampleValue = texture(u_image, vec2(texX, v_texCoord.y));
 		color += sampleValue * weight;
@@ -50,6 +51,7 @@ out vec4 outColor;
 
 uniform sampler2D u_image;
 uniform float u_textureHeight;
+uniform float u_invTextureHeight;
 uniform float u_scale;
 uniform float u_radius;
 const float PI = 3.141592653589793;
@@ -66,7 +68,7 @@ void main(){
 	float sum = 0.0;
 	vec4 color = vec4(0.0);
 	for(int j = start; j <= end; j++){
-		float texY = (float(j) + 0.5) / u_textureHeight;
+		float texY = (float(j) + 0.5) * u_invTextureHeight;
 		float weight = resizeFilter(((float(j) + 0.5) - srcY) * u_scale);
 		vec4 sampleValue = texture(u_image, vec2(v_texCoord.x, texY));
 		color += sampleValue * weight;
@@ -82,6 +84,7 @@ out vec4 outColor;
 
 uniform sampler2D u_image;
 uniform float u_textureWidth;
+uniform float u_invTextureWidth;
 uniform float u_scale;
 uniform float u_radius;
 
@@ -107,7 +110,7 @@ void main(){
 	float sum = 0.0;
 	vec4 color = vec4(0.0);
 	for(int i = start; i <= end; i++){
-		float texX = (float(i) + 0.5) / u_textureWidth;
+		float texX = (float(i) + 0.5) * u_invTextureWidth;
 		float weight = resizeFilter(((float(i) + 0.5) - srcX) * u_scale);
 		vec4 sampleValue = texture(u_image, vec2(texX, v_texCoord.y));
 		color += vec4(sRGBToLinear(vec3(sampleValue)), 1.0) * weight;
@@ -123,6 +126,7 @@ out vec4 outColor;
 
 uniform sampler2D u_image;
 uniform float u_textureHeight;
+uniform float u_invTextureHeight;
 uniform float u_scale;
 uniform float u_radius;
 const float PI = 3.141592653589793;
@@ -147,7 +151,7 @@ void main(){
 	float sum = 0.0;
 	vec4 color = vec4(0.0);
 	for(int j = start; j <= end; j++){
-		float texY = (float(j) + 0.5) / u_textureHeight;
+		float texY = (float(j) + 0.5) * u_invTextureHeight;
 		float weight = resizeFilter(((float(j) + 0.5) - srcY) * u_scale);
 		vec4 sampleValue = texture(u_image, vec2(v_texCoord.x, texY));
 		color += sampleValue * weight;
