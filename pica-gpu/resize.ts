@@ -105,7 +105,7 @@ export class Scaler {
 			this.gl,
 			1,
 			1,
-			gl.RGBA,
+			gl.RGBA8,
 			gl.RGBA,
 			gl.UNSIGNED_BYTE
 		);
@@ -113,7 +113,7 @@ export class Scaler {
 			this.gl,
 			1,
 			1,
-			this.precise ? gl.RGBA16F : gl.RGBA,
+			this.precise ? gl.RGBA16F : gl.RGBA8,
 			gl.RGBA,
 			this.precise ? gl.HALF_FLOAT : gl.UNSIGNED_BYTE
 		);
@@ -121,7 +121,7 @@ export class Scaler {
 			this.gl,
 			1,
 			1,
-			gl.RGBA,
+			gl.RGBA8,
 			gl.RGBA,
 			gl.UNSIGNED_BYTE
 		);
@@ -271,7 +271,7 @@ export class Scaler {
 				this.horizontalTexture,
 				targetWidth,
 				srcHeight,
-				this.precise ? gl.RGBA16F : gl.RGBA,
+				this.precise ? gl.RGBA16F : gl.RGBA8,
 				gl.RGBA,
 				this.precise ? gl.HALF_FLOAT : gl.UNSIGNED_BYTE
 			);
@@ -288,7 +288,7 @@ export class Scaler {
 				this.outputTexture,
 				options.width,
 				options.height,
-				gl.RGBA,
+				gl.RGBA8,
 				gl.RGBA,
 				gl.UNSIGNED_BYTE
 			);
@@ -326,7 +326,7 @@ export class Scaler {
 			frame,
 			srcWidth,
 			srcHeight,
-			gl.RGBA,
+			gl.RGBA8,
 			gl.RGBA,
 			gl.UNSIGNED_BYTE
 		);
