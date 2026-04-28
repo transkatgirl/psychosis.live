@@ -996,13 +996,16 @@ export class MediaScaler {
 							self.requestedResolution = undefined;
 						}
 
-						controller.enqueue(
-							scaler.process(frame, {
-								preserveAspectRatio,
-								width: self.scalerSize![0] as number,
-								height: self.scalerSize![1] as number,
-							})
-						);
+						let output = scaler.read();
+						if (output) {
+							controller.enqueue(output);
+						}
+
+						scaler.process(frame, {
+							preserveAspectRatio,
+							width: self.scalerSize![0] as number,
+							height: self.scalerSize![1] as number,
+						});
 					},
 					flush(controller) {
 						controller.terminate();

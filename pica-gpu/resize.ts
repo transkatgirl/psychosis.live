@@ -53,7 +53,11 @@ export class Scaler {
 	outputFramebuffer: WebGLFramebuffer;
 
 	pixels: Uint8Array;
+	frameInit: VideoFrameBufferInit | undefined;
 	lastPixelCount = -1;
+
+	pbo: WebGLBuffer;
+	sync: WebGLSync | undefined;
 
 	compiledHorizontal: {
 		program: WebGLProgram;
@@ -133,6 +137,8 @@ export class Scaler {
 		);
 		this.outputFramebuffer = createFramebuffer(this.gl, this.outputTexture);
 		this.pixels = new Uint8Array();
+
+		this.pbo = this.gl.createBuffer();
 
 		this.compiledHorizontal = createProgram(
 			this.gl,
@@ -225,7 +231,7 @@ export class Scaler {
 		this.gl.activeTexture(this.gl.TEXTURE0);
 		this.gl.disable(this.gl.BLEND);
 	}
-	public process(frame: VideoFrame, options: FrameOptions): VideoFrame {
+	public process(frame: VideoFrame, options: FrameOptions) {
 		/*
 
 		Breakdown of approximate time spent per frame (evaluated on an Apple M4 Pro):
@@ -305,7 +311,7 @@ export class Scaler {
 			this.lastTargetHeight = targetHeight;
 		}
 
-		let outputFrameInit: VideoFrameBufferInit = {
+		this.frameInit = {
 			timestamp: frame.timestamp,
 			duration: frame.duration ? frame.duration : undefined,
 			codedWidth: targetWidth,
@@ -370,10 +376,13 @@ export class Scaler {
 		gl.viewport(0, 0, targetWidth, targetHeight);
 		gl.bindFramebuffer(gl.FRAMEBUFFER, this.outputFramebuffer);
 		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+		gl.bindBuffer(gl.PIXEL_PACK_BUFFER, this.pbo);
 
-		let pixelCount = targetWidth * targetHeight * 4;
+		const pixelCount = targetWidth * targetHeight * 4;
 
 		if (pixelCount != this.lastPixelCount) {
+			gl.bufferData(gl.PIXEL_PACK_BUFFER, pixelCount, gl.DYNAMIC_READ);
+
 			this.pixels = new Uint8Array(pixelCount);
 			this.lastPixelCount = pixelCount;
 		}
@@ -385,12 +394,33 @@ export class Scaler {
 			targetHeight,
 			gl.RGBA,
 			gl.UNSIGNED_BYTE,
-			this.pixels
+			0
 		);
 
-		return new VideoFrame(this.pixels, outputFrameInit);
+		if (this.sync) {
+			gl.deleteSync(this.sync);
+		}
+
+		this.sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0)!;
+		gl.flush();
+	}
+	public read(): VideoFrame | undefined {
+		if (this.frameInit && this.sync) {
+			const gl = this.gl;
+
+			gl.clientWaitSync(this.sync, gl.SYNC_FLUSH_COMMANDS_BIT, 0); // Necessary to surpress a Chromium warning; we're okay with stalling the graphics pipeline to ensure correct frame timing
+
+			gl.bindBuffer(gl.PIXEL_PACK_BUFFER, this.pbo);
+			gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, this.pixels);
+
+			return new VideoFrame(this.pixels, this.frameInit);
+		}
 	}
 	public destroy() {
+		if (this.sync) {
+			this.gl.deleteSync(this.sync);
+		}
+
 		this.gl.deleteTexture(this.sourceTexture);
 		this.gl.deleteTexture(this.horizontalTexture);
 		this.gl.deleteTexture(this.outputTexture);
@@ -403,6 +433,7 @@ export class Scaler {
 		this.gl.deleteFramebuffer(this.horizontalFramebuffer);
 		this.gl.deleteFramebuffer(this.outputFramebuffer);
 		this.gl.deleteBuffer(this.quadBuffer);
+		this.gl.deleteBuffer(this.pbo);
 		this.gl.deleteVertexArray(this.horizontalVAO);
 		this.gl.deleteVertexArray(this.verticalVAO);
 	}
