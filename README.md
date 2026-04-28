@@ -20,9 +20,8 @@ bun build --compile --target=browser ./index.html --outdir=dist --minify-whitesp
 
 ### low priority
 - [ ] receiver performance monitoring using [VideoPlaybackQuality](https://developer.mozilla.org/en-US/docs/Web/API/VideoPlaybackQuality)
-- [ ] warn if `overrideScaler` is causing performance issues on sender or receiver
 - [ ] add on-screen RMS+clipping warning volume meter
-- [ ] display information (resolution, framerate, channel count, sample rate) about video/audio tracks in sender UI if showStats is enabled
+- [ ] display information (resolution, framerate, channel count, sample rate) about video/audio tracks in sender/receiver UI if showStats is enabled
 
 ### far future ideas
 - [ ] wait for browsers to support Opus 1.6 in WebRTC (alternatively, patch chromium & libwebrtc to support it)
