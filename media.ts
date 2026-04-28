@@ -995,9 +995,7 @@ export class MediaScaler {
 
 						controller.enqueue(
 							scaler.process(frame, {
-								aspectRatioConversion: preserveAspectRatio
-									? "crop"
-									: "distort",
+								preserveAspectRatio,
 								width: self.scalerSize![0] as number,
 								height: self.scalerSize![1] as number,
 							})

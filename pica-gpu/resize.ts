@@ -21,7 +21,7 @@ export interface ScalerCreationOptions {
 }
 
 export interface FrameOptions {
-	aspectRatioConversion: "distort" | "letterbox" | "crop";
+	preserveAspectRatio: boolean;
 	width: number;
 	height: number;
 }
@@ -222,9 +222,6 @@ export class Scaler {
 		if (frame.displayWidth === 0 || frame.displayHeight === 0) {
 			throw new Error("source image width or height is 0");
 		}
-		if (options.width === 0 || options.height === 0) {
-			throw new Error("target canvas width or height is 0");
-		}
 
 		const gl = this.gl;
 
@@ -240,7 +237,7 @@ export class Scaler {
 		const EPSILON = 1e-6;
 		if (
 			Math.abs(srcAspectRatio - outputAspectRatio) > EPSILON &&
-			options.aspectRatioConversion != "distort"
+			options.preserveAspectRatio
 		) {
 			if (srcAspectRatio > outputAspectRatio) {
 				targetHeight = Math.round(options.width / srcAspectRatio);
@@ -249,18 +246,12 @@ export class Scaler {
 			}
 		}
 
+		if (targetWidth === 0 || targetHeight === 0) {
+			throw new Error("target width or height is 0");
+		}
+
 		const scaleX = targetWidth / srcWidth;
 		const scaleY = targetHeight / srcHeight;
-
-		let offsetX = 0;
-		if (options.width > targetWidth) {
-			offsetX = Math.round((options.width - targetWidth) / 2);
-		}
-
-		let offsetY = 0;
-		if (options.height > targetHeight) {
-			offsetY = Math.round((options.height - targetHeight) / 2);
-		}
 
 		if (
 			this.horizontalTextureWidth !== targetWidth ||
@@ -280,26 +271,23 @@ export class Scaler {
 		}
 
 		if (
-			options.width != this.lastTargetWidth ||
-			options.height != this.lastTargetHeight
+			targetWidth != this.lastTargetWidth ||
+			targetHeight != this.lastTargetHeight
 		) {
 			updateTextureFromEmpty(
 				gl,
 				this.outputTexture,
-				options.width,
-				options.height,
+				targetWidth,
+				targetHeight,
 				gl.RGBA8,
 				gl.RGBA,
 				gl.UNSIGNED_BYTE
 			);
-			this.lastTargetWidth = options.width;
-			this.lastTargetHeight = options.height;
+			this.lastTargetWidth = targetWidth;
+			this.lastTargetHeight = targetHeight;
 		}
 
-		let pixelCount =
-			(options.aspectRatioConversion === "crop"
-				? targetWidth * targetHeight
-				: options.width * options.height) * 4;
+		let pixelCount = targetWidth * targetHeight * 4;
 
 		if (pixelCount != this.lastPixelCount) {
 			this.pixels = new Uint8Array(pixelCount);
@@ -349,7 +337,7 @@ export class Scaler {
 		}
 		gl.bindVertexArray(this.verticalVAO);
 		gl.bindTexture(gl.TEXTURE_2D, this.horizontalTexture);
-		gl.viewport(offsetX, offsetY, targetWidth, targetHeight);
+		gl.viewport(0, 0, targetWidth, targetHeight);
 		gl.bindFramebuffer(gl.FRAMEBUFFER, this.outputFramebuffer);
 		if (
 			srcWidth !== this.lastSourceWidth ||
@@ -363,47 +351,23 @@ export class Scaler {
 		}
 		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
-		let init: VideoFrameBufferInit;
+		gl.readPixels(
+			0,
+			0,
+			targetWidth,
+			targetHeight,
+			gl.RGBA,
+			gl.UNSIGNED_BYTE,
+			this.pixels
+		);
 
-		if (options.aspectRatioConversion === "crop") {
-			gl.readPixels(
-				offsetX,
-				offsetY,
-				targetWidth,
-				targetHeight,
-				gl.RGBA,
-				gl.UNSIGNED_BYTE,
-				this.pixels
-			);
-
-			init = {
-				timestamp: frame.timestamp,
-				duration: frame.duration ? frame.duration : undefined,
-				codedWidth: targetWidth,
-				codedHeight: targetHeight,
-				format: "RGBA",
-			};
-		} else {
-			gl.readPixels(
-				0,
-				0,
-				options.width,
-				options.height,
-				gl.RGBA,
-				gl.UNSIGNED_BYTE,
-				this.pixels
-			);
-
-			init = {
-				timestamp: frame.timestamp,
-				duration: frame.duration ? frame.duration : undefined,
-				codedWidth: options.width,
-				codedHeight: options.height,
-				format: "RGBA",
-			};
-		}
-
-		return new VideoFrame(this.pixels, init);
+		return new VideoFrame(this.pixels, {
+			timestamp: frame.timestamp,
+			duration: frame.duration ? frame.duration : undefined,
+			codedWidth: targetWidth,
+			codedHeight: targetHeight,
+			format: "RGBA",
+		});
 	}
 	public destroy() {
 		this.gl.deleteTexture(this.sourceTexture);
