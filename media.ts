@@ -949,7 +949,7 @@ export class MediaScaler {
 			);
 			this.canvasSmooth = scaler === "browser";
 		} else {
-			this.scaler = new Scaler(new OffscreenCanvas(1, 1), {
+			this.scaler = new Scaler({
 				filter: scaler,
 				precise,
 				linear,

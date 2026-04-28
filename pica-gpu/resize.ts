@@ -80,11 +80,8 @@ export class Scaler {
 	horizontalVAO: WebGLVertexArrayObject;
 	verticalVAO: WebGLVertexArrayObject;
 
-	public constructor(
-		canvas: OffscreenCanvas,
-		options: ScalerCreationOptions
-	) {
-		this.canvas = canvas;
+	public constructor(options: ScalerCreationOptions) {
+		this.canvas = new OffscreenCanvas(1, 1);
 
 		const gl = this.canvas.getContext("webgl2", {
 			premultipliedAlpha: false,
