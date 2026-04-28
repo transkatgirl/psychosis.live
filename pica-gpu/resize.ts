@@ -262,17 +262,6 @@ export class Scaler {
 			offsetY = Math.round((options.height - targetHeight) / 2);
 		}
 
-		updateTextureFromImage(
-			gl,
-			this.sourceTexture,
-			frame,
-			srcWidth,
-			srcHeight,
-			gl.RGBA,
-			gl.RGBA,
-			gl.UNSIGNED_BYTE
-		);
-
 		if (
 			this.horizontalTextureWidth !== targetWidth ||
 			this.horizontalTextureHeight !== srcHeight
@@ -303,7 +292,6 @@ export class Scaler {
 				gl.RGBA,
 				gl.UNSIGNED_BYTE
 			);
-
 			this.lastTargetWidth = options.width;
 			this.lastTargetHeight = options.height;
 		}
@@ -331,7 +319,16 @@ export class Scaler {
 			this.lastRadiusX = radiusX;
 		}
 		gl.bindVertexArray(this.horizontalVAO);
-		gl.bindTexture(gl.TEXTURE_2D, this.sourceTexture);
+		updateTextureFromImage(
+			gl,
+			this.sourceTexture,
+			frame,
+			srcWidth,
+			srcHeight,
+			gl.RGBA,
+			gl.RGBA,
+			gl.UNSIGNED_BYTE
+		);
 		gl.viewport(0, 0, targetWidth, srcHeight);
 		gl.bindFramebuffer(gl.FRAMEBUFFER, this.horizontalFramebuffer);
 		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
