@@ -988,28 +988,38 @@ export class MediaScaler {
 			let transformer;
 
 			if (scaler) {
-				transformer = new TransformStream({
-					transform(frame: VideoFrame, controller) {
-						if (self.requestedResolution) {
-							self.scalerSize = self.requestedResolution;
-							self.requestedResolution = undefined;
-						}
+				transformer = new TransformStream(
+					{
+						transform(frame: VideoFrame, controller) {
+							if (self.requestedResolution) {
+								self.scalerSize = self.requestedResolution;
+								self.requestedResolution = undefined;
+							}
 
-						let output = scaler.read();
-						if (output) {
-							controller.enqueue(output);
-						}
+							let output = scaler.read();
+							if (output) {
+								controller.enqueue(output);
+							}
 
-						scaler.process(frame, {
-							preserveAspectRatio,
-							width: self.scalerSize![0] as number,
-							height: self.scalerSize![1] as number,
-						});
+							scaler.process(frame, {
+								preserveAspectRatio,
+								width: self.scalerSize![0] as number,
+								height: self.scalerSize![1] as number,
+							});
+						},
+						flush(controller) {
+							controller.terminate();
+						},
 					},
-					flush(controller) {
-						controller.terminate();
+					{
+						highWaterMark: 1,
+						size: (_) => 1,
 					},
-				});
+					{
+						highWaterMark: 0,
+						size: (_) => 1,
+					}
+				);
 			} else if (canvas) {
 				let ctx = canvas.getContext("2d", {
 					alpha: false,
