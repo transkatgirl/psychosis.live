@@ -1749,14 +1749,15 @@ async function statsOverlay(
 			(jitterBufferDelay &&
 				incomingBandwidth &&
 				incomingBandwidth < 416) ||
-			(roundTripTime && roundTripTime > 500) ||
-			(jitter && jitter > 500) ||
+			(roundTripTime && roundTripTime > 400) ||
+			(jitter && jitter > 400) ||
+			(jitterBufferDelay && jitter && jitterBufferDelay > jitter) ||
 			(lossFraction &&
 				lossFraction >= 2 &&
 				roundTripTime &&
-				roundTripTime + (jitter ? jitter : 0) / 2 > 333) ||
+				roundTripTime + (jitter ? jitter : 0) / 2 > 267) ||
 			(lossFraction && lossFraction >= 10) ||
-			(desync && desync > 333) ||
+			(desync && desync > 250) ||
 			peer.pc.connectionState != "connected"
 		) {
 			peerEntry.classList.add("stats-alert");
@@ -1765,10 +1766,10 @@ async function statsOverlay(
 			(jitterBufferDelay &&
 				incomingBandwidth &&
 				incomingBandwidth < 1184) ||
-			(roundTripTime && roundTripTime > 250) ||
-			(jitter && jitter > 125) ||
+			(roundTripTime && roundTripTime > 200) ||
+			(jitter && jitter > 100) ||
 			(roundTripTime &&
-				roundTripTime + (jitter ? jitter : 0) / 2 > 333) ||
+				roundTripTime + (jitter ? jitter : 0) / 2 > 267) ||
 			(lossFraction && lossFraction >= 2) ||
 			(desync && desync > 100) ||
 			((targetAudioBitrate || targetVideoBitrate) && cpuLimited)
