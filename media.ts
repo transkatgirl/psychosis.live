@@ -544,6 +544,8 @@ function adaptiveAudioBitrate(
 			} else {
 				// prefer staying above stickyTarget * 32 kbit/s
 
+				// decreasing the audio bitrate *too* fast can cause the congestion control algorithm to yo-yo the video bitrate up and down. this is why it's recommended that you disable the "sticky" behavior when audio RED is enabled (as, when RED is enabled, the sent bitrate is 2x the targetBitrate...)
+
 				if (report.targetBitrate >= 64000 * stickyTarget) {
 					bitrateLower =
 						Math.max(
