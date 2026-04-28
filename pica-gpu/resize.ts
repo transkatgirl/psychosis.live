@@ -441,6 +441,9 @@ export class Scaler {
 				this.syncTimeout
 			);
 
+			gl.deleteSync(this.sync);
+			this.sync = undefined;
+
 			gl.bindBuffer(gl.PIXEL_PACK_BUFFER, this.pbo);
 			gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, this.pixels);
 

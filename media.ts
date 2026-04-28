@@ -964,11 +964,7 @@ export class MediaScaler {
 	public resize(width: number, height: number) {
 		this.requestedResolution = [Math.round(width), Math.round(height)];
 	}
-	public addTrack(
-		track: MediaStreamTrack,
-		strictSync: boolean,
-		preserveAspectRatio = true
-	) {
+	public addTrack(track: MediaStreamTrack, preserveAspectRatio = true) {
 		if (track.kind == "video") {
 			if (this.videoId)
 				throw "Scaler already has an attached video track.";
@@ -992,6 +988,11 @@ export class MediaScaler {
 			let transformer;
 
 			if (scaler) {
+				const framerate = track.getSettings()?.frameRate;
+				const frameWaitTime = (1 / (framerate ? framerate : 60)) * 3000;
+
+				let timeout: number | undefined;
+
 				transformer = new TransformStream(
 					{
 						transform(frame: VideoFrame, controller) {
@@ -1000,26 +1001,31 @@ export class MediaScaler {
 								self.requestedResolution = undefined;
 							}
 
-							if (strictSync) {
-								controller.enqueue(
-									scaler.processImmediate(frame, {
-										preserveAspectRatio,
-										width: self.scalerSize![0] as number,
-										height: self.scalerSize![1] as number,
-									})
-								);
-							} else {
+							if (timeout) {
+								window.clearTimeout(timeout);
+							}
+
+							let output = scaler.read();
+							if (output) {
+								controller.enqueue(output);
+							}
+
+							scaler.processBuffered(frame, {
+								preserveAspectRatio,
+								width: self.scalerSize![0] as number,
+								height: self.scalerSize![1] as number,
+							});
+
+							timeout = window.setTimeout(() => {
 								let output = scaler.read();
 								if (output) {
+									console.warn(
+										"Input is likely running behind, reading frame early"
+									);
+
 									controller.enqueue(output);
 								}
-
-								scaler.processBuffered(frame, {
-									preserveAspectRatio,
-									width: self.scalerSize![0] as number,
-									height: self.scalerSize![1] as number,
-								});
-							}
+							}, frameWaitTime);
 						},
 						flush(controller) {
 							controller.terminate();
