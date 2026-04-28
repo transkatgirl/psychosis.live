@@ -58,6 +58,7 @@ export class Scaler {
 
 	pbo: WebGLBuffer;
 	sync: WebGLSync | undefined;
+	syncTimeout: number;
 
 	compiledHorizontal: {
 		program: WebGLProgram;
@@ -139,6 +140,9 @@ export class Scaler {
 		this.pixels = new Uint8Array();
 
 		this.pbo = this.gl.createBuffer();
+		this.syncTimeout = this.gl.getParameter(
+			gl.MAX_CLIENT_WAIT_TIMEOUT_WEBGL
+		);
 
 		this.compiledHorizontal = createProgram(
 			this.gl,
@@ -397,7 +401,11 @@ export class Scaler {
 		if (this.frameInit && this.sync) {
 			const gl = this.gl;
 
-			gl.clientWaitSync(this.sync, gl.SYNC_FLUSH_COMMANDS_BIT, 0); // Necessary to surpress a Chromium warning; we're okay with stalling the graphics pipeline once in a rare while to ensure correct frame timing
+			gl.clientWaitSync(
+				this.sync,
+				gl.SYNC_FLUSH_COMMANDS_BIT,
+				this.syncTimeout
+			);
 
 			gl.bindBuffer(gl.PIXEL_PACK_BUFFER, this.pbo);
 			gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, this.pixels);

@@ -35,8 +35,9 @@ void main(){
 	float sum = 0.0;
 	vec4 color = vec4(0.0);
 	for(int i = start; i <= end; i++){
-		float texX = (float(i) + 0.5) * u_invTextureWidth;
-		float weight = resizeFilter(((float(i) + 0.5) - srcX) * u_scale);
+		float center = float(i) + 0.5;
+		float texX = center * u_invTextureWidth;
+		float weight = resizeFilter((center - srcX) * u_scale);
 		vec4 sampleValue = texture(u_image, vec2(texX, v_texCoord.y));
 		color += sampleValue * weight;
 		sum += weight;
@@ -68,8 +69,9 @@ void main(){
 	float sum = 0.0;
 	vec4 color = vec4(0.0);
 	for(int j = start; j <= end; j++){
-		float texY = (float(j) + 0.5) * u_invTextureHeight;
-		float weight = resizeFilter(((float(j) + 0.5) - srcY) * u_scale);
+		float center = float(j) + 0.5;
+		float texY = center * u_invTextureHeight;
+		float weight = resizeFilter((center - srcY) * u_scale);
 		vec4 sampleValue = texture(u_image, vec2(v_texCoord.x, texY));
 		color += sampleValue * weight;
 		sum += weight;
@@ -110,8 +112,9 @@ void main(){
 	float sum = 0.0;
 	vec4 color = vec4(0.0);
 	for(int i = start; i <= end; i++){
-		float texX = (float(i) + 0.5) * u_invTextureWidth;
-		float weight = resizeFilter(((float(i) + 0.5) - srcX) * u_scale);
+		float center = float(i) + 0.5;
+		float texX = center * u_invTextureWidth;
+		float weight = resizeFilter((center - srcX) * u_scale);
 		vec4 sampleValue = texture(u_image, vec2(texX, v_texCoord.y));
 		color += vec4(sRGBToLinear(vec3(sampleValue)), 1.0) * weight;
 		sum += weight;
@@ -151,8 +154,9 @@ void main(){
 	float sum = 0.0;
 	vec4 color = vec4(0.0);
 	for(int j = start; j <= end; j++){
-		float texY = (float(j) + 0.5) * u_invTextureHeight;
-		float weight = resizeFilter(((float(j) + 0.5) - srcY) * u_scale);
+		float center = float(j) + 0.5;
+		float texY = center * u_invTextureHeight;
+		float weight = resizeFilter((center - srcY) * u_scale);
 		vec4 sampleValue = texture(u_image, vec2(v_texCoord.x, texY));
 		color += sampleValue * weight;
 		sum += weight;
