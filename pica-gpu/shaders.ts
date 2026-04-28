@@ -24,6 +24,71 @@ const float PI = 3.141592653589793;
 
 /* FILTER_FUNCTION */
 
+void main(){
+	float srcX = (v_texCoord.x * u_textureWidth);
+	float left = srcX - u_radius;
+	float right = srcX + u_radius;
+	int start = int(floor(left));
+	int end = int(ceil(right));
+
+	float sum = 0.0;
+	vec4 color = vec4(0.0);
+	for(int i = start; i <= end; i++){
+		float texX = (float(i) + 0.5) / u_textureWidth;
+		float weight = resizeFilter(((float(i) + 0.5) - srcX) * u_scale);
+		vec4 sampleValue = texture(u_image, vec2(texX, v_texCoord.y));
+		color += sampleValue * weight;
+		sum += weight;
+	}
+	outColor = color / sum;
+}`;
+
+const fsVertical = `#version 300 es
+precision highp float;
+in vec2 v_texCoord;
+out vec4 outColor;
+
+uniform sampler2D u_image;
+uniform float u_textureHeight;
+uniform float u_scale;
+uniform float u_radius;
+const float PI = 3.141592653589793;
+
+/* FILTER_FUNCTION */
+
+void main(){
+	float srcY = (v_texCoord.y * u_textureHeight);
+	float top = srcY - u_radius;
+	float bottom = srcY + u_radius;
+	int start = int(floor(top));
+	int end = int(ceil(bottom));
+
+	float sum = 0.0;
+	vec4 color = vec4(0.0);
+	for(int j = start; j <= end; j++){
+		float texY = (float(j) + 0.5) / u_textureHeight;
+		float weight = resizeFilter(((float(j) + 0.5) - srcY) * u_scale);
+		vec4 sampleValue = texture(u_image, vec2(v_texCoord.x, texY));
+		color += sampleValue * weight;
+		sum += weight;
+	}
+	outColor = color / sum;
+}`;
+
+const fsHorizontalLinearize = `#version 300 es
+precision highp float;
+in vec2 v_texCoord;
+out vec4 outColor;
+
+uniform sampler2D u_image;
+uniform float u_textureWidth;
+uniform float u_scale;
+uniform float u_radius;
+
+const float PI = 3.141592653589793;
+
+/* FILTER_FUNCTION */
+
 vec3 sRGBToLinear(vec3 rgb)
 {
   // See https://gamedev.stackexchange.com/questions/92015/optimized-linear-to-srgb-glsl
@@ -51,7 +116,7 @@ void main(){
 	outColor = color / sum;
 }`;
 
-const fsVertical = `#version 300 es
+const fsVerticalLinearize = `#version 300 es
 precision highp float;
 in vec2 v_texCoord;
 out vec4 outColor;
@@ -159,15 +224,16 @@ const windows = {
 
 export function generateHorizontalShader(
 	filterFunction: ScalerCreationOptions["filter"],
+	linear: boolean,
 	precise: boolean
 ) {
 	if (precise) {
-		return fsHorizontal.replace(
+		return (linear ? fsHorizontalLinearize : fsHorizontal).replace(
 			"/* FILTER_FUNCTION */",
 			filters[filterFunction]
 		);
 	} else {
-		return fsHorizontal
+		return (linear ? fsHorizontalLinearize : fsHorizontal)
 			.replace("precision highp float;", "precision mediump float;")
 			.replace("/* FILTER_FUNCTION */", filters[filterFunction]);
 	}
@@ -175,15 +241,16 @@ export function generateHorizontalShader(
 
 export function generateVerticalShader(
 	filterFunction: ScalerCreationOptions["filter"],
+	linear: boolean,
 	precise: boolean
 ) {
 	if (precise) {
-		return fsVertical.replace(
+		return (linear ? fsVerticalLinearize : fsVertical).replace(
 			"/* FILTER_FUNCTION */",
 			filters[filterFunction]
 		);
 	} else {
-		return fsVertical
+		return (linear ? fsVerticalLinearize : fsVertical)
 			.replace("precision highp float;", "precision mediump float;")
 			.replace("/* FILTER_FUNCTION */", filters[filterFunction]);
 	}

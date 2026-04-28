@@ -99,8 +99,6 @@ export class Scaler {
 		}
 		this.precise = options.precise;
 
-		// TODO: Use options.linear
-
 		this.windowSize = getResizeWindow(options.filter);
 
 		this.sourceTexture = createEmptyTexture(
@@ -140,12 +138,20 @@ export class Scaler {
 		this.compiledHorizontal = createProgram(
 			this.gl,
 			options.precise ? vsSource : vsSource.replace("highp", "mediump"),
-			generateHorizontalShader(options.filter, options.precise)
+			generateHorizontalShader(
+				options.filter,
+				options.linear,
+				options.precise
+			)
 		);
 		this.compiledVertical = createProgram(
 			this.gl,
 			options.precise ? vsSource : vsSource.replace("highp", "mediump"),
-			generateVerticalShader(options.filter, options.precise)
+			generateVerticalShader(
+				options.filter,
+				options.linear,
+				options.precise
+			)
 		);
 
 		this.horizontalLocations = {
