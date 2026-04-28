@@ -303,6 +303,7 @@ export class Scaler {
 
 		if (pixelCount != this.lastPixelCount) {
 			this.pixels = new Uint8Array(pixelCount);
+			this.lastPixelCount = pixelCount;
 		}
 
 		const radiusX = scaleX < 1 ? this.windowSize / scaleX : this.windowSize;
