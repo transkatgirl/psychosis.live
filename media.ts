@@ -1026,67 +1026,85 @@ export class MediaScaler {
 					desynchronized: true,
 				});
 
-				transformer = new TransformStream({
-					transform(frame: VideoFrame, controller) {
-						if (self.requestedResolution) {
-							canvas.width = self.requestedResolution[0];
-							canvas.height = self.requestedResolution[1];
-							self.requestedResolution = undefined;
-						}
+				transformer = new TransformStream(
+					{
+						transform(frame: VideoFrame, controller) {
+							if (self.requestedResolution) {
+								canvas.width = self.requestedResolution[0];
+								canvas.height = self.requestedResolution[1];
+								self.requestedResolution = undefined;
+							}
 
-						let targetWidth = canvas.width;
-						let targetHeight = canvas.height;
+							let targetWidth = canvas.width;
+							let targetHeight = canvas.height;
 
-						const srcAspectRatio =
-							frame.displayWidth / frame.displayHeight;
-						const canvasAspectRatio = canvas.width / canvas.height;
+							const srcAspectRatio =
+								frame.displayWidth / frame.displayHeight;
+							const canvasAspectRatio =
+								canvas.width / canvas.height;
 
-						if (preserveAspectRatio) {
-							const EPSILON = 1e-6;
-							if (
-								Math.abs(srcAspectRatio - canvasAspectRatio) >
-								EPSILON
-							) {
-								if (srcAspectRatio > canvasAspectRatio) {
-									targetHeight = Math.round(
-										canvas.width / srcAspectRatio
-									);
-								} else {
-									targetWidth = Math.round(
-										canvas.height * srcAspectRatio
-									);
+							if (preserveAspectRatio) {
+								const EPSILON = 1e-6;
+								if (
+									Math.abs(
+										srcAspectRatio - canvasAspectRatio
+									) > EPSILON
+								) {
+									if (srcAspectRatio > canvasAspectRatio) {
+										targetHeight = Math.round(
+											canvas.width / srcAspectRatio
+										);
+									} else {
+										targetWidth = Math.round(
+											canvas.height * srcAspectRatio
+										);
+									}
 								}
 							}
-						}
 
-						if (self.canvasSmooth) {
-							ctx!.imageSmoothingEnabled = true;
-							ctx!.imageSmoothingQuality = "high";
-						} else {
-							ctx!.imageSmoothingEnabled = false;
-						}
-						ctx!.drawImage(frame, 0, 0, targetWidth, targetHeight);
-						frame.close();
+							if (self.canvasSmooth) {
+								ctx!.imageSmoothingEnabled = true;
+								ctx!.imageSmoothingQuality = "high";
+							} else {
+								ctx!.imageSmoothingEnabled = false;
+							}
+							ctx!.drawImage(
+								frame,
+								0,
+								0,
+								targetWidth,
+								targetHeight
+							);
+							frame.close();
 
-						controller.enqueue(
-							new VideoFrame(canvas.transferToImageBitmap(), {
-								timestamp: frame.timestamp,
-								duration: frame.duration
-									? frame.duration
-									: undefined,
-								visibleRect: {
-									x: 0,
-									y: 0,
-									width: targetWidth,
-									height: targetHeight,
-								},
-							})
-						);
+							controller.enqueue(
+								new VideoFrame(canvas.transferToImageBitmap(), {
+									timestamp: frame.timestamp,
+									duration: frame.duration
+										? frame.duration
+										: undefined,
+									visibleRect: {
+										x: 0,
+										y: 0,
+										width: targetWidth,
+										height: targetHeight,
+									},
+								})
+							);
+						},
+						flush(controller) {
+							controller.terminate();
+						},
 					},
-					flush(controller) {
-						controller.terminate();
+					{
+						highWaterMark: 1,
+						size: (_) => 1,
 					},
-				});
+					{
+						highWaterMark: 0,
+						size: (_) => 1,
+					}
+				);
 			} else {
 				throw "Invalid state";
 			}
