@@ -21,7 +21,7 @@ import {
 	setSenderSettings,
 	type AdaptiveTargets,
 } from "./media";
-import type { ResizeOptions } from "./pica-gpu";
+import type { ScalerCreationOptions } from "./pica-gpu";
 
 const defaultMqttEndpoint = "wss://broker.emqx.io:8084/mqtt";
 const defaultIceServers: RTCIceServer[] = [
@@ -663,7 +663,7 @@ async function launchSender(credentials: RoomCredentials) {
 					scalerWidth,
 					scalerHeight,
 					scalingFilter
-						? (scalingFilter as ResizeOptions["filter"])
+						? (scalingFilter as ScalerCreationOptions["filter"])
 						: "mks2013", // sharper filters are better for downscaling
 					params.get("reducedQualityScaling") !== "true",
 					params.get("reducedQualityScaling") !== "true"
@@ -1150,7 +1150,7 @@ async function launchReceiver(credentials: RoomCredentials) {
 								size[0],
 								size[1],
 								scalingFilter
-									? (scalingFilter as ResizeOptions["filter"])
+									? (scalingFilter as ScalerCreationOptions["filter"])
 									: "mks2021", // blurrier filters are better for upscaling
 								params.get("reducedQualityScaling") !== "true",
 								params.get("reducedQualityScaling") !== "true"
