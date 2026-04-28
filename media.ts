@@ -1,5 +1,5 @@
 import * as sdpTransform from "sdp-transform";
-import { Scaler, type ResizeOptions } from "./pica-gpu";
+import { Scaler, type ScalerCreationOptions } from "./pica-gpu";
 
 export function convertAudioBitrate(
 	bitrate: number,
@@ -914,6 +914,7 @@ export class MediaScaler {
 	public stream: MediaStream;
 	videoId: string | undefined;
 	scaler: Scaler | undefined;
+	scalerSize: [number, number] | undefined;
 	canvas: OffscreenCanvas | undefined;
 	canvasSmooth: boolean = false;
 	processor: any;
@@ -922,7 +923,10 @@ export class MediaScaler {
 	public constructor(
 		width: number,
 		height: number,
-		scaler: ResizeOptions["filter"] | "browser" | "browser_nosmooth",
+		scaler:
+			| ScalerCreationOptions["filter"]
+			| "browser"
+			| "browser_nosmooth",
 		precise: boolean,
 		linear: boolean
 	) {
@@ -942,12 +946,12 @@ export class MediaScaler {
 			);
 			this.canvasSmooth = scaler === "browser";
 		} else {
-			this.scaler = new Scaler(
-				new OffscreenCanvas(Math.round(width), Math.round(height)),
-				scaler,
+			this.scaler = new Scaler(new OffscreenCanvas(1, 1), {
+				filter: scaler,
 				precise,
-				linear
-			);
+				linear,
+			});
+			this.scalerSize = [Math.round(width), Math.round(height)];
 		}
 
 		this.stream = new MediaStream();
@@ -982,47 +986,23 @@ export class MediaScaler {
 			let transformer;
 
 			if (scaler) {
-				let lastInit: VideoFrameInit | undefined;
-				let locked = false;
-
 				transformer = new TransformStream({
 					async transform(frame: VideoFrame, controller) {
-						if (locked) return;
-						locked = true;
-
-						await scaler.sync();
-
-						if (lastInit) {
-							controller.enqueue(
-								new VideoFrame(scaler.canvas, lastInit)
-							);
-							lastInit = undefined;
-						}
-
 						if (self.requestedResolution) {
-							scaler.canvas.width = self.requestedResolution[0];
-							scaler.canvas.height = self.requestedResolution[1];
+							self.scalerSize = self.requestedResolution;
 							self.requestedResolution = undefined;
 						}
 
-						lastInit = {
-							timestamp: frame.timestamp,
-							duration: frame.duration
-								? frame.duration
-								: undefined,
-							alpha: "discard",
-							visibleRect: scaler.process(
-								frame,
-								preserveAspectRatio
-							),
-						};
+						controller.enqueue(
+							scaler.process(frame, {
+								aspectRatioConversion: preserveAspectRatio
+									? "crop"
+									: "distort",
+								width: self.scalerSize![0] as number,
+								height: self.scalerSize![1] as number,
+							})
+						);
 						frame.close();
-
-						if (!preserveAspectRatio) {
-							lastInit.visibleRect = undefined;
-						}
-
-						locked = false;
 					},
 					flush(controller) {
 						controller.terminate();

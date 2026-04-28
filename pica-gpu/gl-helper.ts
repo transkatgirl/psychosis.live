@@ -36,10 +36,13 @@ export function createProgram(
 	};
 }
 
-export function createTextureFromImage(
+export function createEmptyTexture(
 	gl: WebGL2RenderingContext,
-	image: TexImageSource,
-	linear: boolean
+	width: number,
+	height: number,
+	internalFormat: number,
+	format: number,
+	type: number
 ) {
 	const texture = gl.createTexture();
 	gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -50,10 +53,13 @@ export function createTextureFromImage(
 	gl.texImage2D(
 		gl.TEXTURE_2D,
 		0,
-		linear ? gl.SRGB8_ALPHA8 : gl.RGBA,
-		gl.RGBA,
-		gl.UNSIGNED_BYTE,
-		image
+		internalFormat,
+		width,
+		height,
+		0,
+		format,
+		type,
+		null
 	);
 	return texture;
 }
@@ -66,29 +72,16 @@ export function updateTextureFromImage(
 	image: TexImageSource,
 	width: number,
 	height: number,
-	linear: boolean
+	internalFormat: number,
+	format: number,
+	type: number
 ) {
 	gl.bindTexture(gl.TEXTURE_2D, texture);
 	const last = textureUploadSize.get(texture);
 	if (last && last.w === width && last.h === height) {
-		gl.texSubImage2D(
-			gl.TEXTURE_2D,
-			0,
-			0,
-			0,
-			gl.RGBA,
-			gl.UNSIGNED_BYTE,
-			image
-		);
+		gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, format, type, image);
 	} else {
-		gl.texImage2D(
-			gl.TEXTURE_2D,
-			0,
-			linear ? gl.SRGB8_ALPHA8 : gl.RGBA,
-			gl.RGBA,
-			gl.UNSIGNED_BYTE,
-			image
-		);
+		gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, format, type, image);
 		textureUploadSize.set(texture, { w: width, h: height });
 	}
 }
@@ -98,46 +91,22 @@ export function updateTextureFromEmpty(
 	texture: WebGLTexture,
 	width: number,
 	height: number,
-	useFloat: boolean
+	internalFormat: number,
+	format: number,
+	type: number
 ) {
 	gl.bindTexture(gl.TEXTURE_2D, texture);
 	gl.texImage2D(
 		gl.TEXTURE_2D,
 		0,
-		useFloat ? gl.RGBA16F : gl.RGBA,
+		internalFormat,
 		width,
 		height,
 		0,
-		gl.RGBA,
-		useFloat ? gl.HALF_FLOAT : gl.UNSIGNED_BYTE,
+		format,
+		type,
 		null
 	);
-}
-
-export function createEmptyTexture(
-	gl: WebGL2RenderingContext,
-	width: number,
-	height: number,
-	useFloat: boolean
-) {
-	const texture = gl.createTexture();
-	gl.bindTexture(gl.TEXTURE_2D, texture);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-	gl.texImage2D(
-		gl.TEXTURE_2D,
-		0,
-		useFloat ? gl.RGBA16F : gl.RGBA,
-		width,
-		height,
-		0,
-		gl.RGBA,
-		useFloat ? gl.HALF_FLOAT : gl.UNSIGNED_BYTE,
-		null
-	);
-	return texture;
 }
 
 export function createFramebuffer(
@@ -156,17 +125,12 @@ export function createFramebuffer(
 	return fb;
 }
 
-export function createDefaultQuadBuffer(
-	gl: WebGL2RenderingContext,
-	flipY = false
-) {
+export function createDefaultQuadBuffer(gl: WebGL2RenderingContext) {
 	const quadBuffer = gl.createBuffer();
 	gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
-	const quadVertices = new Float32Array(
-		flipY
-			? [-1, -1, 0, 1, 1, -1, 1, 1, -1, 1, 0, 0, 1, 1, 1, 0]
-			: [-1, -1, 0, 0, 1, -1, 1, 0, -1, 1, 0, 1, 1, 1, 1, 1]
-	);
+	const quadVertices = new Float32Array([
+		-1, -1, 0, 0, 1, -1, 1, 0, -1, 1, 0, 1, 1, 1, 1, 1,
+	]);
 	gl.bufferData(gl.ARRAY_BUFFER, quadVertices, gl.STATIC_DRAW);
 	return quadBuffer;
 }

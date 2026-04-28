@@ -3,11 +3,9 @@ import {
 	createEmptyTexture,
 	createFramebuffer,
 	createProgram,
-	createTextureFromImage,
 	createVAOForQuadBuffer,
 	updateTextureFromEmpty,
 	updateTextureFromImage,
-	useDefaultQuadBuffer,
 } from "./gl-helper";
 import {
 	generateHorizontalShader,
@@ -16,171 +14,46 @@ import {
 	vsSource,
 } from "./shaders";
 
-export interface ResizeOptions {
-	targetWidth: number;
-	targetHeight: number;
+export interface ScalerCreationOptions {
 	filter: "box" | "hamming" | "lanczos2" | "lanczos3" | "mks2013" | "mks2021";
 	precise: boolean;
 	linear: boolean;
 }
 
-export function resize(
-	from:
-		| ImageBitmap
-		| ImageData
-		| HTMLImageElement
-		| HTMLCanvasElement
-		| OffscreenCanvas,
-	to: HTMLCanvasElement,
-	options: ResizeOptions
-) {
-	if (from.width === 0 || from.height === 0) {
-		throw new Error("source canvas width or height is 0");
-	}
-	if (to.width === 0 || to.height === 0) {
-		throw new Error("target canvas width or height is 0");
-	}
-	const gl = to.getContext("webgl2", {
-		//alpha: false,
-		premultipliedAlpha: false,
-		preserveDrawingBuffer: false,
-		powerPreference: "high-performance",
-		antialias: false,
-	});
-	if (!gl) {
-		throw new Error("webgl2 context not found");
-	}
-	gl.clearColor(0, 0, 0, 1);
-	if (options.precise) {
-		gl.getExtension("EXT_color_buffer_half_float");
-	}
-
-	if (options.linear) {
-		// @ts-ignore
-		gl.drawingBufferStorage(gl.SRGB8_ALPHA8, to.width, to.height);
-	}
-
-	const targetWidth = Math.round(options.targetWidth);
-	const targetHeight = Math.round(options.targetHeight);
-
-	const srcWidth = from.width;
-	const srcHeight = from.height;
-	const scaleX = targetWidth / srcWidth;
-	const scaleY = targetHeight / srcHeight;
-	const windowSize = getResizeWindow(options.filter);
-	const sourceTexture = createTextureFromImage(gl, from, options.linear);
-	const quadBuffer = createDefaultQuadBuffer(gl);
-	const flippedQuadBuffer = createDefaultQuadBuffer(gl, true);
-
-	const horizontalTexture = createEmptyTexture(
-		gl,
-		targetWidth,
-		srcHeight,
-		options.precise
-	);
-	const horizontalFramebuffer = createFramebuffer(gl, horizontalTexture);
-	const compiledHorizontal = createProgram(
-		gl,
-		options.precise ? vsSource : vsSource.replace("highp", "mediump"),
-		generateHorizontalShader(options.filter, options.precise)
-	);
-	const horizontalProgram = compiledHorizontal.program;
-	gl.useProgram(horizontalProgram);
-	useDefaultQuadBuffer(
-		gl,
-		horizontalProgram,
-		quadBuffer,
-		"a_position",
-		"a_texCoord"
-	);
-	const radiusX = scaleX < 1 ? windowSize / scaleX : windowSize;
-	gl.disable(gl.BLEND);
-	gl.uniform1i(gl.getUniformLocation(horizontalProgram, "u_image"), 0);
-	gl.uniform1f(
-		gl.getUniformLocation(horizontalProgram, "u_textureWidth"),
-		srcWidth
-	);
-	gl.uniform1f(
-		gl.getUniformLocation(horizontalProgram, "u_scale"),
-		windowSize / radiusX
-	);
-	gl.uniform1f(gl.getUniformLocation(horizontalProgram, "u_radius"), radiusX);
-	gl.activeTexture(gl.TEXTURE0);
-	gl.bindTexture(gl.TEXTURE_2D, sourceTexture);
-	gl.viewport(0, 0, targetWidth, srcHeight);
-	gl.bindFramebuffer(gl.FRAMEBUFFER, horizontalFramebuffer);
-	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-
-	const compiledVertical = createProgram(
-		gl,
-		options.precise ? vsSource : vsSource.replace("highp", "mediump"),
-		generateVerticalShader(options.filter, options.precise)
-	);
-	const verticalProgram = compiledVertical.program;
-	gl.useProgram(verticalProgram);
-	useDefaultQuadBuffer(
-		gl,
-		verticalProgram,
-		flippedQuadBuffer,
-		"a_position",
-		"a_texCoord"
-	);
-	const radiusY = scaleY < 1 ? windowSize / scaleY : windowSize;
-	gl.uniform1i(gl.getUniformLocation(verticalProgram, "u_image"), 0);
-	gl.uniform1f(
-		gl.getUniformLocation(verticalProgram, "u_textureHeight"),
-		srcHeight
-	);
-	gl.uniform1f(
-		gl.getUniformLocation(verticalProgram, "u_scale"),
-		windowSize / radiusY
-	);
-	gl.uniform1f(gl.getUniformLocation(verticalProgram, "u_radius"), radiusY);
-	gl.activeTexture(gl.TEXTURE0);
-	gl.bindTexture(gl.TEXTURE_2D, horizontalTexture);
-	gl.viewport(0, 0, targetWidth, targetHeight);
-	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-
-	gl.flush();
-
-	gl.deleteTexture(sourceTexture);
-	gl.deleteTexture(horizontalTexture);
-	gl.deleteProgram(compiledHorizontal.program);
-	gl.deleteProgram(compiledVertical.program);
-	gl.deleteShader(compiledHorizontal.vertexShader);
-	gl.deleteShader(compiledHorizontal.fragmentShader);
-	gl.deleteShader(compiledVertical.vertexShader);
-	gl.deleteShader(compiledVertical.fragmentShader);
-	gl.deleteFramebuffer(horizontalFramebuffer);
-	gl.deleteBuffer(quadBuffer);
-	gl.deleteBuffer(flippedQuadBuffer);
+export interface FrameOptions {
+	aspectRatioConversion: "distort" | "letterbox" | "crop";
+	width: number;
+	height: number;
 }
 
 export class Scaler {
-	public canvas: OffscreenCanvas;
+	canvas: OffscreenCanvas;
 	gl: WebGL2RenderingContext;
-	syncHandle: WebGLSync | null = null;
 
 	precise: boolean;
-	linear: boolean;
 
 	windowSize: number;
 
 	sourceTexture: WebGLTexture;
 	horizontalTexture: WebGLTexture;
+	outputTexture: WebGLTexture;
 
 	lastSourceWidth = -1;
 	lastSourceHeight = -1;
+	lastTargetWidth = -1;
+	lastTargetHeight = -1;
 	lastRadiusX = -1;
 	lastRadiusY = -1;
 	horizontalTextureWidth = -1;
 	horizontalTextureHeight = -1;
 
 	quadBuffer: WebGLBuffer;
-	flippedQuadBuffer: WebGLBuffer;
 
 	horizontalFramebuffer: WebGLFramebuffer;
+	outputFramebuffer: WebGLFramebuffer;
+
+	pixels: Uint8Array;
+	lastPixelCount = -1;
 
 	compiledHorizontal: {
 		program: WebGLProgram;
@@ -207,14 +80,11 @@ export class Scaler {
 
 	public constructor(
 		canvas: OffscreenCanvas,
-		filter: ResizeOptions["filter"],
-		precise: boolean = true,
-		linear: boolean = true
+		options: ScalerCreationOptions
 	) {
 		this.canvas = canvas;
 
 		const gl = this.canvas.getContext("webgl2", {
-			//alpha: false,
 			premultipliedAlpha: false,
 			preserveDrawingBuffer: false,
 			powerPreference: "high-performance",
@@ -224,43 +94,58 @@ export class Scaler {
 
 		this.gl = gl;
 		this.gl.clearColor(0, 0, 0, 1);
-		if (precise) {
+		if (options.precise) {
 			this.gl.getExtension("EXT_color_buffer_half_float");
 		}
-		this.precise = precise;
-		this.linear = linear;
+		this.precise = options.precise;
 
-		if (linear) {
-			// @ts-ignore
-			this.gl.drawingBufferStorage(
-				this.gl.SRGB8_ALPHA8,
-				canvas.width,
-				canvas.height
-			);
-		}
+		// TODO: Use options.linear
 
-		this.windowSize = getResizeWindow(filter);
+		this.windowSize = getResizeWindow(options.filter);
 
-		this.sourceTexture = createEmptyTexture(this.gl, 1, 1, false);
-		this.horizontalTexture = createEmptyTexture(this.gl, 1, 1, precise);
+		this.sourceTexture = createEmptyTexture(
+			this.gl,
+			1,
+			1,
+			gl.RGBA,
+			gl.RGBA,
+			gl.UNSIGNED_BYTE
+		);
+		this.horizontalTexture = createEmptyTexture(
+			this.gl,
+			1,
+			1,
+			this.precise ? gl.RGBA16F : gl.RGBA,
+			gl.RGBA,
+			this.precise ? gl.HALF_FLOAT : gl.UNSIGNED_BYTE
+		);
+		this.outputTexture = createEmptyTexture(
+			this.gl,
+			1,
+			1,
+			gl.RGBA,
+			gl.RGBA,
+			gl.UNSIGNED_BYTE
+		);
 
 		this.quadBuffer = createDefaultQuadBuffer(this.gl);
-		this.flippedQuadBuffer = createDefaultQuadBuffer(this.gl, true);
 
 		this.horizontalFramebuffer = createFramebuffer(
 			this.gl,
 			this.horizontalTexture
 		);
+		this.outputFramebuffer = createFramebuffer(this.gl, this.outputTexture);
+		this.pixels = new Uint8Array();
 
 		this.compiledHorizontal = createProgram(
 			this.gl,
-			precise ? vsSource : vsSource.replace("highp", "mediump"),
-			generateHorizontalShader(filter, precise)
+			options.precise ? vsSource : vsSource.replace("highp", "mediump"),
+			generateHorizontalShader(options.filter, options.precise)
 		);
 		this.compiledVertical = createProgram(
 			this.gl,
-			precise ? vsSource : vsSource.replace("highp", "mediump"),
-			generateVerticalShader(filter, precise)
+			options.precise ? vsSource : vsSource.replace("highp", "mediump"),
+			generateVerticalShader(options.filter, options.precise)
 		);
 
 		this.horizontalLocations = {
@@ -302,7 +187,7 @@ export class Scaler {
 		this.verticalVAO = createVAOForQuadBuffer(
 			this.gl,
 			this.compiledVertical.program,
-			this.flippedQuadBuffer,
+			this.quadBuffer,
 			"a_position",
 			"a_texCoord"
 		);
@@ -327,55 +212,34 @@ export class Scaler {
 		this.gl.activeTexture(this.gl.TEXTURE0);
 		this.gl.disable(this.gl.BLEND);
 	}
-	public process(frame: VideoFrame, preserveAspectRatio = true): DOMRectInit {
+	public process(frame: VideoFrame, options: FrameOptions): VideoFrame {
 		if (frame.displayWidth === 0 || frame.displayHeight === 0) {
 			throw new Error("source image width or height is 0");
 		}
-		if (this.canvas.width === 0 || this.canvas.height === 0) {
+		if (options.width === 0 || options.height === 0) {
 			throw new Error("target canvas width or height is 0");
 		}
 
 		const gl = this.gl;
 
-		if (this.syncHandle) {
-			gl.deleteSync(this.syncHandle);
-			this.syncHandle = null;
-		}
-
 		const srcWidth = frame.displayWidth;
 		const srcHeight = frame.displayHeight;
 
-		if (
-			srcWidth != this.lastSourceWidth ||
-			srcHeight != this.lastSourceHeight
-		) {
-			gl.clearColor(0, 0, 0, 1);
-			gl.clear(gl.COLOR_BUFFER_BIT);
-			if (this.linear) {
-				// @ts-ignore
-				gl.drawingBufferStorage(
-					gl.SRGB8_ALPHA8,
-					this.canvas.width,
-					this.canvas.height
-				);
-			}
-		}
-
 		const srcAspectRatio = srcWidth / srcHeight;
-		const canvasAspectRatio = this.canvas.width / this.canvas.height;
+		const outputAspectRatio = options.width / options.height;
 
-		let targetWidth = this.canvas.width;
-		let targetHeight = this.canvas.height;
+		let targetWidth = options.width;
+		let targetHeight = options.height;
 
 		const EPSILON = 1e-6;
 		if (
-			Math.abs(srcAspectRatio - canvasAspectRatio) > EPSILON &&
-			preserveAspectRatio
+			Math.abs(srcAspectRatio - outputAspectRatio) > EPSILON &&
+			options.aspectRatioConversion != "distort"
 		) {
-			if (srcAspectRatio > canvasAspectRatio) {
-				targetHeight = Math.round(this.canvas.width / srcAspectRatio);
+			if (srcAspectRatio > outputAspectRatio) {
+				targetHeight = Math.round(options.width / srcAspectRatio);
 			} else {
-				targetWidth = Math.round(this.canvas.height * srcAspectRatio);
+				targetWidth = Math.round(options.height * srcAspectRatio);
 			}
 		}
 
@@ -383,13 +247,13 @@ export class Scaler {
 		const scaleY = targetHeight / srcHeight;
 
 		let offsetX = 0;
-		if (this.canvas.width > targetWidth) {
-			offsetX = Math.round((this.canvas.width - targetWidth) / 2);
+		if (options.width > targetWidth) {
+			offsetX = Math.round((options.width - targetWidth) / 2);
 		}
 
 		let offsetY = 0;
-		if (this.canvas.height > targetHeight) {
-			offsetY = Math.round((this.canvas.height - targetHeight) / 2);
+		if (options.height > targetHeight) {
+			offsetY = Math.round((options.height - targetHeight) / 2);
 		}
 
 		updateTextureFromImage(
@@ -398,7 +262,9 @@ export class Scaler {
 			frame,
 			srcWidth,
 			srcHeight,
-			this.linear
+			gl.RGBA,
+			gl.RGBA,
+			gl.UNSIGNED_BYTE
 		);
 
 		if (
@@ -410,17 +276,45 @@ export class Scaler {
 				this.horizontalTexture,
 				targetWidth,
 				srcHeight,
-				this.precise
+				this.precise ? gl.RGBA16F : gl.RGBA,
+				gl.RGBA,
+				this.precise ? gl.HALF_FLOAT : gl.UNSIGNED_BYTE
 			);
 			this.horizontalTextureWidth = targetWidth;
 			this.horizontalTextureHeight = srcHeight;
+		}
+
+		if (
+			options.width != this.lastTargetWidth ||
+			options.height != this.lastTargetHeight
+		) {
+			updateTextureFromEmpty(
+				gl,
+				this.outputTexture,
+				options.width,
+				options.height,
+				gl.RGBA,
+				gl.RGBA,
+				gl.UNSIGNED_BYTE
+			);
+
+			this.lastTargetWidth = options.width;
+			this.lastTargetHeight = options.height;
+		}
+
+		let pixelCount =
+			(options.aspectRatioConversion === "crop"
+				? targetWidth * targetHeight
+				: options.width * options.height) * 4;
+
+		if (pixelCount != this.lastPixelCount) {
+			this.pixels = new Uint8Array(pixelCount);
 		}
 
 		const radiusX = scaleX < 1 ? this.windowSize / scaleX : this.windowSize;
 		gl.useProgram(this.compiledHorizontal.program);
 		if (srcWidth !== this.lastSourceWidth) {
 			gl.uniform1f(this.horizontalLocations.textureWidth, srcWidth);
-			this.lastSourceWidth = srcWidth;
 		}
 		if (radiusX !== this.lastRadiusX) {
 			gl.uniform1f(
@@ -440,7 +334,6 @@ export class Scaler {
 		gl.useProgram(this.compiledVertical.program);
 		if (srcHeight !== this.lastSourceHeight) {
 			gl.uniform1f(this.verticalLocations.textureHeight, srcHeight);
-			this.lastSourceHeight = srcHeight;
 		}
 		if (radiusY !== this.lastRadiusY) {
 			gl.uniform1f(
@@ -453,45 +346,65 @@ export class Scaler {
 		gl.bindVertexArray(this.verticalVAO);
 		gl.bindTexture(gl.TEXTURE_2D, this.horizontalTexture);
 		gl.viewport(offsetX, offsetY, targetWidth, targetHeight);
-		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+		gl.bindFramebuffer(gl.FRAMEBUFFER, this.outputFramebuffer);
+		if (
+			srcWidth !== this.lastSourceWidth ||
+			srcHeight !== this.lastSourceHeight
+		) {
+			gl.clearColor(0, 0, 0, 1);
+			gl.clear(gl.COLOR_BUFFER_BIT);
+
+			this.lastSourceWidth = srcWidth;
+			this.lastSourceHeight = srcHeight;
+		}
 		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
-		this.syncHandle = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
-		gl.flush();
+		let init: VideoFrameBufferInit;
 
-		return {
-			x: offsetX,
-			y: offsetY,
-			width: targetWidth,
-			height: targetHeight,
-		};
-	}
-	public async sync() {
-		if (!this.syncHandle) return;
+		if (options.aspectRatioConversion === "crop") {
+			gl.readPixels(
+				offsetX,
+				offsetY,
+				targetWidth,
+				targetHeight,
+				gl.RGBA,
+				gl.UNSIGNED_BYTE,
+				this.pixels
+			);
 
-		const gl = this.gl;
+			init = {
+				timestamp: frame.timestamp,
+				duration: frame.duration ? frame.duration : undefined,
+				codedWidth: targetWidth,
+				codedHeight: targetHeight,
+				format: "RGBA",
+			};
+		} else {
+			gl.readPixels(
+				0,
+				0,
+				options.width,
+				options.height,
+				gl.RGBA,
+				gl.UNSIGNED_BYTE,
+				this.pixels
+			);
 
-		let signal: number = gl.clientWaitSync(this.syncHandle, 0, 0);
-
-		while (signal === gl.TIMEOUT_EXPIRED) {
-			await new Promise(function (resolve) {
-				setTimeout(resolve, 1);
-			});
-
-			signal = gl.clientWaitSync(this.syncHandle, 0, 0);
+			init = {
+				timestamp: frame.timestamp,
+				duration: frame.duration ? frame.duration : undefined,
+				codedWidth: options.width,
+				codedHeight: options.height,
+				format: "RGBA",
+			};
 		}
 
-		gl.deleteSync(this.syncHandle);
-		this.syncHandle = null;
+		return new VideoFrame(this.pixels, init);
 	}
 	public destroy() {
-		if (this.syncHandle) {
-			this.gl.deleteSync(this.syncHandle);
-			this.syncHandle = null;
-		}
-
 		this.gl.deleteTexture(this.sourceTexture);
 		this.gl.deleteTexture(this.horizontalTexture);
+		this.gl.deleteTexture(this.outputTexture);
 		this.gl.deleteProgram(this.compiledHorizontal.program);
 		this.gl.deleteProgram(this.compiledVertical.program);
 		this.gl.deleteShader(this.compiledHorizontal.vertexShader);
@@ -499,8 +412,8 @@ export class Scaler {
 		this.gl.deleteShader(this.compiledVertical.vertexShader);
 		this.gl.deleteShader(this.compiledVertical.fragmentShader);
 		this.gl.deleteFramebuffer(this.horizontalFramebuffer);
+		this.gl.deleteFramebuffer(this.outputFramebuffer);
 		this.gl.deleteBuffer(this.quadBuffer);
-		this.gl.deleteBuffer(this.flippedQuadBuffer);
 		this.gl.deleteVertexArray(this.horizontalVAO);
 		this.gl.deleteVertexArray(this.verticalVAO);
 	}
