@@ -992,7 +992,7 @@ export class MediaScaler {
 				let framerate = trackFramerate ? trackFramerate : 30;
 				let lastCheck: number | undefined;
 
-				let lastTimestamp = performance.now();
+				let timeout: number | undefined;
 
 				transformer = new TransformStream(
 					{
@@ -1015,34 +1015,39 @@ export class MediaScaler {
 								lastCheck = frame.timestamp;
 							}
 
-							const currentTimestamp = performance.now();
-
-							if (
-								currentTimestamp - lastTimestamp >
-									(1 / framerate) * 4_000 &&
-								scaler.discard()
-							) {
-								console.warn(
-									"Input is running very behind, discarding buffered frame"
-								);
-							} else {
-								let output = scaler.read();
-								if (output) {
-									try {
-										controller.enqueue(output);
-									} catch (error) {
-										controller.terminate();
-									}
-								}
+							if (timeout) {
+								window.clearTimeout(timeout);
 							}
 
-							lastTimestamp = currentTimestamp;
+							let output = scaler.read();
+							if (output) {
+								try {
+									controller.enqueue(output);
+								} catch (error) {
+									controller.terminate();
+								}
+							}
 
 							scaler.processBuffered(frame, {
 								preserveAspectRatio,
 								width: self.scalerSize![0] as number,
 								height: self.scalerSize![1] as number,
 							});
+
+							timeout = window.setTimeout(() => {
+								let output = scaler.read();
+								if (output) {
+									console.warn(
+										"Input is likely running behind, reading frame early"
+									);
+
+									try {
+										controller.enqueue(output);
+									} catch (error) {
+										controller.terminate();
+									}
+								}
+							}, (1 / framerate) * 2000 + 4);
 						},
 						flush(controller) {
 							controller.terminate();
