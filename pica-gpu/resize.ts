@@ -246,10 +246,11 @@ export class Scaler {
 		const srcHeight = frame.displayHeight;
 
 		const srcAspectRatio = srcWidth / srcHeight;
-		const outputAspectRatio = options.width / options.height;
 
-		let targetWidth = options.width;
-		let targetHeight = options.height;
+		let targetWidth = Math.round(options.width);
+		let targetHeight = Math.round(options.height);
+
+		const outputAspectRatio = targetWidth / targetHeight;
 
 		const EPSILON = 1e-6;
 		if (
@@ -257,9 +258,9 @@ export class Scaler {
 			options.preserveAspectRatio
 		) {
 			if (srcAspectRatio > outputAspectRatio) {
-				targetHeight = Math.round(options.width / srcAspectRatio);
+				targetHeight = Math.round(targetWidth / srcAspectRatio);
 			} else {
-				targetWidth = Math.round(options.height * srcAspectRatio);
+				targetWidth = Math.round(targetHeight * srcAspectRatio);
 			}
 		}
 
