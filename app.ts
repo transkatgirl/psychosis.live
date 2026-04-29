@@ -671,7 +671,7 @@ async function launchSender(credentials: RoomCredentials) {
 				peerScalers[peerId] = scaler;
 			}
 
-			const scalerTrack = scaler.addTrack(track);
+			const scalerTrack = scaler.addTrack(track, false);
 
 			transceiver = pc.addTransceiver(scalerTrack, {
 				sendEncodings: [
@@ -746,7 +746,7 @@ async function launchSender(credentials: RoomCredentials) {
 				) {
 					if (scaler) {
 						scaler.removeTrack(oldTrack);
-						const scaledTrack = scaler.addTrack(newTrack);
+						const scaledTrack = scaler.addTrack(newTrack, false);
 
 						promises.push(
 							transceiver.sender
@@ -1168,14 +1168,14 @@ async function launchReceiver(credentials: RoomCredentials) {
 							);
 
 							for (const track of stream.getTracks()) {
-								scaler.addTrack(track);
+								scaler.addTrack(track, true);
 							}
 
 							peerScalers[peerId] = scaler;
 							video.srcObject = scaler.stream;
 
 							stream.onaddtrack = (event) => {
-								scaler.addTrack(event.track);
+								scaler.addTrack(event.track, true);
 							};
 							stream.onremovetrack = async (event) => {
 								scaler.removeTrack(event.track);

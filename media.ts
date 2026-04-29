@@ -966,7 +966,11 @@ export class MediaScaler {
 	public resize(width: number, height: number) {
 		this.requestedResolution = [Math.round(width), Math.round(height)];
 	}
-	public addTrack(track: MediaStreamTrack, preserveAspectRatio = true) {
+	public addTrack(
+		track: MediaStreamTrack,
+		strictTiming: boolean,
+		preserveAspectRatio = true
+	) {
 		if (track.kind == "video") {
 			if (this.videoId)
 				throw "Scaler already has an attached video track.";
@@ -1017,16 +1021,25 @@ export class MediaScaler {
 								lastCheck = frame.timestamp;
 							}
 
-							if (timeout) {
+							if (strictTiming && timeout) {
 								window.clearTimeout(timeout);
 							}
 
-							let output = scaler.read();
-							if (output) {
-								try {
-									controller.enqueue(output);
-								} catch (error) {
-									controller.terminate();
+							if (
+								framerate >= 15 &&
+								scaler.discard(frame.timestamp - 200_000)
+							) {
+								console.warn(
+									"Input is likely running behind, discarding frame"
+								);
+							} else {
+								let output = scaler.read();
+								if (output) {
+									try {
+										controller.enqueue(output);
+									} catch (error) {
+										controller.terminate();
+									}
 								}
 							}
 
@@ -1036,20 +1049,22 @@ export class MediaScaler {
 								height: self.scalerSize![1] as number,
 							});
 
-							timeout = window.setTimeout(() => {
-								let output = scaler.read();
-								if (output) {
-									console.warn(
-										"Input is likely running behind, reading frame early"
-									);
+							if (strictTiming) {
+								timeout = window.setTimeout(() => {
+									let output = scaler.read();
+									if (output) {
+										console.warn(
+											"Input is likely running behind, reading frame early"
+										);
 
-									try {
-										controller.enqueue(output);
-									} catch (error) {
-										controller.terminate();
+										try {
+											controller.enqueue(output);
+										} catch (error) {
+											controller.terminate();
+										}
 									}
-								}
-							}, (1 / framerate) * 2000 + 4);
+								}, (1 / framerate) * 2_000 + 4);
+							}
 						},
 						flush(controller) {
 							controller.terminate();
