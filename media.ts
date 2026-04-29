@@ -1137,7 +1137,6 @@ export class MediaScaler {
 								targetWidth,
 								targetHeight
 							);
-							frame.close();
 
 							const output = new VideoFrame(
 								canvas.transferToImageBitmap(),
@@ -1154,6 +1153,8 @@ export class MediaScaler {
 									},
 								}
 							);
+
+							frame.close();
 
 							try {
 								controller.enqueue(output);

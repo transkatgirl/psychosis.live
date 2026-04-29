@@ -97,7 +97,6 @@ export class Scaler {
 		if (!gl) throw new Error("Failed to initialize WebGL2 context");
 
 		this.gl = gl;
-		this.gl.clearColor(0, 0, 0, 1);
 		if (options.precise) {
 			this.gl.getExtension("EXT_color_buffer_half_float");
 		}
