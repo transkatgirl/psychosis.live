@@ -450,6 +450,20 @@ export class Scaler {
 			return new VideoFrame(this.pixels, this.frameInit);
 		}
 	}
+	public discard(minTimestamp?: number): boolean {
+		if (
+			this.sync &&
+			(!minTimestamp ||
+				(this.frameInit && this.frameInit.timestamp < minTimestamp))
+		) {
+			this.gl.deleteSync(this.sync);
+			this.sync = undefined;
+
+			return true;
+		} else {
+			return false;
+		}
+	}
 	public destroy() {
 		if (this.sync) {
 			this.gl.deleteSync(this.sync);
