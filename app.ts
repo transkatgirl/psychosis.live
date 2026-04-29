@@ -1751,7 +1751,7 @@ async function statsOverlay(
 				incomingBandwidth < 416) ||
 			(roundTripTime && roundTripTime > 400) ||
 			(jitter && jitter > 400) ||
-			(jitterBufferDelay && jitter && jitterBufferDelay > jitter) ||
+			(jitterBufferDelay && jitter && jitter > jitterBufferDelay) ||
 			(lossFraction &&
 				lossFraction >= 2 &&
 				roundTripTime &&
