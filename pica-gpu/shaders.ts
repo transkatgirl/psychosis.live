@@ -16,10 +16,10 @@ in vec2 v_texCoord;
 out vec4 outColor;
 
 uniform sampler2D u_image;
-uniform float u_textureWidth;
-uniform float u_invTextureWidth;
-uniform float u_scale;
-uniform float u_radius;
+uniform highp float u_textureWidth;
+uniform highp float u_invTextureWidth;
+uniform highp float u_scale;
+uniform highp float u_radius;
 
 const float PI = 3.141592653589793;
 
@@ -51,10 +51,10 @@ in vec2 v_texCoord;
 out vec4 outColor;
 
 uniform sampler2D u_image;
-uniform float u_textureHeight;
-uniform float u_invTextureHeight;
-uniform float u_scale;
-uniform float u_radius;
+uniform highp float u_textureHeight;
+uniform highp float u_invTextureHeight;
+uniform highp float u_scale;
+uniform highp float u_radius;
 const float PI = 3.141592653589793;
 
 /* FILTER_FUNCTION */
@@ -85,10 +85,10 @@ in vec2 v_texCoord;
 out vec4 outColor;
 
 uniform sampler2D u_image;
-uniform float u_textureWidth;
-uniform float u_invTextureWidth;
-uniform float u_scale;
-uniform float u_radius;
+uniform highp float u_textureWidth;
+uniform highp float u_invTextureWidth;
+uniform highp float u_scale;
+uniform highp float u_radius;
 
 const float PI = 3.141592653589793;
 
@@ -128,10 +128,10 @@ in vec2 v_texCoord;
 out vec4 outColor;
 
 uniform sampler2D u_image;
-uniform float u_textureHeight;
-uniform float u_invTextureHeight;
-uniform float u_scale;
-uniform float u_radius;
+uniform highp float u_textureHeight;
+uniform highp float u_invTextureHeight;
+uniform highp float u_scale;
+uniform highp float u_radius;
 const float PI = 3.141592653589793;
 
 /* FILTER_FUNCTION */
