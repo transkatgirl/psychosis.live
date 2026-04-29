@@ -453,6 +453,7 @@ export class Scaler {
 	public destroy() {
 		if (this.sync) {
 			this.gl.deleteSync(this.sync);
+			this.sync = undefined;
 		}
 
 		this.gl.deleteTexture(this.sourceTexture);
