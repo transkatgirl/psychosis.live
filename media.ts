@@ -1019,14 +1019,14 @@ export class MediaScaler {
 
 								if (
 									trackFramerate &&
-									framerate < 0.8 * trackFramerate
+									framerate < 0.85 * trackFramerate
 								) {
 									let trackFramerate =
 										track.getSettings()?.frameRate;
 
 									if (trackFramerate) {
 										framerate = Math.max(
-											0.8 * trackFramerate,
+											0.85 * trackFramerate,
 											framerate
 										);
 									}
