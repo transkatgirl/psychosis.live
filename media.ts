@@ -1061,7 +1061,11 @@ export class MediaScaler {
 										"Input is likely running behind, reading frame early"
 									);
 
-									controller.enqueue(output);
+									try {
+										controller.enqueue(output);
+									} catch (error) {
+										controller.terminate();
+									}
 								}
 							}, (1 / framerate!) * 2500);
 						},
