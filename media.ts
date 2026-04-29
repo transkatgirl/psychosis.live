@@ -1041,7 +1041,11 @@ export class MediaScaler {
 
 							let output = scaler.read();
 							if (output) {
-								controller.enqueue(output);
+								try {
+									controller.enqueue(output);
+								} catch (error) {
+									controller.terminate();
+								}
 							}
 
 							scaler.processBuffered(frame, {
@@ -1131,8 +1135,9 @@ export class MediaScaler {
 							);
 							frame.close();
 
-							controller.enqueue(
-								new VideoFrame(canvas.transferToImageBitmap(), {
+							const output = new VideoFrame(
+								canvas.transferToImageBitmap(),
+								{
 									timestamp: frame.timestamp,
 									duration: frame.duration
 										? frame.duration
@@ -1143,8 +1148,14 @@ export class MediaScaler {
 										width: targetWidth,
 										height: targetHeight,
 									},
-								})
+								}
 							);
+
+							try {
+								controller.enqueue(output);
+							} catch (error) {
+								controller.terminate();
+							}
 						},
 						flush(controller) {
 							controller.terminate();
