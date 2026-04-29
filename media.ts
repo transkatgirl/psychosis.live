@@ -1030,7 +1030,7 @@ export class MediaScaler {
 								scaler.discard(frame.timestamp - 200_000)
 							) {
 								console.warn(
-									"Input is likely running behind, discarding frame"
+									"Input is running very behind, discarding frame"
 								);
 							} else {
 								let output = scaler.read();
