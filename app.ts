@@ -846,6 +846,8 @@ async function launchSender(credentials: RoomCredentials) {
 						};
 					}
 
+					const peerScaler = peerScalers[peerId];
+
 					if (
 						params.get("dynamicVideoParams") === "true" &&
 						streamFramerate
@@ -856,6 +858,13 @@ async function launchSender(credentials: RoomCredentials) {
 							framerate: streamFramerate,
 							bitrate: maxVideoBitrate,
 						};
+					} else if (
+						peerScaler &&
+						params.get("dynamicVideoParams") !== "true" &&
+						streamWidth &&
+						streamHeight
+					) {
+						peerScaler.resize(streamWidth, streamHeight);
 					}
 
 					if (!("peerData" in peer.metadata)) {
@@ -867,7 +876,7 @@ async function launchSender(credentials: RoomCredentials) {
 						peer.pc,
 						peerData,
 						targets,
-						peerScalers[peerId]
+						peerScaler
 					);
 					peer.metadata["peerData"] = peerData;
 				}
