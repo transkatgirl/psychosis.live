@@ -988,10 +988,8 @@ export class MediaScaler {
 			let transformer;
 
 			if (scaler) {
-				let framerate = track.getSettings()?.frameRate;
-				if (!framerate) {
-					framerate = 60;
-				}
+				let trackFramerate = track.getSettings()?.frameRate;
+				let framerate = trackFramerate ? trackFramerate : 30;
 
 				let timeout: number | undefined;
 
@@ -1018,6 +1016,21 @@ export class MediaScaler {
 								cumDurations = 0;
 
 								framerate = 1_000_000 / frameInterval;
+
+								if (
+									trackFramerate &&
+									framerate < 0.8 * trackFramerate
+								) {
+									let trackFramerate =
+										track.getSettings()?.frameRate;
+
+									if (trackFramerate) {
+										framerate = Math.max(
+											0.8 * trackFramerate,
+											framerate
+										);
+									}
+								}
 							}
 
 							lastTimestamp = frame.timestamp;
