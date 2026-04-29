@@ -659,20 +659,19 @@ function adaptiveVideoSettings(
 
 		let hasAdapted = false;
 
+		if (
+			data.lastInputResolution &&
+			data.lastInputResolution[0] !== targets.width &&
+			data.lastInputResolution[1] !== targets.height
+		)
+			hasAdapted = true;
+
 		if (data.skipNextInterval) {
 			data.skipNextInterval = false;
-			if (
-				data.lastInputResolution &&
-				data.lastInputResolution[0] === targets.width &&
-				data.lastInputResolution[1] === targets.height
-			)
-				return;
-			hasAdapted = true;
+			if (!hasAdapted) return;
 		} else if (data.skipNextInterval !== undefined) {
 			data.skipNextInterval = true;
 		}
-
-		data.lastInputResolution = [targets.width, targets.height];
 
 		let pixels = MIN_PIXELS;
 		let framerate = Math.min(30, targets.framerate);
@@ -740,7 +739,13 @@ function adaptiveVideoSettings(
 				}
 			}
 
-			if (!data.lastTarget || data.lastTarget[0] != pixels) {
+			if (
+				!data.lastTarget ||
+				data.lastTarget[0] != pixels ||
+				(data.lastInputResolution &&
+					(data.lastInputResolution[0] !== targets.width ||
+						data.lastInputResolution[1] !== targets.height))
+			) {
 				const [width, height] = adaptToPixelCount(
 					targets.width,
 					targets.height,
@@ -753,6 +758,8 @@ function adaptiveVideoSettings(
 
 			data.lastTarget = [pixels, framerate];
 		}
+
+		data.lastInputResolution = [targets.width, targets.height];
 	} else {
 		let framerateLower = 0;
 		let framerateUpper = Infinity;
