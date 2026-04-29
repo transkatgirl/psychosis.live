@@ -988,10 +988,16 @@ export class MediaScaler {
 			let transformer;
 
 			if (scaler) {
-				const framerate = track.getSettings()?.frameRate;
-				const frameWaitTime = (1 / (framerate ? framerate : 60)) * 3000;
+				let framerate = track.getSettings()?.frameRate;
+				if (!framerate) {
+					framerate = 60;
+				}
 
 				let timeout: number | undefined;
+
+				let lastTimestamp: number | undefined;
+				let cumFrames = 0;
+				let cumDurations = 0;
 
 				transformer = new TransformStream(
 					{
@@ -1000,6 +1006,21 @@ export class MediaScaler {
 								self.scalerSize = self.requestedResolution;
 								self.requestedResolution = undefined;
 							}
+
+							if (lastTimestamp) {
+								cumFrames += 1;
+								cumDurations += frame.timestamp - lastTimestamp;
+							}
+
+							if (cumDurations > 5_000_000) {
+								const frameInterval = cumDurations / cumFrames;
+								cumFrames = 0;
+								cumDurations = 0;
+
+								framerate = 1_000_000 / frameInterval;
+							}
+
+							lastTimestamp = frame.timestamp;
 
 							if (timeout) {
 								window.clearTimeout(timeout);
@@ -1025,7 +1046,7 @@ export class MediaScaler {
 
 									controller.enqueue(output);
 								}
-							}, frameWaitTime);
+							}, (1 / framerate!) * 2500);
 						},
 						flush(controller) {
 							controller.terminate();
