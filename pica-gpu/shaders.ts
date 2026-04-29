@@ -2,9 +2,10 @@ import type { ScalerCreationOptions } from "./resize";
 
 export const vsSource = `#version 300 es
 precision highp float;
-in vec2 a_position;
-in vec2 a_texCoord;
-out vec2 v_texCoord;
+precision highp int;
+in highp vec2 a_position;
+in highp vec2 a_texCoord;
+out highp vec2 v_texCoord;
 void main(){
 	v_texCoord = a_texCoord;
 	gl_Position = vec4(a_position, 0.0, 1.0);
@@ -12,8 +13,9 @@ void main(){
 
 const fsHorizontal = `#version 300 es
 precision highp float;
-in vec2 v_texCoord;
-out vec4 outColor;
+precision highp int;
+in highp vec2 v_texCoord;
+out highp vec4 outColor;
 
 uniform sampler2D u_image;
 uniform highp float u_textureWidth;
@@ -47,8 +49,9 @@ void main(){
 
 const fsVertical = `#version 300 es
 precision highp float;
-in vec2 v_texCoord;
-out vec4 outColor;
+precision highp int;
+in highp vec2 v_texCoord;
+out highp vec4 outColor;
 
 uniform sampler2D u_image;
 uniform highp float u_textureHeight;
@@ -81,8 +84,9 @@ void main(){
 
 const fsHorizontalLinearize = `#version 300 es
 precision highp float;
-in vec2 v_texCoord;
-out vec4 outColor;
+precision highp int;
+in highp vec2 v_texCoord;
+out highp vec4 outColor;
 
 uniform sampler2D u_image;
 uniform highp float u_textureWidth;
@@ -124,8 +128,9 @@ void main(){
 
 const fsVerticalLinearize = `#version 300 es
 precision highp float;
-in vec2 v_texCoord;
-out vec4 outColor;
+precision highp int;
+in highp vec2 v_texCoord;
+out highp vec4 outColor;
 
 uniform sampler2D u_image;
 uniform highp float u_textureHeight;
