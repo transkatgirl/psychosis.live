@@ -22,6 +22,7 @@ import {
 	type AdaptiveTargets,
 } from "./media";
 import type { ScalerCreationOptions } from "./pica-gpu";
+import { getPeerStats, parseChannelMessage } from "./stats";
 
 const defaultMqttEndpoint = "wss://broker.emqx.io:8084/mqtt";
 const defaultIceServers: RTCIceServer[] = [
@@ -774,6 +775,10 @@ async function launchSender(credentials: RoomCredentials) {
 		}
 	};
 
+	const textEncoder = new TextEncoder();
+	const textDecoder = new TextDecoder();
+	const peerData: Record<string, RTCDataChannel> = {};
+
 	(globalThis as any).stream = stream;
 	(globalThis as any).room = new Room(
 		mqttEndpoint,
@@ -785,6 +790,15 @@ async function launchSender(credentials: RoomCredentials) {
 		},
 		(peerId, peer) => {
 			if (peer.pc && BigInt(peerId) % 2n == 0n) {
+				peerData[peerId] = peer.pc.createDataChannel("stats");
+				peerData[peerId].onmessage = (event) => {
+					peer.metadata["remoteStats"] = parseChannelMessage(
+						event.data,
+						textDecoder
+					);
+					peer.metadata["remoteStatsTimestamp"] = performance.now();
+				};
+
 				stream.getTracks().forEach((track) => {
 					if (!peer.pc) return;
 
@@ -874,7 +888,7 @@ async function launchSender(credentials: RoomCredentials) {
 			}
 
 			if (params.get("stats") === "true") {
-				await statsOverlay(overlay, peers);
+				await statsOverlay(overlay, peers, peerData, textEncoder);
 			}
 
 			if (
@@ -1084,6 +1098,10 @@ async function launchReceiver(credentials: RoomCredentials) {
 		}
 	};
 
+	const textEncoder = new TextEncoder();
+	const textDecoder = new TextDecoder();
+	const peerData: Record<string, RTCDataChannel> = {};
+
 	(globalThis as any).room = new Room(
 		mqttEndpoint,
 		credentials,
@@ -1094,6 +1112,16 @@ async function launchReceiver(credentials: RoomCredentials) {
 		(peerId, peer) => {
 			if (!peer.pc) return;
 
+			peer.pc.ondatachannel = (event) => {
+				peerData[peerId] = event.channel;
+				peerData[peerId].onmessage = (event) => {
+					peer.metadata["remoteStats"] = parseChannelMessage(
+						event.data,
+						textDecoder
+					);
+					peer.metadata["remoteStatsTimestamp"] = performance.now();
+				};
+			};
 			peer.pc.ontrack = async (event) => {
 				if (codecOrderPreference) {
 					setCodecPreferences(
@@ -1212,7 +1240,13 @@ async function launchReceiver(credentials: RoomCredentials) {
 		},
 		async (peers) => {
 			if (params.get("stats") === "true") {
-				await statsOverlay(overlay, peers);
+				await statsOverlay(
+					overlay,
+					peers,
+					peerData,
+					textEncoder,
+					peerVideos
+				);
 			}
 		},
 		(_, message) => message,
@@ -1495,7 +1529,10 @@ async function createTrackUI(
 
 async function statsOverlay(
 	overlay: HTMLDivElement,
-	peers: Record<string, Peer>
+	peers: Record<string, Peer>,
+	channels: Record<string, RTCDataChannel>,
+	encoder: TextEncoder,
+	videos?: Record<string, HTMLVideoElement>
 ) {
 	const peerList = document.createElement("ul");
 
@@ -1508,271 +1545,107 @@ async function statsOverlay(
 	}
 
 	for (const [peerId, peer] of Object.entries(peers)) {
-		if (!peer.pc || peer.pc?.connectionState === "new") {
+		const stats = await getPeerStats(
+			peer,
+			encoder,
+			channels[peerId],
+			videos?.[peerId]
+		);
+
+		if (!stats) {
 			continue;
 		}
 
+		peer.metadata["stats"] = stats;
+		peer.metadata["statsTimestamp"] = performance.now();
+
+		// TODO: display remote stats
+
 		const peerEntry = document.createElement("li");
-
-		const peerStats = Array.from(await peer.pc.getStats());
-
-		let targetVideoBitrate: number | undefined;
-		let targetAudioBitrate: number | undefined;
-		let cpuLimited = false;
-		let jitterBufferDelay: number | undefined;
-		let maxPlayoutTimestamp: number | undefined;
-		let minPlayoutTimestamp: number | undefined;
-
-		let incomingBandwidth: number | undefined;
-		let outgoingBandwidth: number | undefined;
-		let roundTripTime: number | undefined;
-		let jitter: number | undefined;
-		let lossFraction: number | undefined;
-
-		for (const [_, report] of peerStats) {
-			const lastReport = peer.metadata[report.type + "_" + report.id];
-
-			if (report.type === "outbound-rtp") {
-				if (report.kind === "video" && report.targetBitrate) {
-					targetVideoBitrate =
-						report.targetBitrate +
-						(targetVideoBitrate ? targetVideoBitrate : 0);
-				}
-				if (report.kind === "audio" && report.targetBitrate) {
-					targetAudioBitrate =
-						report.targetBitrate +
-						(targetAudioBitrate ? targetAudioBitrate : 0);
-				}
-				if (report.qualityLimitationReason === "cpu") {
-					cpuLimited = true;
-				}
-			}
-
-			if (report.type === "inbound-rtp") {
-				if (
-					lastReport?.jitterBufferDelay &&
-					lastReport?.jitterBufferEmittedCount
-				) {
-					jitterBufferDelay = Math.max(
-						(report.jitterBufferDelay -
-							lastReport.jitterBufferDelay) /
-							(report.jitterBufferEmittedCount -
-								lastReport.jitterBufferEmittedCount),
-						jitterBufferDelay ? jitterBufferDelay : -Infinity
-					);
-				}
-				if (
-					lastReport?.packetsLost !== undefined &&
-					lastReport?.packetsReceived !== undefined
-				) {
-					lossFraction = Math.max(
-						(report.packetsLost - lastReport.packetsLost) /
-							(report.packetsLost +
-								report.packetsReceived -
-								(lastReport.packetsLost +
-									lastReport.packetsReceived)),
-						lossFraction ? lossFraction : -Infinity
-					);
-				} else if (report.fractionLost !== undefined) {
-					lossFraction = Math.max(
-						report.fractionLost,
-						lossFraction ? lossFraction : -Infinity
-					);
-				}
-				if (report.jitter) {
-					jitter = Math.max(
-						report.jitter,
-						jitter ? jitter : -Infinity
-					);
-				}
-				if (report.estimatedPlayoutTimestamp) {
-					maxPlayoutTimestamp = Math.max(
-						report.estimatedPlayoutTimestamp,
-						maxPlayoutTimestamp ? maxPlayoutTimestamp : -Infinity
-					);
-					minPlayoutTimestamp = Math.min(
-						report.estimatedPlayoutTimestamp,
-						minPlayoutTimestamp ? minPlayoutTimestamp : Infinity
-					);
-				}
-			}
-
-			if (
-				report.type === "remote-inbound-rtp" ||
-				report.type === "remote-outbound-rtp"
-			) {
-				if (
-					lastReport?.totalRoundTripTime &&
-					lastReport?.roundTripTimeMeasurements
-				) {
-					roundTripTime = Math.max(
-						(report.totalRoundTripTime -
-							lastReport.totalRoundTripTime) /
-							(report.roundTripTimeMeasurements -
-								lastReport.roundTripTimeMeasurements),
-						roundTripTime ? roundTripTime : -Infinity
-					);
-				} else if (report.roundTripTime) {
-					roundTripTime = Math.max(
-						report.roundTripTime,
-						roundTripTime ? roundTripTime : -Infinity
-					);
-				}
-				if (
-					lastReport?.packetsLost !== undefined &&
-					lastReport?.packetsReceived !== undefined
-				) {
-					lossFraction = Math.max(
-						(report.packetsLost - lastReport.packetsLost) /
-							(report.packetsLost +
-								report.packetsReceived -
-								(lastReport.packetsLost +
-									lastReport.packetsReceived)),
-						lossFraction ? lossFraction : -Infinity
-					);
-				} else if (report.fractionLost !== undefined) {
-					lossFraction = Math.max(
-						report.fractionLost,
-						lossFraction ? lossFraction : -Infinity
-					);
-				}
-				if (report.jitter) {
-					jitter = Math.max(
-						report.jitter,
-						jitter ? jitter : -Infinity
-					);
-				}
-			}
-
-			if (report.type === "transport") {
-				if (
-					lastReport?.timestamp &&
-					lastReport?.bytesSent &&
-					lastReport?.bytesReceived
-				) {
-					const sinceLast = report.timestamp - lastReport.timestamp;
-
-					outgoingBandwidth =
-						(report.bytesSent - lastReport.bytesSent) / sinceLast +
-						(outgoingBandwidth ? outgoingBandwidth : 0);
-					incomingBandwidth =
-						(report.bytesReceived - lastReport.bytesReceived) /
-							sinceLast +
-						(incomingBandwidth ? incomingBandwidth : 0);
-				}
-			}
-
-			peer.metadata[report.type + "_" + report.id] = report;
-		}
-
-		if (targetVideoBitrate) {
-			targetVideoBitrate = Math.round(targetVideoBitrate / 1000);
-		}
-
-		if (targetAudioBitrate) {
-			targetAudioBitrate = Math.round(targetAudioBitrate / 1000);
-		}
-
-		if (jitterBufferDelay) {
-			jitterBufferDelay = Math.round(jitterBufferDelay * 1000);
-		}
-
-		let desync: number | undefined;
-		if (maxPlayoutTimestamp && minPlayoutTimestamp) {
-			desync = Math.round(maxPlayoutTimestamp - minPlayoutTimestamp);
-		}
-
-		if (incomingBandwidth) {
-			incomingBandwidth = Math.round(incomingBandwidth * 8);
-		}
-
-		if (outgoingBandwidth) {
-			outgoingBandwidth = Math.round(outgoingBandwidth * 8);
-		}
-
-		if (roundTripTime) {
-			roundTripTime = Math.round(roundTripTime * 1000);
-		}
-
-		if (jitter) {
-			jitter = Math.round(jitter * 1000);
-		}
-
-		if (lossFraction !== undefined) {
-			lossFraction = Math.round(lossFraction * 1000) / 10;
-		}
 
 		let label = `${peerId} (${peer.pc?.connectionState})`;
 
-		if (targetAudioBitrate && targetVideoBitrate) {
+		if (stats.targetAudioBitrate && stats.targetVideoBitrate) {
 			label =
 				label +
-				`\nA: ${targetAudioBitrate} kbit/s V: ${targetVideoBitrate} kbit/s`;
-		} else if (targetAudioBitrate) {
-			label = label + `\nA: ${targetAudioBitrate} kbit/s`;
-		} else if (targetVideoBitrate) {
-			label = label + `\nV: ${targetVideoBitrate} kbit/s`;
+				`\nA: ${stats.targetAudioBitrate} kbit/s V: ${stats.targetVideoBitrate} kbit/s`;
+		} else if (stats.targetAudioBitrate) {
+			label = label + `\nA: ${stats.targetAudioBitrate} kbit/s`;
+		} else if (stats.targetVideoBitrate) {
+			label = label + `\nV: ${stats.targetVideoBitrate} kbit/s`;
 		}
 
-		if ((targetAudioBitrate || targetVideoBitrate) && cpuLimited) {
-			label = label + " (CPU limited)";
-		}
+		if (stats.jitterBufferDelay) {
+			label = label + `\nBuffer: ${stats.jitterBufferDelay} ms`;
 
-		if (jitterBufferDelay) {
-			label = label + `\nBuffer: ${jitterBufferDelay} ms`;
-
-			if (desync) {
-				label = label + ` Desync: ${desync} ms`;
+			if (stats.desync) {
+				label = label + ` Desync: ${stats.desync} ms`;
 			}
 		}
 
-		if (outgoingBandwidth && incomingBandwidth) {
+		if (stats.cpuLimited) {
+			if (
+				stats.targetAudioBitrate ||
+				stats.targetVideoBitrate ||
+				stats.jitterBufferDelay
+			) {
+				label = label + " (CPU limited)";
+			} else {
+				label = label + "\n(CPU limited)";
+			}
+		}
+
+		if (stats.outgoingBandwidth && stats.incomingBandwidth) {
 			label =
 				label +
-				`\nD: ${incomingBandwidth} kbit/s U: ${outgoingBandwidth} kbit/s`;
+				`\nD: ${stats.incomingBandwidth} kbit/s U: ${stats.outgoingBandwidth} kbit/s`;
 
-			if (roundTripTime) {
-				label = label + ` RTT: ${roundTripTime} ms`;
+			if (stats.roundTripTime) {
+				label = label + ` RTT: ${stats.roundTripTime} ms`;
 			}
 
-			if (jitter) {
-				label = label + ` PDV: ${jitter} ms`;
+			if (stats.jitter) {
+				label = label + ` PDV: ${stats.jitter} ms`;
 			}
 
-			if (lossFraction !== undefined) {
-				label = label + ` Loss: ${lossFraction}%`;
+			if (stats.loss !== undefined) {
+				label = label + ` Loss: ${stats.loss}%`;
 			}
 		}
 
 		if (
-			(targetVideoBitrate && targetVideoBitrate < 320) ||
-			(jitterBufferDelay &&
-				incomingBandwidth &&
-				incomingBandwidth < 416) ||
-			(roundTripTime && roundTripTime > 400) ||
-			(jitter && jitter > 400) ||
-			(jitterBufferDelay && jitter && jitter > jitterBufferDelay) ||
-			(lossFraction &&
-				lossFraction >= 2 &&
-				roundTripTime &&
-				roundTripTime + (jitter ? jitter : 0) / 2 > 267) ||
-			(lossFraction && lossFraction >= 10) ||
-			(desync && desync > 250) ||
-			peer.pc.connectionState != "connected"
+			(stats.targetVideoBitrate && stats.targetVideoBitrate < 320) ||
+			(stats.jitterBufferDelay &&
+				stats.incomingBandwidth &&
+				stats.incomingBandwidth < 416) ||
+			(stats.roundTripTime && stats.roundTripTime > 400) ||
+			(stats.jitter && stats.jitter > 400) ||
+			(stats.jitterBufferDelay &&
+				stats.jitter &&
+				stats.jitter > stats.jitterBufferDelay) ||
+			(stats.loss &&
+				stats.loss >= 2 &&
+				stats.roundTripTime &&
+				stats.roundTripTime + (stats.jitter ? stats.jitter : 0) / 2 >
+					267) ||
+			(stats.loss && stats.loss >= 10) ||
+			(stats.desync && stats.desync > 250) ||
+			peer.pc?.connectionState !== "connected"
 		) {
 			peerEntry.classList.add("stats-alert");
 		} else if (
-			(targetVideoBitrate && targetVideoBitrate < 1024) ||
-			(jitterBufferDelay &&
-				incomingBandwidth &&
-				incomingBandwidth < 1184) ||
-			(roundTripTime && roundTripTime > 200) ||
-			(jitter && jitter > 100) ||
-			(roundTripTime &&
-				roundTripTime + (jitter ? jitter : 0) / 2 > 267) ||
-			(lossFraction && lossFraction >= 2) ||
-			(desync && desync > 100) ||
-			((targetAudioBitrate || targetVideoBitrate) && cpuLimited)
+			(stats.targetVideoBitrate && stats.targetVideoBitrate < 1024) ||
+			(stats.jitterBufferDelay &&
+				stats.incomingBandwidth &&
+				stats.incomingBandwidth < 1184) ||
+			(stats.roundTripTime && stats.roundTripTime > 200) ||
+			(stats.jitter && stats.jitter > 100) ||
+			(stats.roundTripTime &&
+				stats.roundTripTime + (stats.jitter ? stats.jitter : 0) / 2 >
+					267) ||
+			(stats.loss && stats.loss >= 2) ||
+			(stats.desync && stats.desync > 100) ||
+			stats.cpuLimited
 		) {
 			peerEntry.classList.add("stats-warn");
 		}

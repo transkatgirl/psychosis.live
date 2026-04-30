@@ -1,7 +1,7 @@
 import bs58 from "bs58";
 import { MqttClient, type ClientSubscribeCallback } from "mqtt";
 
-function convertUint8Array(data: Uint8Array<ArrayBuffer>): ArrayBuffer {
+export function convertUint8Array(data: Uint8Array<ArrayBuffer>): ArrayBuffer {
 	return data.buffer.slice(
 		data.byteOffset,
 		data.byteLength + data.byteOffset
@@ -124,14 +124,14 @@ export function generateRandomString(randomBytes: number) {
 	return bs58.encode(generateRandom(randomBytes));
 }
 
-async function compress(bytes: ArrayBuffer): Promise<ArrayBuffer> {
+export async function compress(bytes: ArrayBuffer): Promise<ArrayBuffer> {
 	const compressedStream = (
 		new Response(bytes).body as ReadableStream<Uint8Array<ArrayBuffer>>
 	).pipeThrough(new CompressionStream("deflate-raw"));
 	return await new Response(compressedStream).arrayBuffer();
 }
 
-async function decompress(bytes: ArrayBuffer): Promise<ArrayBuffer> {
+export async function decompress(bytes: ArrayBuffer): Promise<ArrayBuffer> {
 	const decompressedStream = (
 		new Response(bytes).body as ReadableStream<Uint8Array<ArrayBuffer>>
 	).pipeThrough(new DecompressionStream("deflate-raw"));

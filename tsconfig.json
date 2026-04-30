@@ -1,7 +1,7 @@
 {
 	"compilerOptions": {
 		// Environment setup & latest features
-		"lib": ["ES2024", "DOM"],
+		"lib": ["ESNext", "DOM"],
 		"target": "ES2024",
 		"module": "ESNext",
 		"moduleDetection": "force",
