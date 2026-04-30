@@ -21,7 +21,6 @@ bun build --compile --target=browser ./index.html --outdir=dist --minify-whitesp
 ### low priority
 - [ ] add on-screen RMS+clipping warning volume meter
 - [ ] display information (resolution, framerate, channel count, sample rate) about video/audio tracks in sender/receiver UI if showStats is enabled
-- [ ] implement remote monitoring of peer metrics (viewing receiver metrics on sender and sender metrics on receiver)
 - [ ] further optimize webgl-based scaler
 
 ### far future ideas

@@ -2,6 +2,8 @@ import { compress, convertUint8Array, decompress } from "./room/core";
 import type { Peer } from "./room/webrtc";
 
 interface PeerStats {
+	sender: boolean;
+
 	targetAudioBitrate?: number;
 	targetVideoBitrate?: number;
 	cpuLimited?: boolean;
@@ -13,6 +15,47 @@ interface PeerStats {
 	roundTripTime?: number;
 	jitter?: number;
 	loss?: number;
+}
+
+export function combineStats(local: PeerStats, remote: PeerStats) {
+	const stats = structuredClone(local);
+
+	if (!stats.sender && remote.targetAudioBitrate) {
+		stats.targetAudioBitrate = remote.targetAudioBitrate;
+	}
+
+	if (!stats.sender && remote.targetVideoBitrate) {
+		stats.targetVideoBitrate = remote.targetVideoBitrate;
+	}
+
+	if (remote.cpuLimited) {
+		stats.cpuLimited = true;
+	}
+
+	if (remote.desync) {
+		stats.desync = Math.max(stats.desync ? stats.desync : 0, remote.desync);
+	}
+
+	if (remote.jitterBufferDelay) {
+		stats.jitterBufferDelay = Math.max(
+			stats.jitterBufferDelay ? stats.jitterBufferDelay : 0,
+			remote.jitterBufferDelay
+		);
+	}
+
+	if (!stats.roundTripTime && remote.roundTripTime) {
+		stats.roundTripTime = remote.roundTripTime;
+	}
+
+	if (!stats.jitter && remote.jitter) {
+		stats.jitter = remote.jitter;
+	}
+
+	if (!stats.loss && remote.loss) {
+		stats.loss = remote.loss;
+	}
+
+	return stats;
 }
 
 export async function parseChannelMessage(
@@ -32,7 +75,7 @@ export async function getPeerStats(
 		return;
 	}
 
-	let stats: PeerStats = {};
+	let stats: PeerStats = { sender: false };
 
 	const playbackStats = video?.getVideoPlaybackQuality();
 	const lastPlaybackStats: VideoPlaybackQuality | undefined =
@@ -42,11 +85,13 @@ export async function getPeerStats(
 		playbackStats &&
 		lastPlaybackStats &&
 		playbackStats.totalVideoFrames > lastPlaybackStats.totalVideoFrames &&
+		playbackStats.droppedVideoFrames >=
+			lastPlaybackStats.droppedVideoFrames &&
 		playbackStats.droppedVideoFrames -
 			lastPlaybackStats.droppedVideoFrames >
 			(playbackStats.totalVideoFrames -
 				lastPlaybackStats.totalVideoFrames) *
-				0.1
+				0.5 // We can't differentiate between frames dropped due to A/V desync and frames dropped due to the decoder being overloaded, so we should be really conservative here
 	) {
 		stats.cpuLimited = true;
 	}
@@ -62,6 +107,8 @@ export async function getPeerStats(
 		const lastReport = peer.metadata["_" + report.type + "_" + report.id];
 
 		if (report.type === "outbound-rtp") {
+			stats.sender = true;
+
 			if (report.kind === "video" && report.targetBitrate) {
 				stats.targetVideoBitrate =
 					report.targetBitrate +

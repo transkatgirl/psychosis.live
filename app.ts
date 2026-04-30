@@ -22,7 +22,7 @@ import {
 	type AdaptiveTargets,
 } from "./media";
 import type { ScalerCreationOptions } from "./pica-gpu";
-import { getPeerStats, parseChannelMessage } from "./stats";
+import { combineStats, getPeerStats, parseChannelMessage } from "./stats";
 
 const defaultMqttEndpoint = "wss://broker.emqx.io:8084/mqtt";
 const defaultIceServers: RTCIceServer[] = [
@@ -791,12 +791,12 @@ async function launchSender(credentials: RoomCredentials) {
 		(peerId, peer) => {
 			if (peer.pc && BigInt(peerId) % 2n == 0n) {
 				peerData[peerId] = peer.pc.createDataChannel("stats");
-				peerData[peerId].onmessage = (event) => {
-					peer.metadata["remoteStats"] = parseChannelMessage(
+				peerData[peerId].onmessage = async (event) => {
+					peer.metadata["remoteStatsTimestamp"] = performance.now();
+					peer.metadata["remoteStats"] = await parseChannelMessage(
 						event.data,
 						textDecoder
 					);
-					peer.metadata["remoteStatsTimestamp"] = performance.now();
 				};
 
 				stream.getTracks().forEach((track) => {
@@ -1114,12 +1114,12 @@ async function launchReceiver(credentials: RoomCredentials) {
 
 			peer.pc.ondatachannel = (event) => {
 				peerData[peerId] = event.channel;
-				peerData[peerId].onmessage = (event) => {
-					peer.metadata["remoteStats"] = parseChannelMessage(
+				peerData[peerId].onmessage = async (event) => {
+					peer.metadata["remoteStatsTimestamp"] = performance.now();
+					peer.metadata["remoteStats"] = await parseChannelMessage(
 						event.data,
 						textDecoder
 					);
-					peer.metadata["remoteStatsTimestamp"] = performance.now();
 				};
 			};
 			peer.pc.ontrack = async (event) => {
@@ -1545,21 +1545,38 @@ async function statsOverlay(
 	}
 
 	for (const [peerId, peer] of Object.entries(peers)) {
-		const stats = await getPeerStats(
+		const localStats = await getPeerStats(
 			peer,
 			encoder,
 			channels[peerId],
 			videos?.[peerId]
 		);
 
-		if (!stats) {
+		if (!localStats) {
 			continue;
 		}
 
-		peer.metadata["stats"] = stats;
+		peer.metadata["stats"] = localStats;
 		peer.metadata["statsTimestamp"] = performance.now();
 
-		// TODO: display remote stats
+		let remoteStats;
+
+		console.log(peer.metadata["remoteStats"]);
+
+		if (
+			peer.metadata["remoteStatsTimestamp"] -
+				peer.metadata["statsTimestamp"] <
+			2100 +
+				(localStats.roundTripTime ? localStats.roundTripTime : 200 * 2)
+		) {
+			remoteStats = peer.metadata["remoteStats"];
+		}
+
+		let stats = localStats;
+
+		if (remoteStats) {
+			stats = combineStats(localStats, remoteStats);
+		}
 
 		const peerEntry = document.createElement("li");
 
@@ -1575,6 +1592,17 @@ async function statsOverlay(
 			label = label + `\nV: ${stats.targetVideoBitrate} kbit/s`;
 		}
 
+		if (
+			(localStats.sender && localStats.cpuLimited) ||
+			(remoteStats && remoteStats.sender && remoteStats.cpuLimited)
+		) {
+			if (stats.targetAudioBitrate || stats.targetVideoBitrate) {
+				label = label + " (CPU limited)";
+			} else {
+				label = label + "\n(CPU limited)";
+			}
+		}
+
 		if (stats.jitterBufferDelay) {
 			label = label + `\nBuffer: ${stats.jitterBufferDelay} ms`;
 
@@ -1583,12 +1611,11 @@ async function statsOverlay(
 			}
 		}
 
-		if (stats.cpuLimited) {
-			if (
-				stats.targetAudioBitrate ||
-				stats.targetVideoBitrate ||
-				stats.jitterBufferDelay
-			) {
+		if (
+			(!localStats.sender && localStats.cpuLimited) ||
+			(remoteStats && !remoteStats.sender && remoteStats.cpuLimited)
+		) {
+			if (stats.jitterBufferDelay) {
 				label = label + " (CPU limited)";
 			} else {
 				label = label + "\n(CPU limited)";
@@ -1616,10 +1643,8 @@ async function statsOverlay(
 		if (
 			(stats.targetVideoBitrate && stats.targetVideoBitrate < 320) ||
 			(stats.jitterBufferDelay &&
-				stats.incomingBandwidth &&
-				stats.incomingBandwidth < 416) ||
-			(stats.roundTripTime && stats.roundTripTime > 400) ||
-			(stats.jitter && stats.jitter > 400) ||
+				stats.roundTripTime &&
+				stats.roundTripTime > stats.jitterBufferDelay) ||
 			(stats.jitterBufferDelay &&
 				stats.jitter &&
 				stats.jitter > stats.jitterBufferDelay) ||
@@ -1635,9 +1660,6 @@ async function statsOverlay(
 			peerEntry.classList.add("stats-alert");
 		} else if (
 			(stats.targetVideoBitrate && stats.targetVideoBitrate < 1024) ||
-			(stats.jitterBufferDelay &&
-				stats.incomingBandwidth &&
-				stats.incomingBandwidth < 1184) ||
 			(stats.roundTripTime && stats.roundTripTime > 200) ||
 			(stats.jitter && stats.jitter > 100) ||
 			(stats.roundTripTime &&
