@@ -1606,8 +1606,12 @@ async function statsOverlay(
 		if (stats.jitterBufferDelay) {
 			label = label + `\nBuffer: ${stats.jitterBufferDelay} ms`;
 
-			if (stats.desync) {
+			if (stats.desync !== undefined) {
 				label = label + ` Desync: ${stats.desync} ms`;
+			}
+
+			if (stats.frameDropPercent !== undefined) {
+				label = label + ` Drop: ${stats.frameDropPercent}%`;
 			}
 		}
 
@@ -1627,16 +1631,16 @@ async function statsOverlay(
 				label +
 				`\nD: ${stats.incomingBandwidth} kbit/s U: ${stats.outgoingBandwidth} kbit/s`;
 
-			if (stats.roundTripTime) {
+			if (stats.roundTripTime !== undefined) {
 				label = label + ` RTT: ${stats.roundTripTime} ms`;
 			}
 
-			if (stats.jitter) {
+			if (stats.jitter !== undefined) {
 				label = label + ` PDV: ${stats.jitter} ms`;
 			}
 
-			if (stats.loss !== undefined) {
-				label = label + ` Loss: ${stats.loss}%`;
+			if (stats.lossPercent !== undefined) {
+				label = label + ` Loss: ${stats.lossPercent}%`;
 			}
 		}
 
@@ -1648,12 +1652,12 @@ async function statsOverlay(
 			(stats.jitterBufferDelay &&
 				stats.jitter &&
 				stats.jitter > stats.jitterBufferDelay) ||
-			(stats.loss &&
-				stats.loss >= 2 &&
+			(stats.lossPercent &&
+				stats.lossPercent >= 2 &&
 				stats.roundTripTime &&
 				stats.roundTripTime + (stats.jitter ? stats.jitter : 0) / 2 >
 					267) ||
-			(stats.loss && stats.loss >= 10) ||
+			(stats.lossPercent && stats.lossPercent >= 10) ||
 			(stats.desync && stats.desync > 250) ||
 			peer.pc?.connectionState !== "connected"
 		) {
@@ -1665,8 +1669,9 @@ async function statsOverlay(
 			(stats.roundTripTime &&
 				stats.roundTripTime + (stats.jitter ? stats.jitter : 0) / 2 >
 					267) ||
-			(stats.loss && stats.loss >= 2) ||
+			(stats.lossPercent && stats.lossPercent >= 2) ||
 			(stats.desync && stats.desync > 100) ||
+			(stats.frameDropPercent && stats.frameDropPercent > 20) ||
 			stats.cpuLimited
 		) {
 			peerEntry.classList.add("stats-warn");

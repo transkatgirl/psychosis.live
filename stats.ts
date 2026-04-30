@@ -8,13 +8,14 @@ interface PeerStats {
 	targetVideoBitrate?: number;
 	cpuLimited?: boolean;
 	desync?: number;
+	frameDropPercent?: number;
 	jitterBufferDelay?: number;
 
 	incomingBandwidth?: number;
 	outgoingBandwidth?: number;
 	roundTripTime?: number;
 	jitter?: number;
-	loss?: number;
+	lossPercent?: number;
 }
 
 export function combineStats(local: PeerStats, remote: PeerStats) {
@@ -36,6 +37,13 @@ export function combineStats(local: PeerStats, remote: PeerStats) {
 		stats.desync = Math.max(stats.desync ? stats.desync : 0, remote.desync);
 	}
 
+	if (remote.frameDropPercent) {
+		stats.frameDropPercent = Math.max(
+			stats.frameDropPercent ? stats.frameDropPercent : 0,
+			remote.frameDropPercent
+		);
+	}
+
 	if (remote.jitterBufferDelay) {
 		stats.jitterBufferDelay = Math.max(
 			stats.jitterBufferDelay ? stats.jitterBufferDelay : 0,
@@ -51,8 +59,8 @@ export function combineStats(local: PeerStats, remote: PeerStats) {
 		stats.jitter = remote.jitter;
 	}
 
-	if (!stats.loss && remote.loss) {
-		stats.loss = remote.loss;
+	if (!stats.lossPercent && remote.lossPercent) {
+		stats.lossPercent = remote.lossPercent;
 	}
 
 	return stats;
@@ -81,20 +89,18 @@ export async function getPeerStats(
 	const lastPlaybackStats: VideoPlaybackQuality | undefined =
 		peer.metadata["_videoPlaybackQuality"];
 
-	if (
+	/*if (
 		playbackStats &&
 		lastPlaybackStats &&
 		playbackStats.totalVideoFrames > lastPlaybackStats.totalVideoFrames &&
-		playbackStats.droppedVideoFrames >=
-			lastPlaybackStats.droppedVideoFrames &&
-		playbackStats.droppedVideoFrames -
-			lastPlaybackStats.droppedVideoFrames >
-			(playbackStats.totalVideoFrames -
-				lastPlaybackStats.totalVideoFrames) *
-				0.5 // We can't differentiate between frames dropped due to A/V desync and frames dropped due to the decoder being overloaded, so we should be really conservative here
+		playbackStats.droppedVideoFrames >= lastPlaybackStats.droppedVideoFrames
 	) {
-		stats.cpuLimited = true;
-	}
+		stats.frameDropPercent =
+			(playbackStats.droppedVideoFrames -
+				lastPlaybackStats.droppedVideoFrames) /
+			(playbackStats.totalVideoFrames -
+				lastPlaybackStats.totalVideoFrames);
+	}*/
 
 	peer.metadata["_videoPlaybackQuality"] = playbackStats;
 
@@ -142,18 +148,18 @@ export async function getPeerStats(
 				lastReport?.packetsLost !== undefined &&
 				lastReport?.packetsReceived !== undefined
 			) {
-				stats.loss = Math.max(
+				stats.lossPercent = Math.max(
 					(report.packetsLost - lastReport.packetsLost) /
 						(report.packetsLost +
 							report.packetsReceived -
 							(lastReport.packetsLost +
 								lastReport.packetsReceived)),
-					stats.loss ? stats.loss : -Infinity
+					stats.lossPercent ? stats.lossPercent : -Infinity
 				);
 			} else if (report.fractionLost !== undefined) {
-				stats.loss = Math.max(
+				stats.lossPercent = Math.max(
 					report.fractionLost,
-					stats.loss ? stats.loss : -Infinity
+					stats.lossPercent ? stats.lossPercent : -Infinity
 				);
 			}
 			if (report.jitter) {
@@ -199,18 +205,18 @@ export async function getPeerStats(
 				lastReport?.packetsLost !== undefined &&
 				lastReport?.packetsReceived !== undefined
 			) {
-				stats.loss = Math.max(
+				stats.lossPercent = Math.max(
 					(report.packetsLost - lastReport.packetsLost) /
 						(report.packetsLost +
 							report.packetsReceived -
 							(lastReport.packetsLost +
 								lastReport.packetsReceived)),
-					stats.loss ? stats.loss : -Infinity
+					stats.lossPercent ? stats.lossPercent : -Infinity
 				);
 			} else if (report.fractionLost !== undefined) {
-				stats.loss = Math.max(
+				stats.lossPercent = Math.max(
 					report.fractionLost,
-					stats.loss ? stats.loss : -Infinity
+					stats.lossPercent ? stats.lossPercent : -Infinity
 				);
 			}
 			if (report.jitter) {
@@ -258,6 +264,10 @@ export async function getPeerStats(
 		stats.desync = Math.round(maxPlayoutTimestamp - minPlayoutTimestamp);
 	}
 
+	if (stats.frameDropPercent) {
+		stats.frameDropPercent = Math.round(stats.frameDropPercent * 100);
+	}
+
 	if (stats.incomingBandwidth) {
 		stats.incomingBandwidth = Math.round(stats.incomingBandwidth * 8);
 	}
@@ -274,8 +284,8 @@ export async function getPeerStats(
 		stats.jitter = Math.round(stats.jitter * 1000);
 	}
 
-	if (stats.loss) {
-		stats.loss = Math.round(stats.loss * 1000) / 10;
+	if (stats.lossPercent) {
+		stats.lossPercent = Math.round(stats.lossPercent * 1000) / 10;
 	}
 
 	if (channel && channel.readyState === "open") {
