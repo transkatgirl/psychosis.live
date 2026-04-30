@@ -889,6 +889,8 @@ async function launchSender(credentials: RoomCredentials) {
 
 			if (params.get("stats") === "true") {
 				await statsOverlay(overlay, peers, peerData, textEncoder);
+			} else {
+				await calculateStats(peers, peerData, textEncoder);
 			}
 
 			if (
@@ -1247,6 +1249,8 @@ async function launchReceiver(credentials: RoomCredentials) {
 					textEncoder,
 					peerVideos
 				);
+			} else {
+				await calculateStats(peers, peerData, textEncoder, peerVideos);
 			}
 		},
 		(_, message) => message,
@@ -1527,6 +1531,27 @@ async function createTrackUI(
 	return trackUi;
 }
 
+async function calculateStats(
+	peers: Record<string, Peer>,
+	channels: Record<string, RTCDataChannel>,
+	encoder: TextEncoder,
+	videos?: Record<string, HTMLVideoElement>
+) {
+	for (const [peerId, peer] of Object.entries(peers)) {
+		const stats = await getPeerStats(
+			peer,
+			encoder,
+			channels[peerId],
+			videos?.[peerId]
+		);
+
+		if (stats) {
+			peer.metadata["stats"] = stats;
+			peer.metadata["statsTimestamp"] = performance.now();
+		}
+	}
+}
+
 async function statsOverlay(
 	overlay: HTMLDivElement,
 	peers: Record<string, Peer>,
@@ -1681,7 +1706,7 @@ async function statsOverlay(
 					267) ||
 			(stats.lossPercent && stats.lossPercent >= 2) ||
 			(stats.desync && stats.desync > 100) ||
-			(stats.frameDropPercent && stats.frameDropPercent > 20) ||
+			(stats.frameDropPercent && stats.frameDropPercent > 5) ||
 			stats.cpuLimited
 		) {
 			peerEntry.classList.add("stats-warn");
