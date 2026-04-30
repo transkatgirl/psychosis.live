@@ -1077,10 +1077,10 @@ async function launchReceiver(credentials: RoomCredentials) {
 
 	const updateScalers = async () => {
 		for (const [peerId, video] of Object.entries(peerVideos)) {
-			const size = await getDevicePixelSize(video);
 			const scaler = peerScalers[peerId];
 
 			if (scaler) {
+				const size = await getDevicePixelSize(video);
 				scaler.resize(size[0], size[1]);
 			}
 		}
