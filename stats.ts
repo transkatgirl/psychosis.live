@@ -95,6 +95,8 @@ export async function getPeerStats(
 	if (
 		playbackStats &&
 		lastPlaybackStats &&
+		playbackStats.totalVideoFrames &&
+		playbackStats.droppedVideoFrames &&
 		playbackStats.totalVideoFrames >= lastPlaybackStats.totalVideoFrames
 	) {
 		stats.frameDropPercent =

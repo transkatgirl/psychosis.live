@@ -1642,6 +1642,16 @@ async function statsOverlay(
 			if (stats.lossPercent !== undefined) {
 				label = label + ` Loss: ${stats.lossPercent}%`;
 			}
+		} else if (stats.roundTripTime !== undefined) {
+			label = label + `\nRTT: ${stats.roundTripTime} ms`;
+
+			if (stats.jitter !== undefined) {
+				label = label + ` PDV: ${stats.jitter} ms`;
+			}
+
+			if (stats.lossPercent !== undefined) {
+				label = label + ` Loss: ${stats.lossPercent}%`;
+			}
 		}
 
 		if (
