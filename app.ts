@@ -1612,11 +1612,11 @@ async function statsOverlay(
 		if (stats.targetAudioBitrate && stats.targetVideoBitrate) {
 			label =
 				label +
-				`\nA: ${stats.targetAudioBitrate} kbit/s V: ${stats.targetVideoBitrate} kbit/s`;
+				`\n[S] A: ${stats.targetAudioBitrate} kbit/s V: ${stats.targetVideoBitrate} kbit/s`;
 		} else if (stats.targetAudioBitrate) {
-			label = label + `\nA: ${stats.targetAudioBitrate} kbit/s`;
+			label = label + `\n[S] A: ${stats.targetAudioBitrate} kbit/s`;
 		} else if (stats.targetVideoBitrate) {
-			label = label + `\nV: ${stats.targetVideoBitrate} kbit/s`;
+			label = label + `\n[S] V: ${stats.targetVideoBitrate} kbit/s`;
 		}
 
 		if (
@@ -1626,12 +1626,12 @@ async function statsOverlay(
 			if (stats.targetAudioBitrate || stats.targetVideoBitrate) {
 				label = label + " (CPU limited)";
 			} else {
-				label = label + "\n(CPU limited)";
+				label = label + "\n[S] (CPU limited)";
 			}
 		}
 
 		if (stats.jitterBufferDelay) {
-			label = label + `\nBuffer: ${stats.jitterBufferDelay} ms`;
+			label = label + `\n[R] Buffer: ${stats.jitterBufferDelay} ms`;
 
 			if (stats.desync !== undefined) {
 				label = label + ` Desync: ${stats.desync} ms`;
@@ -1649,7 +1649,7 @@ async function statsOverlay(
 			if (stats.jitterBufferDelay) {
 				label = label + " (CPU limited)";
 			} else {
-				label = label + "\n(CPU limited)";
+				label = label + "\n[R] (CPU limited)";
 			}
 		}
 
