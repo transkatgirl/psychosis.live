@@ -791,7 +791,7 @@ async function launchSender(credentials: RoomCredentials) {
 		(peerId, peer) => {
 			if (peer.pc && BigInt(peerId) % 2n == 0n) {
 				peerData[peerId] = peer.pc.createDataChannel("stats", {
-					maxPacketLifeTime: 2000,
+					maxPacketLifeTime: 1000,
 				});
 				peerData[peerId].onmessage = async (event) => {
 					peer.metadata["remoteStatsTimestamp"] = performance.now();
