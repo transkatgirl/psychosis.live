@@ -21,45 +21,48 @@ interface PeerStats {
 export function combineStats(local: PeerStats, remote: PeerStats) {
 	const stats = structuredClone(local);
 
-	if (!stats.sender && remote.targetAudioBitrate) {
+	if (!stats.sender && remote.targetAudioBitrate !== undefined) {
 		stats.targetAudioBitrate = remote.targetAudioBitrate;
 	}
 
-	if (!stats.sender && remote.targetVideoBitrate) {
+	if (!stats.sender && remote.targetVideoBitrate !== undefined) {
 		stats.targetVideoBitrate = remote.targetVideoBitrate;
 	}
 
-	if (remote.cpuLimited) {
+	if (remote.cpuLimited !== undefined) {
 		stats.cpuLimited = true;
 	}
 
-	if (remote.desync) {
+	if (remote.desync !== undefined) {
 		stats.desync = Math.max(stats.desync ? stats.desync : 0, remote.desync);
 	}
 
-	if (remote.frameDropPercent) {
+	if (remote.frameDropPercent !== undefined) {
 		stats.frameDropPercent = Math.max(
 			stats.frameDropPercent ? stats.frameDropPercent : 0,
 			remote.frameDropPercent
 		);
 	}
 
-	if (remote.jitterBufferDelay) {
+	if (remote.jitterBufferDelay !== undefined) {
 		stats.jitterBufferDelay = Math.max(
 			stats.jitterBufferDelay ? stats.jitterBufferDelay : 0,
 			remote.jitterBufferDelay
 		);
 	}
 
-	if (!stats.roundTripTime && remote.roundTripTime) {
+	if (
+		stats.roundTripTime === undefined &&
+		remote.roundTripTime !== undefined
+	) {
 		stats.roundTripTime = remote.roundTripTime;
 	}
 
-	if (!stats.jitter && remote.jitter) {
+	if (stats.jitter === undefined && remote.jitter !== undefined) {
 		stats.jitter = remote.jitter;
 	}
 
-	if (!stats.lossPercent && remote.lossPercent) {
+	if (stats.lossPercent === undefined && remote.lossPercent !== undefined) {
 		stats.lossPercent = remote.lossPercent;
 	}
 
@@ -89,18 +92,17 @@ export async function getPeerStats(
 	const lastPlaybackStats: VideoPlaybackQuality | undefined =
 		peer.metadata["_videoPlaybackQuality"];
 
-	/*if (
+	if (
 		playbackStats &&
 		lastPlaybackStats &&
-		playbackStats.totalVideoFrames > lastPlaybackStats.totalVideoFrames &&
-		playbackStats.droppedVideoFrames >= lastPlaybackStats.droppedVideoFrames
+		playbackStats.totalVideoFrames >= lastPlaybackStats.totalVideoFrames
 	) {
 		stats.frameDropPercent =
 			(playbackStats.droppedVideoFrames -
 				lastPlaybackStats.droppedVideoFrames) /
 			(playbackStats.totalVideoFrames -
 				lastPlaybackStats.totalVideoFrames);
-	}*/
+	}
 
 	peer.metadata["_videoPlaybackQuality"] = playbackStats;
 
