@@ -1032,6 +1032,13 @@ export class MediaScaler {
 								window.clearTimeout(timeout);
 							}
 
+							scaler.processBuffered(frame, {
+								preserveAspectRatio,
+								width: self.scalerSize![0] as number,
+								height: self.scalerSize![1] as number,
+							});
+							frame.close();
+
 							if (
 								framerate >= 15 &&
 								scaler.discard(frame.timestamp - 200_000)
@@ -1049,12 +1056,6 @@ export class MediaScaler {
 									}
 								}
 							}
-
-							scaler.processBuffered(frame, {
-								preserveAspectRatio,
-								width: self.scalerSize![0] as number,
-								height: self.scalerSize![1] as number,
-							});
 
 							if (strictTiming) {
 								timeout = window.setTimeout(() => {

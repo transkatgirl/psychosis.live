@@ -35,17 +35,21 @@ export class Scaler {
 	windowSize: number;
 
 	sourceTexture: WebGLTexture;
-	horizontalTexture: WebGLTexture;
-	outputTexture: WebGLTexture;
+	horizontalTexture: {
+		texture: WebGLTexture;
+		width: number;
+		height: number;
+	};
+	outputTexture: {
+		texture: WebGLTexture;
+		width: number;
+		height: number;
+	};
 
 	lastSourceWidth = -1;
 	lastSourceHeight = -1;
-	lastTargetWidth = -1;
-	lastTargetHeight = -1;
 	lastRadiusX = -1;
 	lastRadiusY = -1;
-	horizontalTextureWidth = -1;
-	horizontalTextureHeight = -1;
 
 	quadBuffer: WebGLBuffer;
 
@@ -53,11 +57,21 @@ export class Scaler {
 	outputFramebuffer: WebGLFramebuffer;
 
 	pixels: Uint8Array;
-	frameInit: VideoFrameBufferInit | undefined;
 	lastPixelCount = -1;
 
-	pbo: WebGLBuffer;
-	sync: WebGLSync | undefined;
+	activeBuffer = 0;
+	buffer0: {
+		pbo: WebGLBuffer;
+		pixelCount: number;
+		sync?: WebGLSync;
+		frameInit?: VideoFrameBufferInit;
+	};
+	buffer1: {
+		pbo: WebGLBuffer;
+		pixelCount: number;
+		sync?: WebGLSync;
+		frameInit?: VideoFrameBufferInit;
+	};
 	syncTimeout: number;
 
 	compiledHorizontal: {
@@ -112,33 +126,45 @@ export class Scaler {
 			gl.RGBA,
 			gl.UNSIGNED_BYTE
 		);
-		this.horizontalTexture = createEmptyTexture(
-			this.gl,
-			1,
-			1,
-			this.precise ? gl.RGBA16F : gl.RGBA8,
-			gl.RGBA,
-			this.precise ? gl.HALF_FLOAT : gl.UNSIGNED_BYTE
-		);
-		this.outputTexture = createEmptyTexture(
-			this.gl,
-			1,
-			1,
-			gl.RGBA8,
-			gl.RGBA,
-			gl.UNSIGNED_BYTE
-		);
+		this.horizontalTexture = {
+			texture: createEmptyTexture(
+				this.gl,
+				1,
+				1,
+				this.precise ? gl.RGBA16F : gl.RGBA8,
+				gl.RGBA,
+				this.precise ? gl.HALF_FLOAT : gl.UNSIGNED_BYTE
+			),
+			width: 1,
+			height: 1,
+		};
+		this.outputTexture = {
+			texture: createEmptyTexture(
+				this.gl,
+				1,
+				1,
+				gl.RGBA8,
+				gl.RGBA,
+				gl.UNSIGNED_BYTE
+			),
+			width: 1,
+			height: 1,
+		};
 
 		this.quadBuffer = createDefaultQuadBuffer(this.gl);
 
 		this.horizontalFramebuffer = createFramebuffer(
 			this.gl,
-			this.horizontalTexture
+			this.horizontalTexture.texture
 		);
-		this.outputFramebuffer = createFramebuffer(this.gl, this.outputTexture);
+		this.outputFramebuffer = createFramebuffer(
+			this.gl,
+			this.outputTexture.texture
+		);
 		this.pixels = new Uint8Array();
 
-		this.pbo = this.gl.createBuffer();
+		this.buffer0 = { pbo: this.gl.createBuffer(), pixelCount: -1 };
+		this.buffer1 = { pbo: this.gl.createBuffer(), pixelCount: -1 };
 		this.syncTimeout = this.gl.getParameter(
 			gl.MAX_CLIENT_WAIT_TIMEOUT_WEBGL
 		);
@@ -234,7 +260,10 @@ export class Scaler {
 		this.gl.activeTexture(this.gl.TEXTURE0);
 		this.gl.disable(this.gl.BLEND);
 	}
-	handleFrame(frame: VideoFrame, options: FrameOptions): [number, number] {
+	handleFrame(frame: VideoFrame, options: FrameOptions) {
+		if (this.activeBuffer === -1)
+			throw new Error("Attempted to use a closed scaler");
+
 		if (frame.displayWidth === 0 || frame.displayHeight === 0) {
 			throw new Error("source image width or height is 0");
 		}
@@ -271,40 +300,40 @@ export class Scaler {
 		const scaleY = targetHeight / srcHeight;
 
 		if (
-			this.horizontalTextureWidth !== targetWidth ||
-			this.horizontalTextureHeight !== srcHeight
+			this.horizontalTexture.width !== targetWidth ||
+			this.horizontalTexture.height !== srcHeight
 		) {
 			updateTextureFromEmpty(
 				gl,
-				this.horizontalTexture,
+				this.horizontalTexture.texture,
 				targetWidth,
 				srcHeight,
 				this.precise ? gl.RGBA16F : gl.RGBA8,
 				gl.RGBA,
 				this.precise ? gl.HALF_FLOAT : gl.UNSIGNED_BYTE
 			);
-			this.horizontalTextureWidth = targetWidth;
-			this.horizontalTextureHeight = srcHeight;
+			this.horizontalTexture.width = targetWidth;
+			this.horizontalTexture.height = srcHeight;
 		}
 
 		if (
-			targetWidth != this.lastTargetWidth ||
-			targetHeight != this.lastTargetHeight
+			this.outputTexture.width != targetWidth ||
+			this.outputTexture.height != targetHeight
 		) {
 			updateTextureFromEmpty(
 				gl,
-				this.outputTexture,
+				this.outputTexture.texture,
 				targetWidth,
 				targetHeight,
 				gl.RGBA8,
 				gl.RGBA,
 				gl.UNSIGNED_BYTE
 			);
-			this.lastTargetWidth = targetWidth;
-			this.lastTargetHeight = targetHeight;
+			this.outputTexture.width = targetWidth;
+			this.outputTexture.height = targetHeight;
 		}
 
-		this.frameInit = {
+		const frameInit: VideoFrameBufferInit = {
 			timestamp: frame.timestamp,
 			duration: frame.duration ? frame.duration : undefined,
 			codedWidth: targetWidth,
@@ -341,7 +370,6 @@ export class Scaler {
 			gl.RGBA,
 			gl.UNSIGNED_BYTE
 		);
-		frame.close();
 		gl.viewport(0, 0, targetWidth, srcHeight);
 		gl.bindFramebuffer(gl.FRAMEBUFFER, this.horizontalFramebuffer);
 		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -365,99 +393,127 @@ export class Scaler {
 			this.lastRadiusY = radiusY;
 		}
 		gl.bindVertexArray(this.verticalVAO);
-		gl.bindTexture(gl.TEXTURE_2D, this.horizontalTexture);
+		gl.bindTexture(gl.TEXTURE_2D, this.horizontalTexture.texture);
 		gl.viewport(0, 0, targetWidth, targetHeight);
 		gl.bindFramebuffer(gl.FRAMEBUFFER, this.outputFramebuffer);
 		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
-		return [targetWidth, targetHeight];
+		return frameInit;
 	}
 	public processImmediate(frame: VideoFrame, options: FrameOptions) {
-		const [width, height] = this.handleFrame(frame, options);
+		const frameInit = this.handleFrame(frame, options);
 
 		const gl = this.gl;
 
-		const pixelCount = width * height * 4;
+		const pixelCount = frameInit.codedWidth * frameInit.codedHeight * 4;
 
-		if (pixelCount != this.lastPixelCount) {
-			gl.bindBuffer(gl.PIXEL_PACK_BUFFER, this.pbo);
-			gl.bufferData(gl.PIXEL_PACK_BUFFER, pixelCount, gl.DYNAMIC_READ);
-			gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
-
+		if (this.lastPixelCount != pixelCount) {
 			this.pixels = new Uint8Array(pixelCount);
 			this.lastPixelCount = pixelCount;
 		}
 
-		if (this.sync) {
-			gl.deleteSync(this.sync);
+		if (this.buffer0.sync) {
+			gl.deleteSync(this.buffer0.sync);
 			gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
-			this.sync = undefined;
+			this.buffer0.sync = undefined;
+		}
+
+		if (this.buffer1.sync) {
+			gl.deleteSync(this.buffer1.sync);
+			gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+			this.buffer1.sync = undefined;
 		}
 
 		gl.readPixels(
 			0,
 			0,
-			width,
-			height,
+			frameInit.codedWidth,
+			frameInit.codedHeight,
 			gl.RGBA,
 			gl.UNSIGNED_BYTE,
 			this.pixels
 		);
 
-		return new VideoFrame(this.pixels, this.frameInit!);
+		return new VideoFrame(this.pixels, frameInit);
 	}
 	public processBuffered(frame: VideoFrame, options: FrameOptions) {
-		const [width, height] = this.handleFrame(frame, options);
+		if (this.activeBuffer === -1) return;
+
+		const buffer = this.activeBuffer ? this.buffer1 : this.buffer0;
+
+		buffer.frameInit = this.handleFrame(frame, options);
 
 		const gl = this.gl;
 
-		gl.bindBuffer(gl.PIXEL_PACK_BUFFER, this.pbo);
+		gl.bindBuffer(gl.PIXEL_PACK_BUFFER, buffer.pbo);
 
-		const pixelCount = width * height * 4;
+		const pixelCount =
+			buffer.frameInit.codedWidth * buffer.frameInit.codedHeight * 4;
 
-		if (pixelCount != this.lastPixelCount) {
+		if (pixelCount != buffer.pixelCount) {
 			gl.bufferData(gl.PIXEL_PACK_BUFFER, pixelCount, gl.DYNAMIC_READ);
-
-			this.pixels = new Uint8Array(pixelCount);
-			this.lastPixelCount = pixelCount;
+			buffer.pixelCount = pixelCount;
 		}
 
-		gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, 0);
+		gl.readPixels(
+			0,
+			0,
+			buffer.frameInit.codedWidth,
+			buffer.frameInit.codedHeight,
+			gl.RGBA,
+			gl.UNSIGNED_BYTE,
+			0
+		);
 
-		if (this.sync) {
-			gl.deleteSync(this.sync);
+		if (buffer.sync) {
+			gl.deleteSync(buffer.sync);
 		}
 
-		this.sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0)!;
+		buffer.sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0)!;
 		gl.flush();
+
+		this.activeBuffer = this.activeBuffer ? 0 : 1;
 	}
 	public read(): VideoFrame | undefined {
-		if (this.frameInit && this.sync) {
+		if (this.activeBuffer === -1) return;
+
+		const buffer = this.activeBuffer ? this.buffer1 : this.buffer0;
+
+		if (buffer.frameInit && buffer.sync) {
 			const gl = this.gl;
 
+			if (this.lastPixelCount != buffer.pixelCount) {
+				this.pixels = new Uint8Array(buffer.pixelCount);
+				this.lastPixelCount = buffer.pixelCount;
+			}
+
 			gl.clientWaitSync(
-				this.sync,
+				buffer.sync,
 				gl.SYNC_FLUSH_COMMANDS_BIT,
 				this.syncTimeout
 			);
 
-			gl.deleteSync(this.sync);
-			this.sync = undefined;
+			gl.deleteSync(buffer.sync);
+			buffer.sync = undefined;
 
-			gl.bindBuffer(gl.PIXEL_PACK_BUFFER, this.pbo);
+			gl.bindBuffer(gl.PIXEL_PACK_BUFFER, buffer.pbo);
 			gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, this.pixels);
 
-			return new VideoFrame(this.pixels, this.frameInit);
+			return new VideoFrame(this.pixels, buffer.frameInit);
 		}
 	}
 	public discard(minTimestamp?: number): boolean {
+		if (this.activeBuffer === -1) return false;
+
+		const buffer = this.activeBuffer ? this.buffer1 : this.buffer0;
+
 		if (
-			this.sync &&
+			buffer.sync &&
 			(!minTimestamp ||
-				(this.frameInit && this.frameInit.timestamp < minTimestamp))
+				(buffer.frameInit && buffer.frameInit.timestamp < minTimestamp))
 		) {
-			this.gl.deleteSync(this.sync);
-			this.sync = undefined;
+			this.gl.deleteSync(buffer.sync);
+			buffer.sync = undefined;
 
 			return true;
 		} else {
@@ -465,14 +521,19 @@ export class Scaler {
 		}
 	}
 	public destroy() {
-		if (this.sync) {
-			this.gl.deleteSync(this.sync);
-			this.sync = undefined;
-		}
+		if (this.activeBuffer === -1) return;
 
+		this.activeBuffer = -1;
+
+		if (this.buffer0.sync) {
+			this.gl.deleteSync(this.buffer0.sync);
+		}
+		if (this.buffer1.sync) {
+			this.gl.deleteSync(this.buffer1.sync);
+		}
 		this.gl.deleteTexture(this.sourceTexture);
-		this.gl.deleteTexture(this.horizontalTexture);
-		this.gl.deleteTexture(this.outputTexture);
+		this.gl.deleteTexture(this.horizontalTexture.texture);
+		this.gl.deleteTexture(this.outputTexture.texture);
 		this.gl.deleteProgram(this.compiledHorizontal.program);
 		this.gl.deleteProgram(this.compiledVertical.program);
 		this.gl.deleteShader(this.compiledHorizontal.vertexShader);
@@ -482,7 +543,8 @@ export class Scaler {
 		this.gl.deleteFramebuffer(this.horizontalFramebuffer);
 		this.gl.deleteFramebuffer(this.outputFramebuffer);
 		this.gl.deleteBuffer(this.quadBuffer);
-		this.gl.deleteBuffer(this.pbo);
+		this.gl.deleteBuffer(this.buffer0.pbo);
+		this.gl.deleteBuffer(this.buffer1.pbo);
 		this.gl.deleteVertexArray(this.horizontalVAO);
 		this.gl.deleteVertexArray(this.verticalVAO);
 	}
