@@ -1744,7 +1744,8 @@ async function statsOverlay(
 			(stats.lossPercent && stats.lossPercent >= 2) ||
 			(stats.desync && stats.desync > 100) ||
 			(stats.frameDropPercent && stats.frameDropPercent > 5) ||
-			stats.cpuLimited
+			stats.cpuLimited ||
+			stats.gpuLimited
 		) {
 			peerEntry.classList.add("stats-warn");
 		}
