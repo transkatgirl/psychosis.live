@@ -1,6 +1,8 @@
 body#app {
 	margin: 0;
 	background-color: black;
+	width: 100vw;
+	height: 100vh;
 }
 
 body:not(#app) {
@@ -21,11 +23,9 @@ blockquote p::after {
 
 .gallery {
 	display: grid;
-	grid-template-columns: 1fr;
-	grid-template-rows: 1fr;
 	grid-auto-columns: 1fr;
-	width: 100vw;
-	height: 100vh;
+	width: 100%;
+	height: 100%;
 }
 
 .gallery video {
@@ -35,8 +35,8 @@ blockquote p::after {
 }
 
 video.preview {
-	width: 100vw;
-	height: 100vh;
+	width: 100%;
+	height: 100%;
 }
 
 input[type="text"] {
@@ -61,10 +61,11 @@ video {
 
 .stats-overlay {
 	position: absolute;
+	contain: layout paint style;
 	top: 1lh;
 	left: 1lh;
-	max-width: calc(100vw - 2lh);
-	max-height: calc(100vh - 2lh);
+	max-width: calc(100% - 2lh);
+	max-height: calc(100% - 2lh);
 	color: white;
 	font: 1em monospace;
 	background-color: rgba(0, 0, 0, 0.5);
@@ -91,10 +92,11 @@ video {
 
 .settings-overlay {
 	position: absolute;
+	contain: layout paint style;
 	bottom: 1lh;
 	right: 1lh;
-	max-width: calc(100vw - 2lh);
-	max-height: calc(100vh - 2lh);
+	max-width: calc(100% - 2lh);
+	max-height: calc(100% - 2lh);
 	color: white;
 	background-color: rgba(0, 0, 0, 0.5);
 	padding: 1em;
