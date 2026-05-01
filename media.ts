@@ -976,7 +976,8 @@ export class MediaScaler {
 	public addTrack(
 		track: MediaStreamTrack,
 		strictTiming: boolean,
-		preserveAspectRatio = true
+		preserveAspectRatio = true,
+		warningCallback = () => {}
 	) {
 		if (track.kind == "video") {
 			if (this.videoId)
@@ -1047,7 +1048,7 @@ export class MediaScaler {
 									"Input is running very behind, discarding frame"
 								);
 							} else {
-								let output = scaler.read();
+								let output = scaler.read(warningCallback);
 								if (output) {
 									try {
 										controller.enqueue(output);
@@ -1059,7 +1060,7 @@ export class MediaScaler {
 
 							if (strictTiming) {
 								timeout = window.setTimeout(() => {
-									let output = scaler.read();
+									let output = scaler.read(warningCallback);
 									if (output) {
 										console.warn(
 											"Input is likely running behind, reading frame early"

@@ -7,6 +7,7 @@ interface PeerStats {
 	targetAudioBitrate?: number;
 	targetVideoBitrate?: number;
 	cpuLimited?: boolean;
+	gpuLimited?: boolean;
 	desync?: number;
 	frameDropPercent?: number;
 	jitterBufferDelay?: number;
@@ -29,8 +30,12 @@ export function combineStats(local: PeerStats, remote: PeerStats) {
 		stats.targetVideoBitrate = remote.targetVideoBitrate;
 	}
 
-	if (remote.cpuLimited !== undefined) {
+	if (remote.cpuLimited) {
 		stats.cpuLimited = true;
+	}
+
+	if (remote.gpuLimited) {
+		stats.gpuLimited = true;
 	}
 
 	if (remote.desync !== undefined) {
@@ -87,6 +92,16 @@ export async function getPeerStats(
 	}
 
 	let stats: PeerStats = { sender: false };
+
+	if (peer.metadata["CPULimited"]) {
+		stats.cpuLimited = true;
+		peer.metadata["CPULimited"] = false;
+	}
+
+	if (peer.metadata["GPULimited"]) {
+		stats.gpuLimited = true;
+		peer.metadata["GPULimited"] = false;
+	}
 
 	const playbackStats = video?.getVideoPlaybackQuality();
 	const lastPlaybackStats: VideoPlaybackQuality | undefined =

@@ -614,11 +614,13 @@ async function launchSender(credentials: RoomCredentials) {
 	const peerScalers: Record<string, MediaScaler> = {};
 
 	const addTrack = async (
-		pc: RTCPeerConnection,
+		peer: Peer,
 		peerId: string,
 		track: MediaStreamTrack,
 		stream: MediaStream
 	) => {
+		if (!peer.pc) return;
+
 		let transceiver;
 
 		if (params.get("overrideScaler") === "true") {
@@ -669,9 +671,11 @@ async function launchSender(credentials: RoomCredentials) {
 				peerScalers[peerId] = scaler;
 			}
 
-			const scalerTrack = scaler.addTrack(track, false);
+			const scalerTrack = scaler.addTrack(track, false, true, () => {
+				peer.metadata["GPULimited"] = true;
+			});
 
-			transceiver = pc.addTransceiver(scalerTrack, {
+			transceiver = peer.pc.addTransceiver(scalerTrack, {
 				sendEncodings: [
 					buildSenderEncoding(
 						track.kind,
@@ -685,7 +689,7 @@ async function launchSender(credentials: RoomCredentials) {
 				streams: [scaler.stream],
 			});
 		} else {
-			transceiver = pc.addTransceiver(track, {
+			transceiver = peer.pc.addTransceiver(track, {
 				sendEncodings: [
 					buildSenderEncoding(
 						track.kind,
@@ -744,7 +748,14 @@ async function launchSender(credentials: RoomCredentials) {
 				) {
 					if (scaler) {
 						scaler.removeTrack(oldTrack);
-						const scaledTrack = scaler.addTrack(newTrack, false);
+						const scaledTrack = scaler.addTrack(
+							newTrack,
+							false,
+							true,
+							() => {
+								peer.metadata["GPULimited"] = true;
+							}
+						);
 
 						promises.push(
 							transceiver.sender
@@ -804,7 +815,7 @@ async function launchSender(credentials: RoomCredentials) {
 				stream.getTracks().forEach((track) => {
 					if (!peer.pc) return;
 
-					addTrack(peer.pc, peerId, track, stream);
+					addTrack(peer, peerId, track, stream);
 				});
 			}
 		},
@@ -1191,14 +1202,18 @@ async function launchReceiver(credentials: RoomCredentials) {
 							);
 
 							for (const track of stream.getTracks()) {
-								scaler.addTrack(track, true);
+								scaler.addTrack(track, true, true, () => {
+									peer.metadata["GPULimited"] = true;
+								});
 							}
 
 							peerScalers[peerId] = scaler;
 							video.srcObject = scaler.stream;
 
 							stream.onaddtrack = (event) => {
-								scaler.addTrack(event.track, true);
+								scaler.addTrack(event.track, true, true, () => {
+									peer.metadata["GPULimited"] = true;
+								});
 							};
 							stream.onremovetrack = async (event) => {
 								scaler.removeTrack(event.track);
@@ -1628,6 +1643,17 @@ async function statsOverlay(
 			}
 		}
 
+		if (
+			(localStats.sender && localStats.gpuLimited) ||
+			(remoteStats && remoteStats.sender && remoteStats.gpuLimited)
+		) {
+			if (stats.targetAudioBitrate || stats.targetVideoBitrate) {
+				label = label + " (GPU limited)";
+			} else {
+				label = label + "\n[S] (GPU limited)";
+			}
+		}
+
 		if (stats.jitterBufferDelay) {
 			label = label + `\n[R] Buffer: ${stats.jitterBufferDelay} ms`;
 
@@ -1648,6 +1674,17 @@ async function statsOverlay(
 				label = label + " (CPU limited)";
 			} else {
 				label = label + "\n[R] (CPU limited)";
+			}
+		}
+
+		if (
+			(!localStats.sender && localStats.gpuLimited) ||
+			(remoteStats && !remoteStats.sender && remoteStats.gpuLimited)
+		) {
+			if (stats.jitterBufferDelay) {
+				label = label + " (GPU limited)";
+			} else {
+				label = label + "\n[R] (GPU limited)";
 			}
 		}
 

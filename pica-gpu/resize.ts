@@ -477,7 +477,7 @@ export class Scaler {
 	public swap() {
 		this.activeBuffer = this.activeBuffer ? 0 : 1;
 	}
-	public read(): VideoFrame | undefined {
+	public read(warningCallback?: () => void): VideoFrame | undefined {
 		if (this.activeBuffer === -1) return;
 
 		const buffer = this.activeBuffer ? this.buffer1 : this.buffer0;
@@ -490,11 +490,14 @@ export class Scaler {
 				this.lastPixelCount = buffer.pixelCount;
 			}
 
-			gl.clientWaitSync(
+			const status = gl.clientWaitSync(
 				buffer.sync,
 				gl.SYNC_FLUSH_COMMANDS_BIT,
 				this.syncTimeout
 			);
+
+			if (status === gl.TIMEOUT_EXPIRED && warningCallback)
+				warningCallback();
 
 			gl.deleteSync(buffer.sync);
 			buffer.sync = undefined;
