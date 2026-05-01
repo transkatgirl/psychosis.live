@@ -22,7 +22,12 @@ import {
 	type AdaptiveTargets,
 } from "./media";
 import type { ScalerCreationOptions } from "./pica-gpu";
-import { combineStats, getPeerStats, parseChannelMessage } from "./stats";
+import {
+	combineStats,
+	getPeerStats,
+	parseChannelMessage,
+	type PeerStats,
+} from "./stats";
 
 const defaultMqttEndpoint = "wss://broker.emqx.io:8084/mqtt";
 const defaultIceServers: RTCIceServer[] = [
@@ -900,10 +905,10 @@ async function launchSender(credentials: RoomCredentials) {
 				peer.metadata["peerData"] = peerData;
 			}
 
+			await calculateStats(peers, peerData, textEncoder);
+
 			if (params.get("stats") === "true") {
-				await statsOverlay(overlay, peers, peerData, textEncoder);
-			} else {
-				await calculateStats(peers, peerData, textEncoder);
+				statsOverlay(overlay, peers);
 			}
 
 			if (
@@ -1258,16 +1263,10 @@ async function launchReceiver(credentials: RoomCredentials) {
 			}
 		},
 		async (peers) => {
+			await calculateStats(peers, peerData, textEncoder, peerVideos);
+
 			if (params.get("stats") === "true") {
-				await statsOverlay(
-					overlay,
-					peers,
-					peerData,
-					textEncoder,
-					peerVideos
-				);
-			} else {
-				await calculateStats(peers, peerData, textEncoder, peerVideos);
+				statsOverlay(overlay, peers);
 			}
 		},
 		(_, message) => message,
@@ -1569,13 +1568,7 @@ async function calculateStats(
 	}
 }
 
-async function statsOverlay(
-	overlay: HTMLDivElement,
-	peers: Record<string, Peer>,
-	channels: Record<string, RTCDataChannel>,
-	encoder: TextEncoder,
-	videos?: Record<string, HTMLVideoElement>
-) {
+function statsOverlay(overlay: HTMLDivElement, peers: Record<string, Peer>) {
 	const peerList = document.createElement("ul");
 
 	if (!((globalThis as any).room as Room).room.client.connected) {
@@ -1587,21 +1580,13 @@ async function statsOverlay(
 	}
 
 	for (const [peerId, peer] of Object.entries(peers)) {
-		const localStats = await getPeerStats(
-			peer,
-			encoder,
-			channels[peerId],
-			videos?.[peerId]
-		);
+		const localStats: PeerStats | undefined = peer.metadata["stats"];
 
 		if (!localStats) {
 			continue;
 		}
 
-		peer.metadata["stats"] = localStats;
-		peer.metadata["statsTimestamp"] = performance.now();
-
-		let remoteStats;
+		let remoteStats: PeerStats | undefined;
 
 		if (
 			peer.metadata["statsTimestamp"] -

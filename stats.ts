@@ -1,7 +1,7 @@
 import { compress, convertUint8Array, decompress } from "./room/core";
 import type { Peer } from "./room/webrtc";
 
-interface PeerStats {
+export interface PeerStats {
 	sender: boolean;
 
 	targetAudioBitrate?: number;
