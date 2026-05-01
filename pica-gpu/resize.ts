@@ -14,6 +14,8 @@ import {
 	vsSource,
 } from "./shaders";
 
+// TODO: benchmark async texture uploading (https://www.songho.ca/opengl/gl_pbo.html) to see if it has a performance benefit?
+
 export interface ScalerCreationOptions {
 	filter: "box" | "hamming" | "lanczos2" | "lanczos3" | "mks2013" | "mks2021";
 	precise: boolean;

@@ -19,19 +19,15 @@ bun build --compile --target=browser ./index.html --outdir=dist --minify-whitesp
 ## todo
 
 ### low priority
-- [ ] adjust jitterBufferTarget based on RTT
 - [ ] add on-screen RMS+clipping warning volume meter
 - [ ] display information (resolution, framerate, channel count, sample rate) about video/audio tracks in sender/receiver UI if showStats is enabled
-- [ ] further scaler optimization
-	- [ ] async texture upload (see https://www.songho.ca/opengl/gl_pbo.html)
+- [ ] update jitterBufferTarget based on 60s rolling window using (2 * RTT + jitter) if calculated value is larger than user-chosen target
 
-### far future ideas
+### future ideas
 - [ ] if Chromium takes too long to fix bugs in getUserMedia() and enumerateDevices(), submit patches to upstream
 - [ ] wait for libwebrtc to support Opus 1.6 or submit patches to support it
 	- [ ] get [DRED](https://opus-codec.org/demo/opus-1.5/) working
 	- [ ] get [DeepPLC](https://opus-codec.org/demo/opus-1.5/) working
 	- [ ] get [NoLACE](https://opus-codec.org/demo/opus-1.5/) working
 	- [ ] get [BWE](https://opus-codec.org/demo/opus-1.6/) working
-	- [ ] update Chromium to use latest libwebrtc w/ Opus 1.6 support
-- [ ] switch to MoQ when it's ready
-	- [ ] implement QUIC multipath draft
+	- [ ] patch Chromium to use latest libwebrtc w/ Opus 1.6 support
