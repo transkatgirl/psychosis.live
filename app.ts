@@ -1588,8 +1588,6 @@ async function statsOverlay(
 
 		let remoteStats;
 
-		console.log(peer.metadata["remoteStats"]);
-
 		if (
 			peer.metadata["statsTimestamp"] -
 				peer.metadata["remoteStatsTimestamp"] <
