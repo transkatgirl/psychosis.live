@@ -22,6 +22,8 @@ bun build --compile --target=browser ./index.html --outdir=dist --minify-whitesp
 - [ ] adjust jitterBufferTarget based on RTT
 - [ ] add on-screen RMS+clipping warning volume meter
 - [ ] display information (resolution, framerate, channel count, sample rate) about video/audio tracks in sender/receiver UI if showStats is enabled
+- [ ] further scaler optimization
+	- [ ] async texture upload (see https://www.songho.ca/opengl/gl_pbo.html)
 
 ### far future ideas
 - [ ] if Chromium takes too long to fix bugs in getUserMedia() and enumerateDevices(), submit patches to upstream
