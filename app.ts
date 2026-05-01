@@ -26,6 +26,7 @@ import {
 	combineStats,
 	getPeerStats,
 	parseChannelMessage,
+	sendChannelMessage,
 	type PeerStats,
 } from "./stats";
 
@@ -1554,14 +1555,13 @@ async function calculateStats(
 	videos?: Record<string, HTMLVideoElement>
 ) {
 	for (const [peerId, peer] of Object.entries(peers)) {
-		const stats = await getPeerStats(
-			peer,
-			encoder,
-			channels[peerId],
-			videos?.[peerId]
-		);
+		const stats = await getPeerStats(peer, videos?.[peerId]);
 
 		if (stats) {
+			const channel = channels[peerId];
+			if (channel) {
+				sendChannelMessage(stats, encoder, channel);
+			}
 			peer.metadata["stats"] = stats;
 			peer.metadata["statsTimestamp"] = performance.now();
 		}

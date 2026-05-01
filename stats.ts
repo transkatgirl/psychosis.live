@@ -74,6 +74,20 @@ export function combineStats(local: PeerStats, remote: PeerStats) {
 	return stats;
 }
 
+export async function sendChannelMessage(
+	message: PeerStats,
+	encoder: TextEncoder,
+	channel: RTCDataChannel // Max message size of 64kB
+) {
+	if (channel && channel.readyState === "open") {
+		channel.send(
+			await compress(
+				convertUint8Array(encoder.encode(JSON.stringify(message)))
+			)
+		);
+	}
+}
+
 export async function parseChannelMessage(
 	message: ArrayBuffer,
 	decoder: TextDecoder
@@ -83,8 +97,6 @@ export async function parseChannelMessage(
 
 export async function getPeerStats(
 	peer: Peer,
-	encoder: TextEncoder,
-	channel?: RTCDataChannel, // Max message size of 64kB
 	video?: HTMLVideoElement
 ): Promise<PeerStats | undefined> {
 	if (!peer.pc || peer.pc?.connectionState === "new") {
@@ -305,14 +317,6 @@ export async function getPeerStats(
 
 	if (stats.lossPercent) {
 		stats.lossPercent = Math.round(stats.lossPercent * 1000) / 10;
-	}
-
-	if (channel && channel.readyState === "open") {
-		channel.send(
-			await compress(
-				convertUint8Array(encoder.encode(JSON.stringify(stats)))
-			)
-		);
 	}
 
 	return stats;
