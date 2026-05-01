@@ -472,6 +472,9 @@ export class Scaler {
 		buffer.sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0)!;
 		gl.flush();
 
+		this.swap();
+	}
+	public swap() {
 		this.activeBuffer = this.activeBuffer ? 0 : 1;
 	}
 	public read(): VideoFrame | undefined {
