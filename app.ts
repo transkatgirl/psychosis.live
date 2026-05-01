@@ -1591,8 +1591,8 @@ async function statsOverlay(
 		console.log(peer.metadata["remoteStats"]);
 
 		if (
-			peer.metadata["remoteStatsTimestamp"] -
-				peer.metadata["statsTimestamp"] <
+			peer.metadata["statsTimestamp"] -
+				peer.metadata["remoteStatsTimestamp"] <
 			2100 +
 				(localStats.roundTripTime ? localStats.roundTripTime : 200 * 2)
 		) {
