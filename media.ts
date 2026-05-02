@@ -804,6 +804,12 @@ function adaptiveVideoSettings(
 	}
 }
 
+/*
+
+- jitter buffer must be at least 1.5x RTT (may require 2x RTT depending on receiver implementation) for retransmissions to work; see https://www.rtcbits.com/2017/03/retransmissions-in-webrtc.html
+-  we can safely assume average network RTT on each end to be ~100ms on non-congested networks, as 4G has now become widespread and 3G is phased out in most countries; see https://hpbn.co/mobile-networks/#cellular-performance and https://en.wikipedia.org/wiki/3G#Phase-out
+
+*/
 export const REASONABLE_MIN_JITTER_BUFFER = 200;
 
 // Intended to be called every 1s
@@ -869,18 +875,28 @@ export async function adaptiveReceiverSettings(peer: Peer) {
 	if (rttAvg !== undefined) {
 		// Note: This calculation makes the assumption that jitterBufferTarget decides the *minimum* jitter buffer, and that the browser can adapt it higher if necessary. This isn't necessarily what the spec says jitterBufferTarget means, but this is currently how all browsers treat it in practice (except Safari, which seems to ignore it entirely???).
 
+		// jitter buffer must be at least 1.5x RTT (may require 2x RTT depending on receiver implementation) for retransmissions to work; see https://www.rtcbits.com/2017/03/retransmissions-in-webrtc.html
+
 		if (jitterAvg !== undefined) {
 			jitterBufferTarget = (rttAvg + jitterAvg) * 1.5 * 2;
 		} else {
 			jitterBufferTarget = rttAvg * 1.5 * 2;
 		}
 
+		if (jitterBufferTarget > 450) {
+			// we want to avoid large jitterBufferTarget values. jitterBufferTarget >= 600ms causes problems with congestion control, as GCC can't adapt fast enough
+
+			jitterBufferTarget = Math.max(450, jitterBufferTarget / 2);
+		}
+
+		jitterBufferTarget += 50; // Take hysteresis into account
+
 		jitterBufferTarget = Math.min(
 			Math.max(
-				50 + Math.round(jitterBufferTarget / 10) * 10,
+				Math.round(jitterBufferTarget / 10) * 10,
 				REASONABLE_MIN_JITTER_BUFFER
 			),
-			4000
+			1200 // refuse to use very large jitterBufferTarget values; something is horribly wrong if you have >800ms of average RTT
 		);
 	}
 
