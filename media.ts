@@ -835,58 +835,69 @@ export async function adaptiveReceiverSettings(peer: Peer) {
 
 	const now = performance.now();
 
-	let rttSum = 0;
-	let rttCount = 0;
+	let rtts: number[] = [];
 
-	let jitterSum = 0;
-	let jitterCount = 0;
+	let rttSum = 0;
 
 	for (const [timestampString, stats] of Object.entries(history)) {
 		const timestamp = Number(timestampString);
 
-		if (now - timestamp > 60000) {
+		if (now - timestamp > 120000) {
 			delete history[timestampString];
 		} else {
 			if (stats.roundTripTime) {
-				rttSum += stats.roundTripTime;
-				rttCount++;
-			}
-			if (stats.jitter) {
-				jitterSum += stats.jitter;
-				jitterCount++;
+				let rtt = stats.roundTripTime;
+
+				if (stats.jitter) {
+					rtt += stats.jitter;
+				}
+
+				rttSum += rtt;
+				rtts.push(rtt);
 			}
 		}
 	}
 
 	let rttAvg;
-	let jitterAvg;
 
-	if (rttCount >= 20) {
-		// Require at least 40s of history, assuming remote stats are received are once every 2s
-		rttAvg = rttSum / rttCount;
-	}
-
-	if (jitterCount >= 20) {
-		jitterAvg = jitterSum / jitterCount;
+	if (rtts.length >= 30) {
+		// Require at least 60s of history, assuming remote stats are received are once every 2s
+		rttAvg = rttSum / rtts.length;
 	}
 
 	let jitterBufferTarget;
 
 	if (rttAvg !== undefined) {
+		let rttStdev;
+
+		{
+			let variance = 0;
+
+			for (const rtt of rtts) {
+				const diff = rtt - rttAvg;
+
+				variance += diff * diff;
+			}
+
+			variance = variance / rtts.length;
+
+			rttStdev = Math.sqrt(variance);
+		}
+
 		// Note: This calculation makes the assumption that jitterBufferTarget decides the *minimum* jitter buffer, and that the browser can adapt it higher if necessary. This isn't necessarily what the spec says jitterBufferTarget means, but this is currently how all browsers treat it in practice (except Safari, which seems to ignore it entirely???).
 
 		// jitter buffer must be at least 1.5x RTT (may require 2x RTT depending on receiver implementation) for retransmissions to work; see https://www.rtcbits.com/2017/03/retransmissions-in-webrtc.html
 
-		if (jitterAvg !== undefined) {
-			jitterBufferTarget = (rttAvg + jitterAvg) * 1.5 * 2;
-		} else {
-			jitterBufferTarget = rttAvg * 1.5 * 2;
-		}
+		jitterBufferTarget = (rttAvg + rttStdev * 2) * 1.5;
 
-		if (jitterBufferTarget > 450) {
+		if (jitterBufferTarget > 350) {
 			// we want to avoid large jitterBufferTarget values. jitterBufferTarget >= 600ms causes problems with congestion control, as GCC can't adapt fast enough
 
-			jitterBufferTarget = Math.max(450, jitterBufferTarget / 2);
+			jitterBufferTarget = Math.max(350, (rttAvg + rttStdev) * 1.5);
+
+			if (jitterBufferTarget > 550) {
+				jitterBufferTarget = Math.max(550, rttAvg * 1.5);
+			}
 		}
 
 		jitterBufferTarget += 50; // Take hysteresis into account
