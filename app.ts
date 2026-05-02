@@ -219,7 +219,7 @@ function generateURL(role: Role, id: string, pass: string): string {
 		url.searchParams.set("dynamicVideoParams", "true");
 	}
 	if (role == Role.Receiver) {
-		url.searchParams.set("jitterBufferTarget", String(400)); // TODO: Perform real-world testing of adaptively calulating jitterBufferTarget
+		url.searchParams.set("jitterBufferTarget", String(-1));
 	}
 	url.searchParams.set(
 		"codecPreferences",

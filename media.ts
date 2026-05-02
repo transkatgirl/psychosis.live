@@ -860,8 +860,8 @@ export async function adaptiveReceiverSettings(peer: Peer) {
 
 	let rttAvg;
 
-	if (rtts.length > Math.round((120 / 2) * 0.6)) {
-		// Require >60% of expected messages to be present
+	if (rtts.length > 90 / 2) {
+		// Require at least 90s worth of connection reports, assuming new reports every ~2s
 		rttAvg = rttSum / rtts.length;
 	}
 
