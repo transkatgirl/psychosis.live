@@ -209,11 +209,20 @@ if (selfId === 0n) {
 }
 
 export function setSelfId(id: bigint) {
+	if (id === 0n) throw "Invalid identifier";
 	selfId = bytesToBigint(bigintToBytes(id));
 }
 
+export function idToString(id: bigint) {
+	return bs58.encode(new Uint8Array(bigintToBytes(id)));
+}
+
+export function idFromString(id: string) {
+	return bytesToBigint(convertUint8Array(new Uint8Array(bs58.decode(id))));
+}
+
 function peerTopic(topic: string, id: bigint) {
-	return topic + "/" + bs58.encode(new Uint8Array(bigintToBytes(id)));
+	return topic + "/" + idToString(id);
 }
 
 export class MqttRoom {
@@ -253,7 +262,7 @@ export class MqttRoom {
 					console.error(error);
 				}
 
-				if (message && message.from != selfId) {
+				if (message && message.from !== selfId) {
 					onMessage(message);
 				}
 			}
@@ -286,7 +295,7 @@ export class MqttRoom {
 		}
 	}
 	public async send(message: Message) {
-		if (message.to === undefined) {
+		if (message.to === undefined || message.to === 0n) {
 			this.client.publish(
 				this.topic,
 				new Uint8Array(

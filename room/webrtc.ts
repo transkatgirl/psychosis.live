@@ -1,5 +1,12 @@
 import mqtt from "mqtt";
-import { deriveKey, hashText, MqttRoom, selfId } from "./core";
+import {
+	deriveKey,
+	hashText,
+	idFromString,
+	idToString,
+	MqttRoom,
+	selfId,
+} from "./core";
 
 export interface RoomCredentials {
 	topic: string;
@@ -86,7 +93,7 @@ export class Room {
 			},
 			async (message) => {
 				try {
-					const peerId = message.from.toString();
+					const peerId = idToString(message.from);
 
 					const sendResponse = async (response: WebRTCMessage) => {
 						await this.room.send({
@@ -116,7 +123,7 @@ export class Room {
 						configurePeer(peerId, this.peers[peerId]);
 					}
 
-					if (message.to == selfId && message.payload) {
+					if (message.to === selfId && message.payload) {
 						const pc = this.peers[peerId];
 
 						if (pc) {
@@ -164,7 +171,7 @@ export class Room {
 		for (const [peerId, peer] of Object.entries(this.peers)) {
 			await this.room.send({
 				from: selfId,
-				to: BigInt(peerId),
+				to: idFromString(peerId),
 				payload: this.encoder.encode(JSON.stringify({})),
 			});
 		}

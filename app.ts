@@ -4,7 +4,13 @@ import {
 	Room,
 	type RoomCredentials,
 } from "./room/webrtc";
-import { generateRandomString, selfId, setSelfId } from "./room/core";
+import {
+	generateRandomString,
+	idFromString,
+	idToString,
+	selfId,
+	setSelfId,
+} from "./room/core";
 import {
 	adaptiveReceiverSettings,
 	adaptiveSenderSettings,
@@ -250,7 +256,7 @@ async function launchApp(
 		setSelfId(selfId - 1n); // Signaling hack: Receivers have even IDs
 	}
 
-	console.log(`role = ${role}, peer ID = ${selfId}`);
+	console.log(`role = ${role}, peer ID = ${idToString(selfId)}`);
 
 	const credentials = await createRoomCredentials(roomId, password);
 
@@ -729,7 +735,7 @@ async function launchSender(credentials: RoomCredentials) {
 		let promises = [];
 
 		for (const [peerId, peer] of Object.entries(room.peers)) {
-			if (!peer.pc || BigInt(peerId) % 2n != 0n) continue;
+			if (!peer.pc || idFromString(peerId) % 2n != 0n) continue;
 
 			let scaler = peerScalers[peerId];
 
@@ -803,7 +809,7 @@ async function launchSender(credentials: RoomCredentials) {
 			iceServers,
 		},
 		(peerId, peer) => {
-			if (peer.pc && BigInt(peerId) % 2n == 0n) {
+			if (peer.pc && idFromString(peerId) % 2n == 0n) {
 				peerData[peerId] = peer.pc.createDataChannel("stats", {
 					maxPacketLifeTime: 1000,
 				});
@@ -986,7 +992,7 @@ async function launchSender(credentials: RoomCredentials) {
 
 		if (removedTrack) {
 			for (const [peerId, peer] of Object.entries(room.peers)) {
-				if (!peer.pc || BigInt(peerId) % 2n != 0n) continue;
+				if (!peer.pc || idFromString(peerId) % 2n != 0n) continue;
 
 				await replaceTrack(removedTrack, event.track);
 			}
