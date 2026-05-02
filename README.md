@@ -19,9 +19,6 @@ bun build --compile --target=browser ./index.html --outdir=dist --minify-whitesp
 ## todo
 
 ### low priority
-- [ ] update jitterBufferTarget based on rolling window using (2 * RTT + jitter) if calculated value is larger than user-chosen target
-	- how large should the rolling window be?
-	- what hysteresis thresholds should be used?
 - [ ] add on-screen RMS+clipping warning volume meter
 - [ ] display information (resolution, framerate, channel count, sample rate) about video/audio tracks in sender/receiver UI if showStats is enabled
 

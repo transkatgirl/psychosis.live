@@ -184,7 +184,7 @@ export interface WebRTCMessage {
 
 export class Peer {
 	public pc: RTCPeerConnection | null;
-	public metadata: any = {};
+	public metadata: Record<string, any> = {};
 	polite: boolean;
 	makingOffer = false;
 	ignoreOffer = false;

@@ -6,7 +6,8 @@ import {
 } from "./room/webrtc";
 import { generateRandomString, selfId, setSelfId } from "./room/core";
 import {
-	adaptiveSettings,
+	adaptiveReceiverSettings,
+	adaptiveSenderSettings,
 	adaptToPixelCount,
 	buildSenderEncoding,
 	calculateReasonableAudioBitrateKbps,
@@ -902,7 +903,12 @@ async function launchSender(credentials: RoomCredentials) {
 				}
 
 				const peerData = peer.metadata["peerData"];
-				await adaptiveSettings(peer.pc, peerData, targets, peerScaler);
+				await adaptiveSenderSettings(
+					peer.pc,
+					peerData,
+					targets,
+					peerScaler
+				);
 				peer.metadata["peerData"] = peerData;
 			}
 
@@ -1264,6 +1270,17 @@ async function launchReceiver(credentials: RoomCredentials) {
 			}
 		},
 		async (peers) => {
+			if (params.get("adaptiveJitterBuffer") === "true") {
+				for (const [peerId, peer] of Object.entries(peers)) {
+					if (!peer.pc) continue;
+
+					adaptiveReceiverSettings(
+						peer,
+						jitterBufferTarget ? jitterBufferTarget : 100
+					);
+				}
+			}
+
 			await calculateStats(peers, peerData, textEncoder, peerVideos);
 
 			if (params.get("stats") === "true") {

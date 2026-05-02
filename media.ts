@@ -1,5 +1,7 @@
 import * as sdpTransform from "sdp-transform";
 import { Scaler, type ScalerCreationOptions } from "./pica-gpu";
+import type { Peer } from "./room/webrtc";
+import type { PeerStats } from "./stats";
 
 // Note: >2 channel audio isn't supported yet (in WebRTC, it's a weird propretary thing that only Chromium supports afaik), but support may be added in the future
 
@@ -470,7 +472,8 @@ export interface AdaptiveVideoTargets {
 	bitrate?: number;
 }
 
-export async function adaptiveSettings(
+// Intended to be called every 2s
+export async function adaptiveSenderSettings(
 	pc: RTCPeerConnection,
 	peerData: AdaptiveData,
 	targets: AdaptiveTargets,
@@ -797,6 +800,100 @@ function adaptiveVideoSettings(
 					}
 				}
 			}
+		}
+	}
+}
+
+// Intended to be called every 1s
+export async function adaptiveReceiverSettings(
+	peer: Peer,
+	jitterBufferMinimum: number
+) {
+	if (!peer.pc) return;
+
+	let history;
+
+	if (!("remoteHistory" in peer.metadata)) {
+		peer.metadata["remoteHistory"] = {};
+	}
+
+	history = peer.metadata["remoteHistory"] as Record<string, PeerStats>;
+
+	if (
+		"remoteStats" in peer.metadata &&
+		"remoteStatsTimestamp" in peer.metadata
+	) {
+		history[
+			(peer.metadata["remoteStatsTimestamp"] as number).toString(10)
+		] = peer.metadata["remoteStats"] as PeerStats;
+	}
+
+	const now = performance.now();
+
+	let rttSum = 0;
+	let rttCount = 0;
+
+	let jitterSum = 0;
+	let jitterCount = 0;
+
+	for (const [timestampString, stats] of Object.entries(history)) {
+		const timestamp = Number(timestampString);
+
+		if (now - timestamp > 60000) {
+			delete history[timestampString];
+		} else {
+			if (stats.roundTripTime) {
+				rttSum += stats.roundTripTime;
+				rttCount++;
+			}
+			if (stats.jitter) {
+				jitterSum += stats.jitter;
+				jitterCount++;
+			}
+		}
+	}
+
+	let rttAvg;
+	let jitterAvg;
+
+	if (rttCount >= 20) {
+		// Require at least 40s of history, assuming remote stats are received are once every 2s
+		rttAvg = rttSum / rttCount;
+	}
+
+	if (jitterCount >= 20) {
+		jitterAvg = jitterSum / jitterCount;
+	}
+
+	let jitterBufferTarget;
+
+	if (rttAvg !== undefined) {
+		// Note: This calculation makes the assumption that jitterBufferTarget decides the *minimum* jitter buffer, and that the browser can adapt it higher if necessary. This isn't necessarily what the spec says jitterBufferTarget means, but this is currently how all browsers treat it in practice.
+
+		if (jitterAvg !== undefined) {
+			jitterBufferTarget = (rttAvg + jitterAvg) * 1.5 * 2;
+		} else {
+			jitterBufferTarget = rttAvg * 1.5 * 2;
+		}
+
+		jitterBufferTarget = Math.max(
+			Math.round(jitterBufferTarget),
+			jitterBufferMinimum
+		);
+	} else {
+		jitterBufferTarget = jitterBufferMinimum;
+	}
+
+	for (const receiver of peer.pc.getReceivers()) {
+		if (
+			!receiver.jitterBufferTarget ||
+			(jitterBufferMinimum === jitterBufferTarget &&
+				receiver.jitterBufferTarget > jitterBufferMinimum) ||
+			receiver.jitterBufferTarget > jitterBufferTarget + 50 ||
+			receiver.jitterBufferTarget < jitterBufferTarget - 50
+		) {
+			console.log("set jitterBufferTarget", jitterBufferTarget);
+			receiver.jitterBufferTarget = jitterBufferTarget;
 		}
 	}
 }
