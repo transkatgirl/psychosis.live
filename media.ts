@@ -804,11 +804,10 @@ function adaptiveVideoSettings(
 	}
 }
 
+export const REASONABLE_MIN_JITTER_BUFFER = 200;
+
 // Intended to be called every 1s
-export async function adaptiveReceiverSettings(
-	peer: Peer,
-	jitterBufferMinimum: number
-) {
+export async function adaptiveReceiverSettings(peer: Peer) {
 	if (!peer.pc) return;
 
 	let history;
@@ -876,26 +875,35 @@ export async function adaptiveReceiverSettings(
 			jitterBufferTarget = rttAvg * 1.5 * 2;
 		}
 
-		jitterBufferTarget = Math.max(
-			Math.round(jitterBufferTarget),
-			jitterBufferMinimum
+		jitterBufferTarget = Math.min(
+			Math.max(
+				50 + Math.round(jitterBufferTarget / 10) * 10,
+				REASONABLE_MIN_JITTER_BUFFER
+			),
+			4000
 		);
-	} else {
-		jitterBufferTarget = jitterBufferMinimum;
 	}
 
-	jitterBufferTarget = Math.min(Math.max(jitterBufferTarget, 50), 4000);
-
-	for (const receiver of peer.pc.getReceivers()) {
-		if (
-			!receiver.jitterBufferTarget ||
-			(jitterBufferMinimum === jitterBufferTarget &&
-				receiver.jitterBufferTarget > jitterBufferMinimum) ||
-			receiver.jitterBufferTarget >= jitterBufferTarget + 50 ||
-			receiver.jitterBufferTarget <= jitterBufferTarget - 50
-		) {
-			console.log("set jitterBufferTarget", jitterBufferTarget);
-			receiver.jitterBufferTarget = jitterBufferTarget;
+	if (jitterBufferTarget) {
+		for (const receiver of peer.pc.getReceivers()) {
+			if (
+				!receiver.jitterBufferTarget ||
+				receiver.jitterBufferTarget >= jitterBufferTarget + 50 ||
+				receiver.jitterBufferTarget <= jitterBufferTarget - 50
+			) {
+				console.log("set jitterBufferTarget", jitterBufferTarget);
+				receiver.jitterBufferTarget = jitterBufferTarget;
+			}
+		}
+	} else {
+		for (const receiver of peer.pc.getReceivers()) {
+			if (!receiver.jitterBufferTarget) {
+				console.log(
+					"set jitterBufferTarget",
+					REASONABLE_MIN_JITTER_BUFFER
+				);
+				receiver.jitterBufferTarget = REASONABLE_MIN_JITTER_BUFFER;
+			}
 		}
 	}
 }
