@@ -842,7 +842,7 @@ export async function adaptiveReceiverSettings(peer: Peer) {
 	for (const [timestampString, stats] of Object.entries(history)) {
 		const timestamp = Number(timestampString);
 
-		if (now - timestamp > 120000) {
+		if (now - timestamp > 90000) {
 			delete history[timestampString];
 		} else {
 			if (stats.roundTripTime) {
@@ -860,8 +860,8 @@ export async function adaptiveReceiverSettings(peer: Peer) {
 
 	let rttAvg;
 
-	if (rtts.length >= 30) {
-		// Require at least 60s of history, assuming remote stats are received are once every 2s
+	if (rtts.length >= Math.round((90 / 2) * 0.95)) {
+		// Require 95% of expected statistics messages to be present
 		rttAvg = rttSum / rtts.length;
 	}
 
