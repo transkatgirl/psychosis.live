@@ -884,7 +884,7 @@ export async function adaptiveReceiverSettings(peer: Peer) {
 			rttStdev = Math.sqrt(variance);
 		}
 
-		// Note: This calculation makes the assumption that jitterBufferTarget decides the *minimum* jitter buffer, and that the browser can adapt it higher if necessary. This isn't necessarily what the spec says jitterBufferTarget means, but this is currently how all browsers treat it in practice (except Safari, which seems to ignore it entirely???).
+		// Note: This calculation makes the assumption that jitterBufferTarget decides the *minimum* jitter buffer, and that the browser can adapt it higher if necessary. This isn't necessarily what the spec says jitterBufferTarget means, but this is currently how all browsers treat it in practice.
 
 		// jitter buffer must be at least 1.5x RTT (may require 2x RTT depending on receiver implementation) for retransmissions to work; see https://www.rtcbits.com/2017/03/retransmissions-in-webrtc.html
 
