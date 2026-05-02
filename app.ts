@@ -1747,7 +1747,7 @@ function statsOverlay(overlay: HTMLDivElement, peers: Record<string, Peer>) {
 			peerEntry.classList.add("stats-alert");
 		} else if (
 			(stats.targetVideoBitrate && stats.targetVideoBitrate < 1024) ||
-			(stats.jitterBufferDelay && stats.jitterBufferDelay > 500) ||
+			(stats.jitterBufferDelay && stats.jitterBufferDelay > 600) ||
 			(stats.roundTripTime &&
 				stats.jitterBufferDelay &&
 				stats.roundTripTime + (stats.jitter ? stats.jitter : 0) / 2 >
