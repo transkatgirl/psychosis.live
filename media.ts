@@ -842,7 +842,7 @@ export async function adaptiveReceiverSettings(peer: Peer) {
 	for (const [timestampString, stats] of Object.entries(history)) {
 		const timestamp = Number(timestampString);
 
-		if (now - timestamp > 90000) {
+		if (now - timestamp > 120_000) {
 			delete history[timestampString];
 		} else {
 			if (stats.roundTripTime) {
@@ -860,8 +860,8 @@ export async function adaptiveReceiverSettings(peer: Peer) {
 
 	let rttAvg;
 
-	if (rtts.length >= Math.round((90 / 2) * 0.95)) {
-		// Require 95% of expected statistics messages to be present
+	if (rtts.length > Math.round((120 / 2) * 0.6)) {
+		// Require >60% of expected messages to be present
 		rttAvg = rttSum / rtts.length;
 	}
 
@@ -888,15 +888,15 @@ export async function adaptiveReceiverSettings(peer: Peer) {
 
 		// jitter buffer must be at least 1.5x RTT (may require 2x RTT depending on receiver implementation) for retransmissions to work; see https://www.rtcbits.com/2017/03/retransmissions-in-webrtc.html
 
-		jitterBufferTarget = (rttAvg + rttStdev * 2) * 1.5;
+		jitterBufferTarget = (rttAvg + rttStdev * 2) * 1.5; // target 98% RTX reliability
 
 		if (jitterBufferTarget > 350) {
 			// we want to avoid large jitterBufferTarget values. jitterBufferTarget >= 600ms causes problems with congestion control, as GCC can't adapt fast enough
 
-			jitterBufferTarget = Math.max(350, (rttAvg + rttStdev) * 1.5);
+			jitterBufferTarget = Math.max(350, (rttAvg + rttStdev) * 1.5); // target 84% RTX reliability
 
 			if (jitterBufferTarget > 550) {
-				jitterBufferTarget = Math.max(550, rttAvg * 1.5);
+				jitterBufferTarget = Math.max(550, rttAvg * 1.5); // target 50% RTX reliability
 			}
 		}
 
@@ -907,7 +907,7 @@ export async function adaptiveReceiverSettings(peer: Peer) {
 				Math.round(jitterBufferTarget / 10) * 10,
 				REASONABLE_MIN_JITTER_BUFFER
 			),
-			1200 // refuse to use very large jitterBufferTarget values; something is horribly wrong if you have >800ms of average RTT
+			1000 // refuse to use very large jitterBufferTarget values; something is horribly wrong if you have >650ms of average RTT
 		);
 	}
 
