@@ -867,7 +867,7 @@ export async function adaptiveReceiverSettings(peer: Peer) {
 	let jitterBufferTarget;
 
 	if (rttAvg !== undefined) {
-		// Note: This calculation makes the assumption that jitterBufferTarget decides the *minimum* jitter buffer, and that the browser can adapt it higher if necessary. This isn't necessarily what the spec says jitterBufferTarget means, but this is currently how all browsers treat it in practice.
+		// Note: This calculation makes the assumption that jitterBufferTarget decides the *minimum* jitter buffer, and that the browser can adapt it higher if necessary. This isn't necessarily what the spec says jitterBufferTarget means, but this is currently how all browsers treat it in practice (except Safari, which seems to ignore it entirely???).
 
 		if (jitterAvg !== undefined) {
 			jitterBufferTarget = (rttAvg + jitterAvg) * 1.5 * 2;
