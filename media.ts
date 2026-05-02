@@ -891,13 +891,9 @@ export async function adaptiveReceiverSettings(peer: Peer) {
 		jitterBufferTarget = (rttAvg + rttStdev * 2) * 1.5; // target 98% RTX reliability
 
 		if (jitterBufferTarget > 350) {
-			// we want to avoid large jitterBufferTarget values. jitterBufferTarget >= 600ms causes problems with congestion control, as GCC can't adapt fast enough
+			// we want to avoid large jitterBufferTarget values, as they make it harder for the congestion control to adapt to changes in network conditions
 
 			jitterBufferTarget = Math.max(350, (rttAvg + rttStdev) * 1.5); // target 84% RTX reliability
-
-			if (jitterBufferTarget > 550) {
-				jitterBufferTarget = Math.max(550, rttAvg * 1.5); // target 50% RTX reliability
-			}
 		}
 
 		jitterBufferTarget += 50; // Take hysteresis into account
@@ -907,7 +903,7 @@ export async function adaptiveReceiverSettings(peer: Peer) {
 				Math.round(jitterBufferTarget / 10) * 10,
 				REASONABLE_MIN_JITTER_BUFFER
 			),
-			800 // refuse to use very large jitterBufferTarget values, as they're more likely to cause problems than fix them
+			600 // jitterBufferTarget >= 600ms causes problems with congestion control, as GCC can't adapt fast enough
 		);
 	}
 
