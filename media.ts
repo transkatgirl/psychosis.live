@@ -907,7 +907,7 @@ export async function adaptiveReceiverSettings(peer: Peer) {
 				Math.round(jitterBufferTarget / 10) * 10,
 				REASONABLE_MIN_JITTER_BUFFER
 			),
-			1000 // refuse to use very large jitterBufferTarget values; something is horribly wrong if you have >650ms of average RTT
+			800 // refuse to use very large jitterBufferTarget values, as they're more likely to cause problems than fix them
 		);
 	}
 
