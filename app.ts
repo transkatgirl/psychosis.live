@@ -1737,8 +1737,9 @@ function statsOverlay(overlay: HTMLDivElement, peers: Record<string, Peer>) {
 			(stats.lossPercent &&
 				stats.lossPercent >= 2 &&
 				stats.roundTripTime &&
+				stats.jitterBufferDelay &&
 				stats.roundTripTime + (stats.jitter ? stats.jitter : 0) / 2 >
-					267) ||
+					stats.jitterBufferDelay / 1.5) ||
 			(stats.lossPercent && stats.lossPercent >= 10) ||
 			(stats.desync && stats.desync > 250) ||
 			peer.pc?.connectionState !== "connected"
@@ -1746,11 +1747,11 @@ function statsOverlay(overlay: HTMLDivElement, peers: Record<string, Peer>) {
 			peerEntry.classList.add("stats-alert");
 		} else if (
 			(stats.targetVideoBitrate && stats.targetVideoBitrate < 1024) ||
-			(stats.roundTripTime && stats.roundTripTime > 200) ||
-			(stats.jitter && stats.jitter > 100) ||
+			(stats.jitterBufferDelay && stats.jitterBufferDelay > 500) ||
 			(stats.roundTripTime &&
+				stats.jitterBufferDelay &&
 				stats.roundTripTime + (stats.jitter ? stats.jitter : 0) / 2 >
-					267) ||
+					stats.jitterBufferDelay / 1.5) ||
 			(stats.lossPercent && stats.lossPercent >= 2) ||
 			(stats.desync && stats.desync > 100) ||
 			(stats.frameDropPercent && stats.frameDropPercent > 5) ||
