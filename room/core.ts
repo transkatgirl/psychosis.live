@@ -155,12 +155,12 @@ async function decodeMessage(data: Uint8Array<ArrayBuffer>): Promise<Message> {
 				await decompress(convertUint8Array(data.slice(16)))
 			),
 		};
-	} else if (data.length == 16) {
+	} else if (data.length === 16) {
 		return {
 			from: bytesToBigint(convertUint8Array(data.slice(0, 8))),
 			to: bytesToBigint(convertUint8Array(data.slice(8, 16))),
 		};
-	} else if (data.length == 8) {
+	} else if (data.length === 8) {
 		return {
 			from: bytesToBigint(convertUint8Array(data)),
 		};
@@ -172,7 +172,7 @@ async function decodeMessage(data: Uint8Array<ArrayBuffer>): Promise<Message> {
 async function encodeMessage(
 	message: Message
 ): Promise<Uint8Array<ArrayBuffer>> {
-	if (message.from != selfId || message.from == message.to) {
+	if (message.from !== selfId || message.from === message.to) {
 		throw "Invalid message ID";
 	}
 
@@ -204,7 +204,7 @@ export let selfId: Identifier = bytesToBigint(
 	convertUint8Array(generateRandom(8))
 );
 
-if (selfId == 0n) {
+if (selfId === 0n) {
 	throw "Identifier generation failed";
 }
 
@@ -212,8 +212,13 @@ export function setSelfId(id: bigint) {
 	selfId = bytesToBigint(bigintToBytes(id));
 }
 
+function peerTopic(topic: string, id: bigint) {
+	return topic + "/" + bs58.encode(new Uint8Array(bigintToBytes(id)));
+}
+
 export class MqttRoom {
 	topic: string;
+	selfTopic: string;
 	key: CryptoKey;
 	client: MqttClient;
 	public constructor(
@@ -224,12 +229,13 @@ export class MqttRoom {
 		onMessage: (message: Message) => void
 	) {
 		this.topic = topic;
+		this.selfTopic = peerTopic(this.topic, selfId);
 		this.key = key;
 		this.client = client;
 
 		this.client.on("error", console.error);
 		this.client.on("message", async (topic, buffer) => {
-			if (topic == this.topic) {
+			if (topic === this.topic || topic === this.selfTopic) {
 				let message;
 
 				try {
@@ -265,22 +271,42 @@ export class MqttRoom {
 			}
 		};
 		this.client.on("connect", () => {
-			this.client.subscribe(this.topic, { qos: 1 }, onConnect);
+			this.client.subscribe(
+				[this.topic, this.selfTopic],
+				{ qos: 1 },
+				onConnect
+			);
 		});
 		if (client.connected) {
-			this.client.subscribe(this.topic, { qos: 1 }, onConnect);
+			this.client.subscribe(
+				[this.topic, this.selfTopic],
+				{ qos: 1 },
+				onConnect
+			);
 		}
 	}
 	public async send(message: Message) {
-		this.client.publish(
-			this.topic,
-			new Uint8Array(
-				await encrypt(
-					this.key,
-					convertUint8Array(await encodeMessage(message))
-				)
-			) as Buffer
-		);
+		if (message.to === undefined) {
+			this.client.publish(
+				this.topic,
+				new Uint8Array(
+					await encrypt(
+						this.key,
+						convertUint8Array(await encodeMessage(message))
+					)
+				) as Buffer
+			);
+		} else {
+			this.client.publish(
+				peerTopic(this.topic, message.to),
+				new Uint8Array(
+					await encrypt(
+						this.key,
+						convertUint8Array(await encodeMessage(message))
+					)
+				) as Buffer
+			);
+		}
 	}
 	public async leave() {
 		await this.client.endAsync();

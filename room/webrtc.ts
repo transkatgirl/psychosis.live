@@ -61,6 +61,7 @@ export class Room {
 			message: RTCSessionDescriptionInit
 		) => RTCSessionDescriptionInit = (_, m) => m,
 		interval: number = 1_500,
+		quiet: boolean = false,
 		timeout: number = 15_000
 	) {
 		this.id = nextRoomId;
@@ -146,9 +147,11 @@ export class Room {
 
 				onScan(this.peers);
 
-				await this.room.send({
-					from: selfId,
-				});
+				if (!quiet) {
+					await this.room.send({
+						from: selfId,
+					});
+				}
 			} catch (err) {
 				console.error(err);
 			}
