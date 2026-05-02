@@ -845,10 +845,10 @@ export async function adaptiveReceiverSettings(peer: Peer) {
 		if (now - timestamp > 120_000) {
 			delete history[timestampString];
 		} else {
-			if (stats.roundTripTime) {
+			if (stats.roundTripTime && !isNaN(stats.roundTripTime)) {
 				let rtt = stats.roundTripTime;
 
-				if (stats.jitter) {
+				if (stats.jitter && !isNaN(stats.jitter)) {
 					rtt += stats.jitter;
 				}
 
