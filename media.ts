@@ -884,13 +884,15 @@ export async function adaptiveReceiverSettings(
 		jitterBufferTarget = jitterBufferMinimum;
 	}
 
+	jitterBufferTarget = Math.min(Math.max(jitterBufferTarget, 50), 4000);
+
 	for (const receiver of peer.pc.getReceivers()) {
 		if (
 			!receiver.jitterBufferTarget ||
 			(jitterBufferMinimum === jitterBufferTarget &&
 				receiver.jitterBufferTarget > jitterBufferMinimum) ||
-			receiver.jitterBufferTarget > jitterBufferTarget + 50 ||
-			receiver.jitterBufferTarget < jitterBufferTarget - 50
+			receiver.jitterBufferTarget >= jitterBufferTarget + 50 ||
+			receiver.jitterBufferTarget <= jitterBufferTarget - 50
 		) {
 			console.log("set jitterBufferTarget", jitterBufferTarget);
 			receiver.jitterBufferTarget = jitterBufferTarget;
