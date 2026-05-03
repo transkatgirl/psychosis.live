@@ -1154,6 +1154,7 @@ async function launchReceiver(credentials: RoomCredentials) {
 		mqttEndpoint,
 		credentials,
 		{
+			bundlePolicy: "max-bundle",
 			iceCandidatePoolSize: 10,
 			iceServers,
 		},
