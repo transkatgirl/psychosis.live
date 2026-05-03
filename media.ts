@@ -95,27 +95,11 @@ export function calculateReasonableMinimumAudioBitrateKbps(channels: number) {
 	*/
 
 	return Math.min(
-		// minimum of 64 kbit/s stereo chosen based on https://wiki.hydrogenaudio.org/index.php?title=Opus#Indicative_bitrate_and_quality
-		convertAudioBitrate(8, 2, channels) * 8,
+		// minimum of 104 kbit/s stereo chosen based on https://wiki.hydrogenaudio.org/index.php?title=Opus#Indicative_bitrate_and_quality and https://wiki.hydrogenaudio.org/index.php?title=Opus#CELT_layer_latency_versus_quality/bitrate_trade-off
+		convertAudioBitrate(13, 2, channels) * 8,
 		// Opus supports a maximum bitrate of 510 kbit/s
 		510
 	);
-}
-
-function calculateStickyDynamicAudioBitrateTarget(channels: number) {
-	// see above function for reference regarding how these targets were chosen
-
-	// returned values will be multiplied against 32 kbit/s to calculate the final value
-
-	if (channels == 1) {
-		return 3; // 96 kbit/s
-	}
-
-	if (channels == 2) {
-		return 4; // 128 kbit/s
-	}
-
-	return convertAudioBitrate(4, 2, channels);
 }
 
 export function calculateReasonableVideoBitrateKbps(
@@ -460,7 +444,6 @@ export interface AdaptiveTargets {
 export interface AdaptiveAudioTargets {
 	channels: number;
 	bitrate?: number;
-	linearDecrease?: boolean; // Should be enabled if RED is enabled
 }
 
 export interface AdaptiveVideoTargets {
@@ -521,9 +504,6 @@ function adaptiveAudioBitrate(
 		(targets.bitrate
 			? targets.bitrate
 			: calculateReasonableAudioBitrateKbps(targets.channels)) * 1000;
-	const stickyTarget = calculateStickyDynamicAudioBitrateTarget(
-		targets.channels
-	);
 
 	let bitrateLower = 0;
 	let bitrateUpper = Infinity;
@@ -535,41 +515,11 @@ function adaptiveAudioBitrate(
 			report.kind == "video" &&
 			report.targetBitrate
 		) {
-			if (targets.linearDecrease) {
-				// minimum of 32 kbit/s (see calculateReasonableMinimumAudioBitrateKbps for details)
-				bitrateLower =
-					Math.max(Math.floor(report.targetBitrate / 128000), 1) *
-					32000;
-				bitrateUpper =
-					Math.max(Math.ceil(report.targetBitrate / 128000), 1) *
-					32000;
-			} else {
-				// prefer staying above stickyTarget * 32 kbit/s
-
-				// decreasing the audio bitrate *too* fast can cause the congestion control algorithm to yo-yo the video bitrate up and down. this is why it's recommended that you disable the "sticky" behavior when audio RED is enabled (as, when RED is enabled, the sent bitrate is 2x the targetBitrate...)
-
-				if (report.targetBitrate >= 64000 * stickyTarget) {
-					bitrateLower =
-						Math.max(
-							Math.floor(report.targetBitrate / 128000),
-							stickyTarget
-						) * 32000;
-					bitrateUpper =
-						Math.max(
-							Math.ceil(report.targetBitrate / 128000),
-							stickyTarget
-						) * 32000;
-				} else {
-					// minimum of 32 kbit/s (see calculateReasonableMinimumAudioBitrateKbps for details)
-
-					bitrateLower =
-						Math.max(Math.floor(report.targetBitrate / 64000), 1) *
-						32000;
-					bitrateUpper =
-						Math.max(Math.ceil(report.targetBitrate / 64000), 1) *
-						32000;
-				}
-			}
+			// minimum of 32 kbit/s (see calculateReasonableMinimumAudioBitrateKbps for details)
+			bitrateLower =
+				Math.max(Math.floor(report.targetBitrate / 128000), 1) * 32000;
+			bitrateUpper =
+				Math.max(Math.ceil(report.targetBitrate / 128000), 1) * 32000;
 
 			bitrateLower = Math.min(
 				Math.max(bitrateLower, minBitrate),
