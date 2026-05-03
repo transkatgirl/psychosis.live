@@ -219,7 +219,7 @@ function generateURL(role: Role, id: string, pass: string): string {
 		url.searchParams.set("dynamicVideoParams", "true");
 	}
 	if (role == Role.Receiver) {
-		url.searchParams.set("jitterBufferTarget", String(400)); // Until OBS updates to a newer version of the CEF, a 400ms jitterBufferTarget is a good middle ground between low latency (+ not overwhelming the congestion control algorithm) and retransmission reliability.
+		url.searchParams.set("jitterBufferTarget", String(400)); // 400ms jitterBufferTarget is a good middle ground between low latency (+ not overwhelming the congestion control algorithm) and retransmission reliability. See adaptiveReceiverSettings for more information on how this was calculated
 	}
 	url.searchParams.set(
 		"codecPreferences",
