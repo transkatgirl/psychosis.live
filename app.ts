@@ -249,7 +249,7 @@ function generateURL(role: Role, id: string, pass: string): string {
 			"video/H264", // H.264 delivers better visual quality than VP8; see https://www.streamingmedia.com/Articles/Editorial/Featured-Articles/WebM-vs.-H.264-A-Closer-Look-68594.aspx
 			"video/VP8",
 			"audio/opus",
-			"audio/red", // consider prioritizing this above audio/opus if your latency budget is too low for retransmissions to work
+			"audio/red", // consider prioritizing this above audio/opus if your latency budget is too low for retransmissions to work; see https://getstream.io/resources/projects/webrtc/advanced/red/
 			"audio/mp4a-latm", // outperformed by Opus across the board; see https://wiki.hydrogenaudio.org/index.php?title=Opus
 			"audio/G722",
 			"audio/PCMU",
