@@ -897,7 +897,7 @@ export async function adaptiveReceiverSettings(peer: Peer) {
 				Math.round(jitterBufferTarget / 10) * 10,
 				REASONABLE_MIN_JITTER_BUFFER
 			),
-			500 // jitterBufferTarget > 500ms causes problems with congestion control, as GCC can't adapt fast enough. in addition, as jitterBufferTarget gets larger, A/V desync tends to get worse
+			500 // jitterBufferTarget > 500ms causes problems with congestion control, as GCC can't adapt fast enough when available network bandwidth changes. in addition, as jitterBufferTarget gets larger, A/V desync tends to get worse
 		);
 	}
 
