@@ -860,8 +860,8 @@ export async function adaptiveReceiverSettings(peer: Peer) {
 
 	let rttAvg;
 
-	if (rtts.length > 90 / 2) {
-		// Require at least 90s worth of connection reports, assuming new reports every ~2s
+	if (rtts.length > 30 / 2) {
+		// Require at least 30s worth of connection reports, assuming new reports every ~2s
 		rttAvg = rttSum / rtts.length;
 	}
 
@@ -897,7 +897,7 @@ export async function adaptiveReceiverSettings(peer: Peer) {
 				Math.round(jitterBufferTarget / 10) * 10,
 				REASONABLE_MIN_JITTER_BUFFER
 			),
-			500 // jitterBufferTarget > 500ms causes problems with congestion control, as GCC can't adapt fast enough
+			500 // jitterBufferTarget > 500ms causes problems with congestion control, as GCC can't adapt fast enough. in addition, as jitterBufferTarget gets larger, A/V desync tends to get worse
 		);
 	}
 
