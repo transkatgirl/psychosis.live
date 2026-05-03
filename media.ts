@@ -842,7 +842,7 @@ export async function adaptiveReceiverSettings(peer: Peer) {
 	for (const [timestampString, stats] of Object.entries(history)) {
 		const timestamp = Number(timestampString);
 
-		if (now - timestamp > 120_000) {
+		if (now - timestamp > 300_000) {
 			delete history[timestampString];
 		} else {
 			if (stats.roundTripTime && !isNaN(stats.roundTripTime)) {
@@ -888,13 +888,7 @@ export async function adaptiveReceiverSettings(peer: Peer) {
 
 		// jitter buffer must be at least 1.5x RTT (may require 2x RTT depending on receiver implementation) for retransmissions to work; see https://www.rtcbits.com/2017/03/retransmissions-in-webrtc.html
 
-		jitterBufferTarget = (rttAvg + rttStdev * 2) * 1.5; // target 98% RTX reliability
-
-		if (jitterBufferTarget > 350) {
-			// we want to avoid large jitterBufferTarget values, as they make it harder for the congestion control to adapt to changes in network conditions
-
-			jitterBufferTarget = Math.max(350, (rttAvg + rttStdev) * 1.5); // target 84% RTX reliability
-		}
+		jitterBufferTarget = (rttAvg + rttStdev) * 1.5; // target 84% RTX reliability, assuming normally distributed latency
 
 		jitterBufferTarget += 50; // Take hysteresis into account
 
