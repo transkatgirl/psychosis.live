@@ -232,12 +232,11 @@ function generateURL(role: Role, id: string, pass: string): string {
 
 		Reasons to prefer a higher jitterBufferTarget:
 		- Retransmissions take 1.5 * RTT. If the buffer is too small, lost packets can't be retransmitted in time, significantly worsening user experience (see https://www.rtcbits.com/2017/03/retransmissions-in-webrtc.html)
-			- https://hpbn.co/mobile-networks/#cellular-performance discusses latency on non-congested cellular networks.
+			- https://hpbn.co/mobile-networks/#cellular-performance discusses latency on non-congested cellular networks; 4G latency is usually <100ms
 				- Keep in mind that 3G is phased out or in the process of being phased out in most countries (see https://en.wikipedia.org/wiki/3G#Phase-out).
-			- https://hpbn.co/primer-on-latency-and-bandwidth/#geo-latency-table discusses latency caused by the physical distance between peers
-			- https://hpbn.co/primer-on-latency-and-bandwidth/#last-mile-latency - last-mile latency for residential internet is usually <50ms
-		- Repeatedly adjusting the jitter buffer size up and down based on network conditions requires stretching the audio and video timing, which can be unacceptable for some applications (such as live music).
-		- Consistent latency is often more desirable than widely varying latency for many applications.
+			- https://hpbn.co/primer-on-latency-and-bandwidth/#geo-latency-table discusses latency caused by the physical distance between peers; real world latency between geographically distant peers is usually 200-300ms
+			- https://hpbn.co/primer-on-latency-and-bandwidth/#last-mile-latency - last-mile latency for residential internet is usually 10-65 ms
+		- Letting the browser repeatedly adjust the jitter buffer size up and down based on network conditions requires stretching the audio and video timing, which can be unacceptable for some applications (such as live music).
 
 		*/
 		url.searchParams.set("jitterBufferTarget", String(400));
