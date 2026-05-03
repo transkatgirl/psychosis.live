@@ -231,7 +231,7 @@ function generateURL(role: Role, id: string, pass: string): string {
 		- Lower latency leads to a better user experience.
 
 		Reasons to prefer a higher jitterBufferTarget:
-		- Retransmissions take 1.5 * RTT. If the buffer is too small, lost packets can't be retransmitted in time, significantly worsening user experience (see https://www.rtcbits.com/2017/03/retransmissions-in-webrtc.html)
+		- If the buffer is too small, lost packets can't be retransmitted in time, significantly worsening user experience; Retransmissions are done immediately after a gap in packet sequence numbers, see https://www.rtcbits.com/2017/03/retransmissions-in-webrtc.html
 			- https://hpbn.co/mobile-networks/#cellular-performance discusses latency on non-congested cellular networks; 4G latency is usually <100ms
 				- Keep in mind that 3G is phased out or in the process of being phased out in most countries (see https://en.wikipedia.org/wiki/3G#Phase-out).
 			- https://hpbn.co/primer-on-latency-and-bandwidth/#geo-latency-table discusses latency caused by the physical distance between peers; real world latency between geographically distant peers is usually 200-300ms
@@ -1742,7 +1742,7 @@ function statsOverlay(overlay: HTMLDivElement, peers: Record<string, Peer>) {
 				stats.roundTripTime &&
 				stats.jitterBufferDelay &&
 				stats.roundTripTime + (stats.jitter ? stats.jitter : 0) / 2 >
-					stats.jitterBufferDelay / 1.5) ||
+					stats.jitterBufferDelay) ||
 			(stats.lossPercent && stats.lossPercent >= 10) ||
 			(stats.desync && stats.desync > 250) ||
 			peer.pc?.connectionState !== "connected"
@@ -1754,7 +1754,7 @@ function statsOverlay(overlay: HTMLDivElement, peers: Record<string, Peer>) {
 			(stats.roundTripTime &&
 				stats.jitterBufferDelay &&
 				stats.roundTripTime + (stats.jitter ? stats.jitter : 0) / 2 >
-					stats.jitterBufferDelay / 1.5) ||
+					stats.jitterBufferDelay) ||
 			(stats.lossPercent && stats.lossPercent >= 2) ||
 			(stats.desync && stats.desync > 100) ||
 			(stats.frameDropPercent && stats.frameDropPercent > 5) ||
