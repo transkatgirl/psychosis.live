@@ -877,7 +877,7 @@ export class MediaScaler {
 	public stream: MediaStream;
 	videoId: string | undefined;
 	scaler: Scaler | undefined;
-	scalerSize: [number, number] | undefined;
+	scalerSize: [number, number];
 	canvas: OffscreenCanvas | undefined;
 	canvasSmooth: boolean = false;
 	processor: any;
@@ -888,8 +888,9 @@ export class MediaScaler {
 		height: number,
 		scaler:
 			| ScalerCreationOptions["filter"]
-			| "browser"
-			| "browser_nosmooth",
+			| "canvas"
+			| "canvas_nosmooth"
+			| "crop_constraint",
 		precise: boolean
 	) {
 		if (
@@ -901,21 +902,21 @@ export class MediaScaler {
 			throw "Insertable Streams unsupported";
 		}
 
-		if (scaler === "browser" || scaler === "browser_nosmooth") {
+		if (scaler === "canvas" || scaler === "canvas_nosmooth") {
 			this.canvas = new OffscreenCanvas(
 				Math.round(width),
 				Math.round(height)
 			);
-			this.canvasSmooth = scaler === "browser";
-		} else {
+			this.canvasSmooth = scaler === "canvas";
+		} else if (scaler !== "crop_constraint") {
 			this.scaler = new Scaler({
 				filter: scaler,
 				precise,
 				linear: precise, // Quantization artifacts are far more visually distracting than slightly incorrect pixel blending
 			});
-			this.scalerSize = [Math.round(width), Math.round(height)];
 		}
 
+		this.scalerSize = [Math.round(width), Math.round(height)];
 		this.stream = new MediaStream();
 	}
 	public get videoIdentifier() {
@@ -1051,6 +1052,7 @@ export class MediaScaler {
 							if (self.requestedResolution) {
 								canvas.width = self.requestedResolution[0];
 								canvas.height = self.requestedResolution[1];
+								self.scalerSize = self.requestedResolution;
 								self.requestedResolution = undefined;
 							}
 
@@ -1133,7 +1135,50 @@ export class MediaScaler {
 					}
 				);
 			} else {
-				throw "Invalid state";
+				this.requestedResolution = this.scalerSize;
+				const self = this;
+
+				let lastFrame: VideoFrame | undefined = undefined;
+
+				transformer = new TransformStream(
+					{
+						async transform(frame: VideoFrame, controller) {
+							if (self.requestedResolution && lastFrame) {
+								await (
+									self.generator as MediaStreamTrack
+								).applyConstraints({
+									width: {
+										exact: self.requestedResolution[0],
+									},
+									height: {
+										exact: self.requestedResolution[1],
+									},
+									// @ts-ignore
+									resizeMode: { exact: "crop-and-scale" },
+								});
+								self.scalerSize = self.requestedResolution;
+								self.requestedResolution = undefined;
+							}
+
+							controller.enqueue(frame);
+							if (lastFrame) {
+								lastFrame.close();
+							}
+							lastFrame = frame;
+						},
+						flush(controller) {
+							controller.terminate();
+						},
+					},
+					{
+						highWaterMark: 1,
+						size: (_) => 1,
+					},
+					{
+						highWaterMark: 0,
+						size: (_) => 1,
+					}
+				);
 			}
 
 			(this.processor.readable as ReadableStream<VideoFrame>)
