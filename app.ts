@@ -78,7 +78,7 @@ if (params.has("role") && params.has("id")) {
 	}
 
 	if (role && id && password) {
-		await launchApp(role, id, password, params);
+		await launchApp(role, id, password);
 	} else {
 		helperMenu();
 	}
@@ -260,12 +260,7 @@ function generateURL(role: Role, id: string, pass: string): string {
 	return url.toString();
 }
 
-async function launchApp(
-	role: Role,
-	roomId: string,
-	password: string,
-	params: URLSearchParams
-) {
+async function launchApp(role: Role, roomId: string, password: string) {
 	document.body.id = "app";
 
 	if (role == Role.Sender && selfId % 2n == 0n) {
