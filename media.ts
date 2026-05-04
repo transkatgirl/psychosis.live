@@ -890,7 +890,7 @@ export class MediaScaler {
 			| ScalerCreationOptions["filter"]
 			| "canvas"
 			| "canvas_nosmooth"
-			| "crop_constraint",
+			| "media_constraints",
 		precise: boolean
 	) {
 		if (
@@ -908,7 +908,7 @@ export class MediaScaler {
 				Math.round(height)
 			);
 			this.canvasSmooth = scaler === "canvas";
-		} else if (scaler !== "crop_constraint") {
+		} else if (scaler !== "media_constraints") {
 			this.scaler = new Scaler({
 				filter: scaler,
 				precise,
@@ -1148,10 +1148,10 @@ export class MediaScaler {
 									self.generator as MediaStreamTrack
 								).applyConstraints({
 									width: {
-										exact: self.requestedResolution[0],
+										ideal: self.requestedResolution[0],
 									},
 									height: {
-										exact: self.requestedResolution[1],
+										ideal: self.requestedResolution[1],
 									},
 									// @ts-ignore
 									resizeMode: { exact: "crop-and-scale" },
