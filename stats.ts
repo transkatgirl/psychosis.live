@@ -146,10 +146,29 @@ export async function getPeerStats(
 		if (report.type === "outbound-rtp") {
 			stats.sender = true;
 
-			if (report.kind === "video" && report.targetBitrate) {
-				stats.targetVideoBitrate =
-					report.targetBitrate +
-					(stats.targetVideoBitrate ? stats.targetVideoBitrate : 0);
+			if (report.kind === "video") {
+				if (report.targetBitrate) {
+					stats.targetVideoBitrate =
+						report.targetBitrate +
+						(stats.targetVideoBitrate
+							? stats.targetVideoBitrate
+							: 0);
+				}
+				if (
+					report.totalEncodeTime &&
+					lastReport?.totalEncodeTime &&
+					report.timestamp &&
+					lastReport?.timestamp
+				) {
+					const encodeProportion =
+						((report.totalEncodeTime - lastReport.totalEncodeTime) *
+							1000) /
+						(report.timestamp - lastReport.timestamp);
+
+					if (encodeProportion > 0.99) {
+						stats.cpuLimited = true;
+					}
+				}
 			}
 			if (report.kind === "audio" && report.targetBitrate) {
 				stats.targetAudioBitrate =
