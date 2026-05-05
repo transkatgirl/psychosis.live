@@ -667,7 +667,7 @@ function adaptiveVideoSettings(
 				(analysis.framesAnalyzed &&
 					analysis.framesAnalyzed <= framerate * 0.8) ||
 				(analysis.encodeProportion &&
-					analysis.encodeProportion > 0.9) ||
+					analysis.encodeProportion > 0.95) ||
 				analysis.codecData.highQP < analysis.qpAvg
 			) {
 				[pixels, framerate] = adaptDown(pixels, framerate);
@@ -684,7 +684,7 @@ function adaptiveVideoSettings(
 			} else if (
 				(analysis.codecData.lowQP >= analysis.qpAvg &&
 					analysis.encodeProportion &&
-					analysis.encodeProportion < 0.3 &&
+					analysis.encodeProportion < 0.25 &&
 					!analysis.framesAnalyzed) ||
 				(analysis.framesAnalyzed &&
 					analysis.framesAnalyzed >= framerate * 2 &&
