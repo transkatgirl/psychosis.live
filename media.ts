@@ -952,6 +952,7 @@ export class MediaScaler {
 			const self = this;
 
 			let transformer;
+			let lastFrame: VideoFrame | undefined;
 
 			if (scaler) {
 				let trackFramerate = track.getSettings()?.frameRate;
@@ -990,7 +991,6 @@ export class MediaScaler {
 								width: self.scalerSize![0] as number,
 								height: self.scalerSize![1] as number,
 							});
-							frame.close();
 
 							if (
 								framerate >= 15 &&
@@ -1026,8 +1026,18 @@ export class MediaScaler {
 									}
 								}, (1 / framerate) * 2_000 + 4);
 							}
+
+							if (lastFrame) {
+								lastFrame.close();
+							}
+							lastFrame = frame;
 						},
 						flush(controller) {
+							if (lastFrame) {
+								lastFrame.close();
+								lastFrame = undefined;
+							}
+
 							controller.terminate();
 						},
 					},
@@ -1113,15 +1123,23 @@ export class MediaScaler {
 								}
 							);
 
-							frame.close();
-
 							try {
 								controller.enqueue(output);
 							} catch (error) {
 								controller.terminate();
 							}
+
+							if (lastFrame) {
+								lastFrame.close();
+							}
+							lastFrame = frame;
 						},
 						flush(controller) {
+							if (lastFrame) {
+								lastFrame.close();
+								lastFrame = undefined;
+							}
+
 							controller.terminate();
 						},
 					},
@@ -1137,8 +1155,6 @@ export class MediaScaler {
 			} else {
 				this.requestedResolution = this.scalerSize;
 				const self = this;
-
-				let lastFrame: VideoFrame | undefined = undefined;
 
 				transformer = new TransformStream(
 					{
@@ -1160,13 +1176,23 @@ export class MediaScaler {
 								self.requestedResolution = undefined;
 							}
 
-							controller.enqueue(frame);
+							try {
+								controller.enqueue(frame);
+							} catch (error) {
+								controller.terminate();
+							}
+
 							if (lastFrame) {
 								lastFrame.close();
 							}
 							lastFrame = frame;
 						},
 						flush(controller) {
+							if (lastFrame) {
+								lastFrame.close();
+								lastFrame = undefined;
+							}
+
 							controller.terminate();
 						},
 					},
