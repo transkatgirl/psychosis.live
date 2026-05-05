@@ -684,7 +684,7 @@ function adaptiveVideoSettings(
 			} else if (
 				(analysis.codecData.lowQP >= analysis.qpAvg &&
 					analysis.encodeProportion &&
-					analysis.encodeProportion < 0.4 &&
+					analysis.encodeProportion < 0.3 &&
 					!analysis.framesAnalyzed) ||
 				(analysis.framesAnalyzed &&
 					analysis.framesAnalyzed >= framerate * 2 &&
@@ -712,6 +712,8 @@ function adaptiveVideoSettings(
 			];
 
 			data.framesEncodedOlder = undefined;
+			data.timestampOlder = undefined;
+			data.totalEncodeTimeOlder = undefined;
 			data.qpSumOlder = undefined;
 
 			if (!data.lastTarget || data.lastTarget[1] != framerate) {
