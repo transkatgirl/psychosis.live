@@ -165,7 +165,7 @@ export async function getPeerStats(
 							1000) /
 						(report.timestamp - lastReport.timestamp);
 
-					if (encodeProportion > 0.99) {
+					if (encodeProportion > 0.95) {
 						stats.cpuLimited = true;
 					}
 				}
