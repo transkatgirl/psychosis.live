@@ -1033,11 +1033,6 @@ export class MediaScaler {
 							lastFrame = frame;
 						},
 						flush(controller) {
-							if (lastFrame) {
-								lastFrame.close();
-								lastFrame = undefined;
-							}
-
 							controller.terminate();
 						},
 					},
@@ -1135,11 +1130,6 @@ export class MediaScaler {
 							lastFrame = frame;
 						},
 						flush(controller) {
-							if (lastFrame) {
-								lastFrame.close();
-								lastFrame = undefined;
-							}
-
 							controller.terminate();
 						},
 					},
@@ -1188,11 +1178,6 @@ export class MediaScaler {
 							lastFrame = frame;
 						},
 						flush(controller) {
-							if (lastFrame) {
-								lastFrame.close();
-								lastFrame = undefined;
-							}
-
 							controller.terminate();
 						},
 					},
