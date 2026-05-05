@@ -356,6 +356,10 @@ function sortCodecs(codecs: RTCRtpCodec[], preferredOrder: string[]) {
 export interface AdaptiveData {
 	framesEncoded?: number;
 	framesEncodedOlder?: number;
+	timestamp?: number;
+	timestampOlder?: number;
+	totalEncodeTime?: number;
+	totalEncodeTimeOlder?: number;
 	qpSum?: number; // 1 scan interval ago
 	qpSumOlder?: number; // 2 scan intervals ago
 
@@ -367,6 +371,7 @@ export interface AdaptiveData {
 interface AdaptiveDataAnalysis {
 	codecData?: CodecAdaptiveData;
 	framesAnalyzed?: number;
+	encodeProportion?: number;
 	qpAvg?: number;
 }
 
@@ -378,6 +383,7 @@ function analyzeAdaptiveData(stats: [string, any][], data: AdaptiveData) {
 	}
 
 	let framesEncoded;
+	let encodeProportion;
 	let qpSum;
 
 	for (const [_, report] of stats) {
@@ -422,11 +428,33 @@ function analyzeAdaptiveData(stats: [string, any][], data: AdaptiveData) {
 				data.qpSumOlder = data.qpSum;
 				data.qpSum = report.qpSum;
 			}
+			if (report.totalEncodeTime) {
+				if (data.totalEncodeTime && data.timestamp) {
+					if (data.totalEncodeTimeOlder && data.timestampOlder) {
+						encodeProportion =
+							((report.totalEncodeTime -
+								data.totalEncodeTimeOlder) *
+								1000) /
+							(report.timestamp - data.timestampOlder);
+					} else {
+						encodeProportion =
+							((report.totalEncodeTime - data.totalEncodeTime) *
+								1000) /
+							(report.timestamp - data.timestamp);
+					}
+				}
+
+				data.totalEncodeTimeOlder = data.totalEncodeTime;
+				data.totalEncodeTime = report.totalEncodeTime;
+			}
+			data.timestampOlder = data.timestamp;
+			data.timestamp = report.timestamp;
 		}
 	}
 
 	if (framesEncoded) {
 		analysis.framesAnalyzed = framesEncoded;
+		analysis.encodeProportion = encodeProportion;
 
 		if (qpSum) {
 			analysis.qpAvg = qpSum / framesEncoded;
@@ -638,6 +666,8 @@ function adaptiveVideoSettings(
 			if (
 				(analysis.framesAnalyzed &&
 					analysis.framesAnalyzed <= framerate * 0.8) ||
+				(analysis.encodeProportion &&
+					analysis.encodeProportion > 0.9) ||
 				analysis.codecData.highQP < analysis.qpAvg
 			) {
 				[pixels, framerate] = adaptDown(pixels, framerate);
@@ -652,10 +682,15 @@ function adaptiveVideoSettings(
 					data.skipNextInterval = true;
 				}
 			} else if (
-				analysis.codecData.lowQP >= analysis.qpAvg &&
-				(!analysis.framesAnalyzed ||
-					(analysis.framesAnalyzed &&
-						analysis.framesAnalyzed >= framerate * 2))
+				(analysis.codecData.lowQP >= analysis.qpAvg &&
+					analysis.encodeProportion &&
+					analysis.encodeProportion < 0.4 &&
+					!analysis.framesAnalyzed) ||
+				(analysis.framesAnalyzed &&
+					analysis.framesAnalyzed >= framerate * 2 &&
+					(peerScaler.scalerSize[0] * peerScaler.scalerSize[1] <
+						targets.width * targets.height ||
+						framerate < targets.framerate))
 			) {
 				[pixels, framerate] = adaptUp(
 					pixels,
