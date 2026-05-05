@@ -854,15 +854,31 @@ export function adaptToPixelCount(
 	let adjustedWidth = Math.round(Math.sqrt(pixels * (width / height)));
 	let adjustedHeight = Math.round(Math.sqrt(pixels * (height / width)));
 
-	return adaptToRatioExact(adjustedWidth, adjustedHeight, width / height);
+	const adjusted = adaptToRatioExact(
+		adjustedWidth,
+		adjustedHeight,
+		width / height
+	);
+
+	if (adjusted[0] !== 0 && adjusted[1] !== 0) {
+		return adjusted;
+	} else {
+		return adaptToRatioExact(
+			adjustedWidth,
+			adjustedHeight,
+			width / height,
+			1e-4
+		);
+	}
 }
 
 export function adaptToRatioExact(
 	width: number,
 	height: number,
-	ratio: number
+	ratio: number,
+	epsilon = 1e-10
 ): [number, number] {
-	while (Math.abs(width / height - ratio) >= 1e-10) {
+	while (Math.abs(width / height - ratio) >= epsilon) {
 		if (width / height > ratio) {
 			width--;
 		} else {
@@ -923,6 +939,7 @@ export class MediaScaler {
 		return this.videoId;
 	}
 	public resize(width: number, height: number) {
+		if (width === 0 || height === 0) throw "Invalid dimensions";
 		this.requestedResolution = [Math.round(width), Math.round(height)];
 	}
 	public addTrack(
