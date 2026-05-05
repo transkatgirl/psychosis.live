@@ -854,22 +854,30 @@ export function adaptToPixelCount(
 	let adjustedWidth = Math.round(Math.sqrt(pixels * (width / height)));
 	let adjustedHeight = Math.round(Math.sqrt(pixels * (height / width)));
 
-	const adjusted = adaptToRatioExact(
-		adjustedWidth,
-		adjustedHeight,
-		width / height
-	);
+	return adaptToRatioBestFit(adjustedWidth, adjustedHeight, width / height);
+}
 
-	if (adjusted[0] !== 0 && adjusted[1] !== 0) {
-		return adjusted;
-	} else {
-		return adaptToRatioExact(
-			adjustedWidth,
-			adjustedHeight,
-			width / height,
-			1e-4
+export function adaptToRatioBestFit(
+	width: number,
+	height: number,
+	ratio: number
+) {
+	let adjusted: [number, number] = [0, 0];
+
+	let epsilonPower = -10;
+
+	while (adjusted[0] === 0 || adjusted[1] === 0) {
+		adjusted = adaptToRatioExact(
+			width,
+			height,
+			ratio,
+			Math.pow(10, epsilonPower)
 		);
+
+		epsilonPower++;
 	}
+
+	return adjusted;
 }
 
 export function adaptToRatioExact(
