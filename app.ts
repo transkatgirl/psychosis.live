@@ -1724,15 +1724,12 @@ function statsOverlay(overlay: HTMLDivElement, peers: Record<string, Peer>) {
 		}
 
 		if (
-			(stats.targetVideoBitrate && stats.targetVideoBitrate < 320) ||
-			(stats.jitterBufferDelay &&
-				stats.roundTripTime &&
-				stats.roundTripTime > stats.jitterBufferDelay) ||
+			(stats.targetVideoBitrate && stats.targetVideoBitrate < 384) ||
 			(stats.jitterBufferDelay &&
 				stats.jitter &&
 				stats.jitter > stats.jitterBufferDelay) ||
 			(stats.lossPercent &&
-				stats.lossPercent >= 2 &&
+				stats.lossPercent > 0 &&
 				stats.roundTripTime &&
 				stats.jitterBufferDelay &&
 				stats.roundTripTime + (stats.jitter ? stats.jitter : 0) / 2 >
