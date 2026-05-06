@@ -190,7 +190,7 @@ export function mungeSDP(sdp: string, stereo: boolean): string {
 				// - https://issues.webrtc.org/issues/42229513
 
 				let payloads = sdpTransform.parsePayloads(media.payloads);
-				payloads.splice(payloads.indexOf(opus) + 1, 0, 112);
+				//payloads.splice(payloads.indexOf(opus) + 1, 0, 112);
 
 				let payloadOrdering = (a: any, b: any) => {
 					const indexA = payloads.indexOf(a.payload);
