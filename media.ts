@@ -110,7 +110,7 @@ export function calculateReasonableVideoBitrateKbps(
 	// Based loosely on https://support.google.com/youtube/answer/2853702 and https://support.google.com/youtube/answer/1722171
 
 	let bitrate = Math.max(
-		Math.round((height * width * 4.8) / 100000) * 100,
+		Math.round((height * width * 5.4) / 100000) * 100,
 		1000
 	);
 
