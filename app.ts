@@ -165,19 +165,15 @@ function helperMenu() {
 
 	updateURLs();
 
-	roomInput.addEventListener("input", (event) => {
-		updateURLs();
-	});
-	passwordInput.addEventListener("input", (event) => {
-		updateURLs();
-	});
+	roomInput.addEventListener("input", updateURLs);
+	passwordInput.addEventListener("input", updateURLs);
 
 	document.body.appendChild(senderLabel);
 	document.body.appendChild(senderLink);
 
 	document.body.insertAdjacentHTML(
 		"beforeend",
-		"<p>Requires a fairly powerful device due to use of newer video codecs, especially if using high resolutions and frame rates.</p><p>Supports up to 25 simultaneous senders. However, it is recommended that you stick to &lt;= 4 simultaneous senders to avoid overloading your receiver.</p>"
+		"<p>Requires a fairly powerful device (recent flagship phone or a decently capable computer) due to use of newer video codecs, especially if using high resolutions and frame rates.</p><p>Supports up to 25 simultaneous senders. However, it is recommended that you stick to &lt;= 4 simultaneous senders to avoid overloading your receiver.</p>"
 	);
 
 	document.body.appendChild(receiverLabel);
