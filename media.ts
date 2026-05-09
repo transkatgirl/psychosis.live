@@ -107,12 +107,22 @@ export function calculateReasonableVideoBitrateKbps(
 	height: number,
 	framerate: number
 ) {
-	// Based loosely on https://support.google.com/youtube/answer/2853702 and https://support.google.com/youtube/answer/1722171
-
-	let bitrate = Math.max(
-		Math.round((height * width * 5.4) / 100000) * 100,
+	return Math.max(
+		Math.round(calculateVideoBitrate(width * height, framerate) / 100000) *
+			100,
 		1000
 	);
+}
+
+function calculateVideoBitrate(
+	pixels: number,
+	framerate: number,
+	minBitrate = 1000000,
+	bitsPerPixel = 5.4
+) {
+	// Based loosely on https://support.google.com/youtube/answer/2853702 and https://support.google.com/youtube/answer/1722171
+
+	let bitrate = Math.max(pixels * bitsPerPixel, minBitrate);
 
 	return Math.round(bitrate * Math.max(1 + (framerate - 30) * (0.5 / 30), 1));
 }
@@ -373,6 +383,7 @@ interface AdaptiveDataAnalysis {
 	framesAnalyzed?: number;
 	encodeProportion?: number;
 	qpAvg?: number;
+	targetBitrate?: number;
 }
 
 function analyzeAdaptiveData(stats: [string, any][], data: AdaptiveData) {
@@ -446,6 +457,12 @@ function analyzeAdaptiveData(stats: [string, any][], data: AdaptiveData) {
 
 				data.totalEncodeTimeOlder = data.totalEncodeTime;
 				data.totalEncodeTime = report.totalEncodeTime;
+			}
+			if (report.targetBitrate) {
+				analysis.targetBitrate = Math.max(
+					report.targetBitrate,
+					analysis.targetBitrate ? analysis.targetBitrate : 0
+				);
 			}
 			data.timestampOlder = data.timestamp;
 			data.timestamp = report.timestamp;
@@ -662,17 +679,33 @@ function adaptiveVideoSettings(
 			hasAdapted = true;
 		}
 
-		if (analysis.qpAvg) {
+		if (analysis.qpAvg && analysis.targetBitrate) {
 			if (
 				(analysis.framesAnalyzed &&
 					analysis.framesAnalyzed <= framerate * 0.8) ||
 				(analysis.encodeProportion &&
 					analysis.encodeProportion > 0.95) ||
-				analysis.codecData.highQP < analysis.qpAvg
+				analysis.codecData.highQP < analysis.qpAvg ||
+				analysis.targetBitrate <
+					calculateVideoBitrate(
+						pixels,
+						framerate,
+						0,
+						analysis.codecData.minBPP
+					)
 			) {
 				[pixels, framerate] = adaptDown(pixels, framerate);
 
-				if (calculateHigherQP(analysis.codecData) > analysis.qpAvg) {
+				if (
+					calculateHigherQP(analysis.codecData) > analysis.qpAvg ||
+					analysis.targetBitrate <
+						calculateVideoBitrate(
+							pixels,
+							framerate,
+							0,
+							analysis.codecData.minBPP
+						)
+				) {
 					[pixels, framerate] = adaptDown(pixels, framerate);
 				}
 
@@ -692,14 +725,27 @@ function adaptiveVideoSettings(
 						targets.width * targets.height ||
 						framerate < targets.framerate))
 			) {
-				[pixels, framerate] = adaptUp(
+				const [newPixels, newFramerate] = adaptUp(
 					pixels,
 					framerate,
 					targets.framerate
 				);
 
-				hasAdapted = true;
+				if (
+					analysis.targetBitrate >=
+					calculateVideoBitrate(
+						newPixels,
+						newFramerate,
+						0,
+						analysis.codecData.minBPP
+					)
+				) {
+					[pixels, framerate] = [newPixels, newFramerate];
+					hasAdapted = true;
+				}
 			}
+		} else {
+			console.warn("Video metrics unavailable");
 		}
 
 		if (hasAdapted) {
@@ -792,34 +838,39 @@ function adaptiveVideoSettings(
 interface CodecAdaptiveData {
 	lowQP: number;
 	highQP: number;
+	minBPP: number;
 }
 
 function calculateHigherQP(data: CodecAdaptiveData) {
 	return Math.min(data.highQP - data.lowQP + data.highQP, 63);
 }
 
-// https://github.com/webrtc-sdk/webrtc/blob/6c1aa903241e69eb2eca64caad16779351bb1ab2/modules/video_coding/codecs/h264/h264_encoder_impl.cc#L69
+// QP thresholds from https://github.com/webrtc-sdk/webrtc/blob/6c1aa903241e69eb2eca64caad16779351bb1ab2/modules/video_coding/codecs/h264/h264_encoder_impl.cc#L69
 const H264_ADAPTIVE_DATA: CodecAdaptiveData = {
 	lowQP: 24,
 	highQP: 37,
+	minBPP: 0.8,
 };
 
-// https://github.com/webrtc-sdk/webrtc/blob/6c1aa903241e69eb2eca64caad16779351bb1ab2/modules/video_coding/codecs/vp8/libvpx_vp8_encoder.cc#L91
+// QP thresholds from https://github.com/webrtc-sdk/webrtc/blob/6c1aa903241e69eb2eca64caad16779351bb1ab2/modules/video_coding/codecs/vp8/libvpx_vp8_encoder.cc#L91
 const VP8_ADAPTIVE_DATA: CodecAdaptiveData = {
 	lowQP: 39,
 	highQP: 95,
+	minBPP: 0.8,
 };
 
-// https://github.com/webrtc-sdk/webrtc/blob/6c1aa903241e69eb2eca64caad16779351bb1ab2/modules/video_coding/codecs/vp9/libvpx_vp9_encoder.cc#L107
+// QP thresholds from https://github.com/webrtc-sdk/webrtc/blob/6c1aa903241e69eb2eca64caad16779351bb1ab2/modules/video_coding/codecs/vp9/libvpx_vp9_encoder.cc#L107
 const VP9_ADAPTIVE_DATA: CodecAdaptiveData = {
 	lowQP: 149,
 	highQP: 205,
+	minBPP: 0.6,
 };
 
-// https://github.com/webrtc-sdk/webrtc/blob/6c1aa903241e69eb2eca64caad16779351bb1ab2/modules/video_coding/codecs/av1/libaom_av1_encoder.cc#L80
+// QP thresholds from https://github.com/webrtc-sdk/webrtc/blob/6c1aa903241e69eb2eca64caad16779351bb1ab2/modules/video_coding/codecs/av1/libaom_av1_encoder.cc#L80
 const AV1_ADAPTIVE_DATA: CodecAdaptiveData = {
 	lowQP: 145,
 	highQP: 205,
+	minBPP: 0.4,
 };
 
 function adjustCodecData(
@@ -831,6 +882,7 @@ function adjustCodecData(
 	return {
 		lowQP: data.lowQP - qpAdjustment,
 		highQP: data.highQP - qpAdjustment,
+		minBPP: data.minBPP,
 	};
 }
 
