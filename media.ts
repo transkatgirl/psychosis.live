@@ -744,7 +744,7 @@ function adaptiveVideoSettings(
 					hasAdapted = true;
 				}
 			}
-		} else {
+		} else if (analysis.framesAnalyzed) {
 			console.warn("Video metrics unavailable");
 		}
 
